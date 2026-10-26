@@ -27,9 +27,6 @@ HALLUCINATIONS = {
     "obrigado por assistir.",
     "thanks for watching!",
     "thank you for watching.",
-    "[música]",
-    "[music]",
-    "(música)",
     "...",
 }
 

@@ -29,6 +29,11 @@ class TranscribeTest(unittest.TestCase):
         self.assertEqual(transcribe.speech_spans(out), [(2.08, 2.94), (21.73, 31.01)])
         self.assertEqual(transcribe.speech_spans("Detected 0 speech segments:\n"), [])
 
+    def test_bracketed_noise_is_dropped_without_listing_each_one(self):
+        for text in ["[music]", "[Música]", "(música)", "(applause)", "[ Silence ]"]:
+            self.assertTrue(transcribe.is_hallucination(text), text)
+        self.assertFalse(transcribe.is_hallucination("The [music] plan is ready"))
+
     def test_merge_interleaves_by_time(self):
         me = [{"t": 1.0, "who": "Me", "text": "a"}, {"t": 9.0, "who": "Me", "text": "c"}]
         others = [{"t": 5.0, "who": "Others", "text": "b"}]
