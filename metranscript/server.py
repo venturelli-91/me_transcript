@@ -91,7 +91,7 @@ def switch_device(track: str, name: str) -> None:
     recorder.switch(track, name)
 
 
-MEETING_APPS = {"Meet", "Zoom", "Teams", "Chrome", "Edge", "Firefox", "Brave", "Arc"}
+MEETING_APPS = {*detect.EXES.values(), *agenda.APPS.values()}
 
 
 def start(title: str, lang: str, private: bool, mic: str | None = None, speakers: str | None = None,

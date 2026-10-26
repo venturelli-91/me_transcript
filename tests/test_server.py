@@ -6,6 +6,13 @@ from metranscript import server
 EVENT = {"key": "k", "title": "Weekly sync", "start": "2026-10-26T14:00:00-03:00", "app": "Meet"}
 
 
+class MeetingAppsTest(unittest.TestCase):
+    def test_accepts_every_app_the_detector_or_the_calendar_can_report(self):
+        for app in [*server.detect.EXES.values(), *server.agenda.APPS.values()]:
+            self.assertIn(app, server.MEETING_APPS)
+        self.assertNotIn("Slack", server.MEETING_APPS)
+
+
 class ReminderTokenTest(unittest.TestCase):
     def setUp(self):
         server.reminder_tokens.clear()
