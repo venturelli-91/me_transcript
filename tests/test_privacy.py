@@ -143,5 +143,21 @@ class MaskSpeedTest(PrivacyCase):
             self.assertLess(self.timed(mask, text), 5, text[:6])
 
 
+class LongTokenTest(PrivacyCase):
+    def test_a_long_signed_url_is_hidden_to_its_last_character(self):
+        url = "https://bucket.s3.amazonaws.com/plan.pdf?X-Amz-Signature=" + "ab12" * 250
+        masked = privacy.Mask().apply(f"download {url}, then go")
+        self.assertEqual(masked, "download [LINK_1], then go")
+
+    def test_a_long_hex_key_and_a_long_prefixed_key_are_hidden_whole(self):
+        for key in ("0123456789abcdef" * 20, "sk-" + "Ab1" * 120):
+            self.assertEqual(privacy.Mask().apply(f"key {key} ok"), "key [SECRET_1] ok")
+
+    def test_many_link_starts_in_one_run_stay_fast(self):
+        start = time.perf_counter()
+        privacy.Mask().apply("http://" * 50000)
+        self.assertLess(time.perf_counter() - start, 5)
+
+
 if __name__ == "__main__":
     unittest.main()

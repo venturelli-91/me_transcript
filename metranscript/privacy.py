@@ -11,12 +11,15 @@ MAX_TERM = 100
 PLACEHOLDER_RE = re.compile(r"\[[A-Z]+_\d+\]")
 LOOKS_LIKE_CODE_RE = re.compile(r"\[[a-z]+_\d+\]")  # the same, on folded (lowercase) text
 _UNITS = "k|mil|milhões|milhão|bilhões|bilhão|million|billion|reais|dólares|dollars|euros"
-# Patterns run on the folded text, in this order; the first match of a stretch wins. Every repeat is bounded so
-# a long run of text can't make the matching slow. Digit-only ids need 9+ digits, see Mask.apply.
+# Patterns run on the folded text, in this order; the first match of a stretch wins. Repeats that could be slow on
+# long input are bounded; a link is then extended in code to the end of its run (see Mask.apply), so a long signed
+# URL is still hidden whole. Digit-only ids need 9+ digits.
+TOKEN_END = re.compile(r"[\s<>\"')\]]")
 PATTERNS = [
-    ("SECRET", re.compile(r"\b(?:sk|pk|ghp|xox[abp])[-_][a-z0-9_-]{16,200}|\b[0-9a-f]{32,200}\b")),
-    ("LINK", re.compile(r"(?:https?://|www\.)[^\s<>\"')\]]{0,500}[^\s<>\"')\].,;:!?]")),
+    # Links and emails first: a key-looking piece inside one must not split it and leave the rest in clear.
+    ("LINK", re.compile(r"(?:https?://|www\.)[^\s<>\"')\]]{0,500}")),
     ("EMAIL", re.compile(r"[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,5}")),
+    ("SECRET", re.compile(r"\b(?:sk|pk|ghp|xox[abp])[-_][a-z0-9_-]{16,}|\b[0-9a-f]{32,}\b")),
     ("AMOUNT", re.compile(rf"(?:r\$|us\$|\$|€|£)\s?\d(?:[\d.,]{{0,20}}\d)?(?:\s?(?:{_UNITS}|m|bn)\b)?"
                           rf"|\b\d(?:[\d.,]{{0,20}}\d)?\s?(?:{_UNITS})\b")),
     ("ID", re.compile(r"\+?\d[\d ()./-]{7,30}\d")),
@@ -120,8 +123,16 @@ class Mask:
         # Contacts and values first, so a term inside an email or link hides the whole thing, not a piece of it.
         for kind, rx in PATTERNS:
             for m in rx.finditer(folded):
-                if kind != "ID" or sum(c.isdigit() for c in m.group()) >= 9:
-                    add(m.start(), m.end(), kind, text[index[m.start()]:index[m.end() - 1] + 1])
+                if taken[m.start()]:
+                    continue  # inside a run an earlier match already covered
+                end = m.end()
+                if kind == "LINK":
+                    found = TOKEN_END.search(folded, end)
+                    end = found.start() if found else len(folded)
+                    while folded[end - 1] in ".,;:!?":
+                        end -= 1
+                if kind != "ID" or sum(c.isdigit() for c in folded[m.start():end]) >= 9:
+                    add(m.start(), end, kind, text[index[m.start()]:index[end - 1] + 1])
         for term, key, rx in self._terms:
             for m in rx.finditer(folded):
                 add(m.start(), m.end(), "TERM", key, term)
