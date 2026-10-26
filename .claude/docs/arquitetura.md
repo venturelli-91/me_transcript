@@ -10,7 +10,7 @@
       │
       ├── capture.py   PyAudioWPatch: mic + loopback  → mic.wav, system.wav
       ├── transcribe.py thread: blocos 30 s → ffmpeg → whisper-cli → segmentos
-      ├── enhance.py    urllib → DeepSeek → ata.md
+      ├── enhance.py    urllib → DeepSeek → resumo (ata.md) e conversa (chat.json)
       └── detect.py     winreg ConsentStore → app de reunião usando o mic?
 ```
 
@@ -43,8 +43,12 @@ ponytail: uma sessão global — o app é de uma pessoa, uma reunião por vez.
    `whisper-cli -l <lang> -ot <início da voz> -oj` na janela (GPU via Vulkan), em prioridade
    baixa do Windows. Os segmentos com
    tempo absoluto vão para `Session.segments` e para `transcript.md`.
-3. `POST /api/stop` → `capture.stop()` → transcreve o resto → `enhance.generate()` →
-   `ata.md` → `phase = done`.
+3. `POST /api/stop` → `capture.stop()` → transcreve o resto → `phase = enhancing` →
+   `enhance.summarize()` → `ata.md` → `phase = done`. Falha na transcrição ou no resumo →
+   `phase = error` com mensagem; nada salvo é apagado. Reunião sigilosa pula o resumo.
+4. Na reunião aberta, cada mensagem do chat chama `enhance.chat()` (JSON mode): a resposta vai
+   para `chat.json`; se veio `summary`, a versão anterior vai para `ata-history.json` e o novo
+   texto para `ata.md`. "Desfazer" restaura a última versão do histórico.
 
 ## Contrato da API (JSON, 127.0.0.1 apenas)
 
@@ -53,16 +57,24 @@ ponytail: uma sessão global — o app é de uma pessoa, uma reunião por vez.
 | `GET /` | — | `web/index.html` |
 | `GET /api/status` | — | `{phase, meeting_id, elapsed, levels:{mic,system}, segments:[...], detected, error}` |
 | `GET /api/meetings` | — | `[{id, title, started_at, has_ata}]` |
-| `GET /api/meetings/<id>` | — | `{id, title, lang, started_at, notes, transcript, ata}` |
-| `POST /api/start` | `{title?, lang: "pt"\|"en"}` | `{id}` · `409` se já gravando |
+| `GET /api/meetings/<id>` | — | `{id, title, lang, private, started_at, ended_at, notes, transcript, ata, chat, can_undo}` |
+| `POST /api/start` | `{title?, lang: "pt"\|"en", private?: bool}` | `{id}` · `409` se já gravando |
 | `POST /api/stop` | — | `{}` (processamento segue em background) |
 | `PUT /api/meetings/<id>/notes` | `{notes}` | `{}` |
-| `POST /api/meetings/<id>/ata` | — | `{}` (gera de novo em background) |
+| `POST /api/meetings/<id>/ata` | — | reunião atualizada (gera o resumo de novo; síncrono) |
+| `POST /api/meetings/<id>/chat` | `{message}` (1–4000 caracteres) | reunião atualizada |
+| `POST /api/meetings/<id>/undo` | — | reunião atualizada · `409` sem versão anterior |
+
+Toda escrita exige `Host` local e `Content-Type: application/json` (bloqueia DNS rebinding e
+POST de outros sites).
 
 Segmento: `{"t": 83.2, "who": "Eu" | "Outros", "text": "..."}` (`t` em segundos desde o início).
 
 ## Formatos em disco
-- `meta.json`: `{"title", "lang", "started_at", "ended_at"}` (ISO 8601 local).
+- `meta.json`: `{"title", "lang", "private", "started_at", "ended_at"}` (ISO 8601 local).
+- `chat.json`: `[{"role": "user"|"assistant", "content", "changed_summary"?}]`.
+- `ata-history.json`: versões anteriores do resumo (pilha para "Desfazer").
+- Escritas são atômicas (`.tmp` + `os.replace`) sob um lock global.
 - `transcript.md`: uma linha por segmento — `[00:01:23] **Outros:** texto`.
 - `notes.md`, `ata.md`: Markdown livre.
 - `mic.wav`, `system.wav`: PCM 16-bit no formato nativo do dispositivo.
@@ -70,7 +82,7 @@ Segmento: `{"t": 83.2, "who": "Eu" | "Outros", "text": "..."}` (`t` em segundos 
 ## Configuração
 | Variável | Padrão |
 |---|---|
-| `DEEPSEEK_API_KEY` | — (obrigatória para a ata; lida do ambiente ou de `.env`) |
+| `DEEPSEEK_API_KEY` | — (obrigatória para resumo e conversa; lida do ambiente ou de `.env`) |
 | `ATA_WHISPER` | `bin/vulkan/whisper-cli.exe` (build Vulkan local) |
 | `ATA_THREADS` | `4` |
 | `ATA_MODEL` | `models/ggml-large-v3-turbo-q5_0.bin` |

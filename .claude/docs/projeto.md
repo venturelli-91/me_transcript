@@ -16,8 +16,9 @@ Um programa local (Python) com uma página no navegador (`127.0.0.1:8765`):
 2. Grava duas trilhas: **Eu** (microfone) e **Outros** (áudio do sistema).
 3. Transcreve em blocos durante a reunião, localmente, com whisper.cpp.
 4. Você escreve anotações curtas enquanto conversa.
-5. Ao parar, a DeepSeek usa suas anotações como esqueleto e a transcrição como fonte para
-   gerar a **ata**.
+5. Ao parar, a DeepSeek resume as **ideias por tópico** e os próximos passos.
+6. Você conversa com a reunião: pergunta algo específico (resposta com o horário do trecho),
+   pede para incluir algo no resumo ou para reformulá-lo — e pode desfazer.
 
 ## Objetivos
 - Substituir o another note-taking app no uso diário do CEO para Meet, Zoom e Teams.
@@ -25,8 +26,8 @@ Um programa local (Python) com uma página no navegador (`127.0.0.1:8765`):
 - Tudo armazenado localmente, em Markdown legível fora do app.
 
 ## Não-objetivos (por ora)
-Chat com reuniões, múltiplos templates, agenda, compartilhamento, sync em nuvem,
-identificação de cada participante, transcrição palavra a palavra ao vivo, busca, login,
+Busca entre reuniões, múltiplos templates, agenda, compartilhamento, sync em nuvem,
+identificação de cada participante, transcrição palavra a palavra ao vivo, login,
 instalador.
 
 ## Anti-objetivos (seria fracasso mesmo funcionando)

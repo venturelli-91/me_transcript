@@ -39,13 +39,15 @@ Um ticket = um commit atômico (`DEV-XXXX: ...`). Fluxo por ticket: dev → `cod
   filtro).
 - **Risco:** compilar Vulkan exige cmake/SDK/Build Tools → **aprovação do CEO**.
 
-## DEV-0006 — Ata pela DeepSeek (F6) · `engenheiro-ia` + `engenheiro-prompt` · revisão `seguranca`
-- **Escopo:** `ata/enhance.py` (urllib, `.env`), `ata/prompt.md`, geração ao parar e
-  botão "Gerar de novo".
-- **Testes:** `tests/test_enhance.py` (montagem das mensagens, leitura do `.env`,
-  tratamento de erro HTTP); 1 reunião real pt e 1 en.
-- **Risco:** chave vazar em log/erro; transcrição longa estourar contexto (64k tokens no
-  `deepseek-chat` cobre ~3 h).
+## DEV-0006 — Resumo e conversa (F6) · `engenheiro-ia` + `engenheiro-prompt` · revisão `seguranca`
+- **Escopo:** `ata/enhance.py` (urllib, `.env`, JSON mode no chat), `ata/prompt.md` (resumo
+  por tópicos), `ata/chat.md` (perguntar/citar/reformular), `store` com `chat.json` e
+  `ata-history.json`; rotas `POST /chat`, `POST /undo`; resumo gerado ao parar; painel de
+  conversa, "Incluir no resumo" e "Desfazer" na página.
+- **Testes:** `tests/test_enhance.py` (mensagens, parse do JSON, `.env`, erro HTTP sem vazar
+  chave), `tests/test_store.py` (versões, desfazer, chat); 1 reunião real pt e 1 en.
+- **Risco:** chave vazar em log/erro; prompt injection vinda da transcrição (prompts tratam o
+  material como dado); conversa longa estourar contexto (últimas 20 mensagens).
 
 ## DEV-0007 — Aviso de reunião (F7) · `dev-backend`
 - **Escopo:** `ata/detect.py` (winreg), campo `detected` no `/api/status`, banner +
@@ -57,3 +59,9 @@ Um ticket = um commit atômico (`DEV-XXXX: ...`). Fluxo por ticket: dev → `cod
 - **Escopo:** `README.md` na raiz — instalar dependências, whisper.cpp, modelo, chave,
   rodar, onde ficam as reuniões.
 - **Aceite:** alguém segue o README do zero e grava uma reunião.
+
+## Pendências conhecidas (baixa severidade)
+- "Incluir no resumo" aparece também em respostas sem conteúdo útil ("isso não foi falado",
+  "já está no resumo"); clicar gasta uma chamada à toa. Ideia: a resposta do modelo indicar se é
+  incluível.
+- O rótulo "Resumo atualizado" continua na mensagem do chat depois de "Desfazer".

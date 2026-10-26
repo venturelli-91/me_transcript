@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src data:">
 <title>Ata</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,8 +51,10 @@ main { display: grid; grid-template-rows: auto 1fr; min-width: 0; height: 100vh;
 .deck.rec #rec span { border-radius: 4px; width: 22px; height: 22px; }
 #rec:disabled { opacity: .45; cursor: default; }
 .setup { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-width: 0; }
-.setup input { flex: 1 1 220px; min-width: 0; max-width: 560px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 8px 10px; color: var(--sheet); }
-.setup input::placeholder { color: #a9bdb5; }
+#title { flex: 1 1 220px; min-width: 0; max-width: 560px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 8px 10px; color: var(--sheet); }
+#title::placeholder { color: #a9bdb5; }
+.private { display: inline-flex; gap: 6px; align-items: center; font-size: 13.5px; color: #c9d6d0; cursor: pointer; }
+.private input { accent-color: var(--sheet); }
 .lang { display: inline-flex; border: 1px solid rgba(255,255,255,.25); border-radius: 6px; overflow: hidden; }
 .lang label { padding: 8px 12px; cursor: pointer; }
 .lang input { position: absolute; opacity: 0; }
@@ -101,7 +104,26 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
 .reading h1, .reading h2, .reading h3 { font-family: var(--ui); line-height: 1.25; color: var(--bottle); }
 .reading h1 { font-size: 24px; } .reading h2 { font-size: 18px; margin-top: 1.8em; } .reading h3 { font-size: 16px; }
 .reading ul { padding-left: 1.2em; }
-.toolbar { display: flex; gap: 12px; align-items: center; padding: 0 32px 28px; }
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 0 32px 28px; }
+.summary-view { display: grid; grid-template-columns: minmax(0, 1fr) 380px; min-height: 0; height: 100%; }
+.summary-col { overflow-y: auto; min-height: 0; }
+.chat { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; border-left: 1px solid var(--line); background: var(--sheet); }
+.chat h3 { margin: 0; padding: 16px 20px 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.chat-log { overflow-y: auto; padding: 4px 20px 12px; display: grid; align-content: start; gap: 10px; }
+.msg { border-radius: 8px; padding: 8px 12px; max-width: 92%; overflow-wrap: anywhere; }
+#chat-msg { grid-column: 1 / -1; font-size: 13.5px; }
+#chat-msg:empty { display: none; }
+.msg p { margin: 0 0 6px; }
+.msg p:last-child { margin: 0; }
+.msg ul { margin: 4px 0; padding-left: 1.1em; }
+.msg.me { justify-self: end; background: var(--bottle); color: var(--sheet); }
+.msg.bot { justify-self: start; background: var(--paper); }
+.msg small { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+.hint { color: var(--muted); font-size: 14px; margin: 0; }
+.privacy { font-size: 12.5px; padding: 0 20px 8px; }
+.link { border: 0; background: none; padding: 0; margin-top: 6px; color: var(--bottle); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
+#chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
+#chat-form textarea { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; max-height: 140px; }
 .btn { border: 1px solid var(--bottle); background: none; color: var(--bottle); border-radius: 6px; padding: 7px 14px; cursor: pointer; font-weight: 500; }
 .btn:hover { background: var(--bottle-soft); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -121,6 +143,9 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
   .split { grid-template-columns: 1fr; }
   .pane { border-right: 0; border-bottom: 1px solid var(--line); min-height: 50vh; }
   .doc header, .reading, .toolbar { padding-left: 16px; padding-right: 16px; }
+  .summary-view { grid-template-columns: 1fr; height: auto; }
+  .chat { border-left: 0; border-top: 1px solid var(--line); }
+  .chat-log { max-height: 60vh; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -142,6 +167,7 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
           <label><input type="radio" name="lang" value="pt" checked><span>Português</span></label>
           <label><input type="radio" name="lang" value="en"><span>English</span></label>
         </fieldset>
+        <label class="private"><input type="checkbox" id="private"> Reunião sigilosa: não enviar para a IA</label>
       </form>
       <div class="live">
         <div id="clock">00:00</div>
@@ -180,7 +206,7 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
     <header>
       <h2 id="doc-title"></h2>
       <div role="tablist" aria-label="Partes da reunião">
-        <button role="tab" id="tab-ata" aria-controls="doc-body" data-tab="ata" aria-selected="true">Ata</button>
+        <button role="tab" id="tab-ata" aria-controls="doc-body" data-tab="ata" aria-selected="true">Resumo</button>
         <button role="tab" id="tab-notes" aria-controls="doc-body" data-tab="notes" aria-selected="false">Notas</button>
         <button role="tab" id="tab-transcript" aria-controls="doc-body" data-tab="transcript" aria-selected="false">Transcrição</button>
       </div>
@@ -223,7 +249,7 @@ const LANG = { pt: "Português", en: "English" };
 async function loadList() {
   const items = await api("/api/meetings");
   $("#list").innerHTML = items.length ? items.map(m =>
-    `<li><button data-id="${m.id}" aria-current="${m.id === openId}">${esc(m.title || "Reunião sem título")}<span class="when">${when(m.started_at)}${m.has_ata ? "" : ", sem ata"}</span></button></li>`
+    `<li><button data-id="${m.id}" aria-current="${m.id === openId}">${esc(m.title || "Reunião sem título")}<span class="when">${when(m.started_at)}${m.has_ata ? "" : ", sem resumo"}</span></button></li>`
   ).join("") : `<li class="empty">As reuniões gravadas aparecem aqui.</li>`;
   $('#list [aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
@@ -318,11 +344,106 @@ function renderDoc() {
   } else if (tab === "transcript") {
     body.innerHTML = `<div class="reading">${openMeeting.transcript ? markdown(openMeeting.transcript) : "<p>Sem transcrição.</p>"}</div>`;
   } else {
-    const msg = busy ? (status.phase === "transcribing" ? "Terminando a transcrição…" : "Escrevendo a ata…")
+    const msg = busy ? (status.phase === "transcribing" ? "Terminando a transcrição…" : "Escrevendo o resumo…")
       : status.error && status.meeting_id === openId ? `<span class="error">${esc(status.error)}</span>` : "";
-    body.innerHTML = `<div><div class="reading">${openMeeting.ata ? markdown(openMeeting.ata) : `<p>${busy ? "A ata fica pronta logo depois da transcrição." : "Esta reunião ainda não tem ata."}</p>`}</div>
-      <div class="toolbar"><button class="btn" id="regen" ${busy ? "disabled" : ""}>${openMeeting.ata ? "Gerar de novo" : "Gerar ata"}</button><span aria-live="polite">${msg}</span></div></div>`;
-    $("#regen").addEventListener("click", regenerate);
+    const off = busy || waiting === openId || openMeeting.private ? "disabled" : "";
+    body.innerHTML = `<div class="summary-view">
+      <div class="summary-col">
+        <div class="reading">${openMeeting.ata ? markdown(openMeeting.ata) : `<p>${busy ? "O resumo fica pronto logo depois da transcrição." : "Esta reunião ainda não tem resumo."}</p>`}</div>
+        <div class="toolbar">
+          <button class="btn" id="regen" ${off}>${openMeeting.ata ? "Gerar de novo" : "Gerar resumo"}</button>
+          ${openMeeting.can_undo ? `<button class="btn" id="undo" ${off}>Desfazer</button>` : ""}
+          <span id="doc-msg" aria-live="polite">${msg}</span>
+        </div>
+      </div>
+      <section class="chat" aria-labelledby="chat-title">
+        <h3 id="chat-title">Converse com a reunião</h3>
+        <p class="hint privacy">${openMeeting.private
+          ? "Reunião sigilosa: resumo e conversa ficam desativados e nada é enviado para a IA."
+          : "Gerar resumo e conversar enviam a transcrição e as notas desta reunião para a DeepSeek."}</p>
+        <div class="chat-log" id="chat-log">${chatLog()}</div>
+        <form id="chat-form">
+          <label class="sr" for="chat-input">Mensagem</label>
+          <textarea id="chat-input" rows="2" placeholder="Pergunte algo ou peça um ajuste no resumo" ${off}></textarea>
+          <button class="btn" ${off}>Enviar</button>
+          <span id="chat-msg" aria-live="polite"></span>
+        </form>
+      </section>
+    </div>`;
+    $("#regen").addEventListener("click", () => docAction("ata", "Escrevendo o resumo…", "Resumo gerado."));
+    $("#undo")?.addEventListener("click", () => docAction("undo", "", "Versão anterior restaurada."));
+    const input = $("#chat-input");
+    input.value = draft;
+    input.addEventListener("input", () => { draft = input.value; });
+    $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send(input.value, true); });
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value, true); }
+    });
+    $("#chat-log").addEventListener("click", e => {
+      const b = e.target.closest("button[data-include]");
+      if (b) send(`Inclua no resumo esta informação: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
+    });
+    const log = $("#chat-log");
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
+let waiting = null, draft = "";
+function chatLog() {
+  if (!openMeeting.chat.length && waiting !== openId) {
+    return openMeeting.private ? ""
+      : `<p class="hint">Pergunte algo específico, como “Qual prazo o João deu?”, ou peça um ajuste, como “Deixe mais curto” ou “Foque no orçamento”.</p>`;
+  }
+  return openMeeting.chat.map((m, i) => m.role === "user"
+    ? `<div class="msg me"><p>${esc(m.content)}</p></div>`
+    : `<div class="msg bot">${markdown(m.content)}${m.changed_summary
+        ? `<small>Resumo atualizado</small>`
+        : `<button class="link" data-include="${i}">Incluir no resumo</button>`}</div>`
+  ).join("") + (waiting === openId ? `<div class="msg bot"><p class="hint">Pensando…</p></div>` : "");
+}
+
+async function send(text, typed) {
+  text = text.trim();
+  if (!text || waiting) return;
+  const id = openId;
+  waiting = id;
+  if (typed) draft = "";
+  openMeeting.chat.push({ role: "user", content: text });
+  renderDoc();
+  try {
+    const m = await api(`/api/meetings/${id}/chat`, { method: "POST", body: JSON.stringify({ message: text }) });
+    waiting = null;
+    if (openId !== id) return;
+    openMeeting = m;
+    renderDoc();
+    $("#chat-input").focus();
+    loadList();
+  } catch (err) {
+    waiting = null;
+    if (typed) draft = text;
+    if (openId !== id) return;
+    openMeeting.chat.pop();
+    renderDoc();
+    $("#chat-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
+  }
+}
+
+async function docAction(action, label, done) {
+  const id = openId;
+  waiting = id;
+  renderDoc();
+  $("#doc-msg").textContent = label;
+  try {
+    await flushNotes();
+    const m = await api(`/api/meetings/${id}/${action}`, { method: "POST" });
+    waiting = null;
+    if (openId === id) { openMeeting = m; renderDoc(); $("#doc-msg").textContent = done; }
+    loadList();
+  } catch (err) {
+    waiting = null;
+    if (openId !== id) return;
+    renderDoc();
+    $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
   }
 }
 
@@ -335,17 +456,12 @@ async function openMeeting_(id) {
   loadList();
 }
 
-async function regenerate() {
-  $("#regen").disabled = true;
-  try { await flushNotes(); await api(`/api/meetings/${openId}/ata`, { method: "POST" }); await poll(); }
-  catch (err) { $(".toolbar span").innerHTML = `<span class="error">${esc(err.message)}</span>`; $("#regen").disabled = false; }
-}
-
 async function startRec() {
   const lang = document.querySelector('input[name="lang"]:checked').value;
   try {
-    const { id } = await api("/api/start", { method: "POST", body: JSON.stringify({ title: $("#title").value, lang }) });
+    const { id } = await api("/api/start", { method: "POST", body: JSON.stringify({ title: $("#title").value, lang, private: $("#private").checked }) });
     $("#title").value = "";
+    $("#private").checked = false;
     await poll();
     await openMeeting_(id);
   } catch (err) { stateEl.innerHTML = `<span class="error">${esc(err.message)}</span>`; }
@@ -377,7 +493,7 @@ async function refresh() {
   $("#now").textContent = current ? `${current.title || "Reunião sem título"}, em ${LANG[current.lang]}` : "";
   stateEl.innerHTML = rec ? (status.error ? `<span class="error">${esc(status.error)}</span>` : "Gravando. Clique no quadrado para parar.")
     : p === "transcribing" ? "Terminando a transcrição…"
-    : p === "enhancing" ? "Escrevendo a ata…"
+    : p === "enhancing" ? "Escrevendo o resumo…"
     : p === "error" ? `<span class="error">${esc(status.error || "Algo deu errado.")}</span>`
     : "Pronto para gravar";
   if (rec && status.meeting_id === openId) renderFeed();

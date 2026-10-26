@@ -7,7 +7,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from ata import store
+from ata import enhance, store
 from ata.capture import Recorder
 from ata.transcribe import Transcriber, check_ready
 
@@ -49,14 +49,14 @@ class Session:
 session = Session()
 
 
-def start(title: str, lang: str) -> str:
+def start(title: str, lang: str, private: bool) -> str:
     with session.lock:
         if session.phase == "recording":
             raise RuntimeError("Já existe uma reunião sendo gravada.")
         if session.phase in BUSY:
             raise RuntimeError("A reunião anterior ainda está sendo processada. Aguarde a ata ficar pronta.")
         check_ready()
-        meeting_id = store.create(title, lang)
+        meeting_id = store.create(title, lang, private)
         try:
             recorder = Recorder(store.meeting_dir(meeting_id))
         except Exception as e:
@@ -92,15 +92,56 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
         end = recorder.stop()
         store.finish(meeting_id)
         transcriber.finish(end)
-        phase, error = "done", None
     except Exception as e:
         log.exception("Falha ao finalizar %s", meeting_id)
-        phase, error = "error", f"A transcrição não terminou ({e}). O áudio e as notas estão salvos na pasta da reunião."
+        return _set_phase("error", f"A transcrição não terminou ({e}). O áudio e as notas estão salvos na pasta da reunião.")
+    meeting = store.load(meeting_id)
+    if meeting.get("private"):
+        return _set_phase("done")
+    _set_phase("enhancing")
+    try:
+        store.save_ata(meeting_id, enhance.summarize(meeting))
+    except Exception as e:
+        log.exception("Falha ao gerar o resumo de %s", meeting_id)
+        return _set_phase("error", f"Resumo não gerado: {e} A transcrição está salva; use Gerar resumo.")
+    _set_phase("done")
+
+
+def _set_phase(phase: str, error: str | None = None) -> None:
     with session.lock:
         session.phase, session.error = phase, error
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/ata)?")
+def _sendable(meeting_id: str) -> dict:
+    with session.lock:
+        if session.meeting_id == meeting_id and session.phase in BUSY:
+            raise RuntimeError("Aguarde: esta reunião ainda está sendo gravada, transcrita ou resumida.")
+    meeting = store.load(meeting_id)
+    if meeting.get("private"):
+        raise RuntimeError("Reunião sigilosa: nada dela é enviado para a IA.")
+    return meeting
+
+
+def summarize(meeting_id: str) -> dict:
+    store.save_ata(meeting_id, enhance.summarize(_sendable(meeting_id)))
+    return store.load(meeting_id)
+
+
+def chat(meeting_id: str, message: str) -> dict:
+    result = enhance.chat(_sendable(meeting_id), message)
+    if result["summary"]:
+        store.save_ata(meeting_id, result["summary"])
+    store.append_chat(meeting_id, {"role": "user", "content": message},
+                      {"role": "assistant", "content": result["reply"], "changed_summary": bool(result["summary"])})
+    return store.load(meeting_id)
+
+
+def undo(meeting_id: str) -> dict:
+    store.undo_ata(meeting_id)
+    return store.load(meeting_id)
+
+
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/ata|/chat|/undo)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -160,17 +201,29 @@ class Handler(BaseHTTPRequestHandler):
                 body = self._body()
                 lang = body.get("lang", "pt")
                 title = body.get("title", "")
+                private = body.get("private", False)
                 if lang not in LANGS:
                     raise ValueError("Idioma deve ser pt ou en.")
                 if not isinstance(title, str):
                     raise ValueError("O título deve ser texto.")
-                self._send(200, {"id": start(title.strip()[:200], lang)})
+                if not isinstance(private, bool):
+                    raise ValueError("private deve ser true ou false.")
+                self._send(200, {"id": start(title.strip()[:200], lang, private)})
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))
         m = MEETING_RE.fullmatch(self.path)
         if m and m.group(2) == "/ata":
-            return self._guard(lambda: (regenerate(m.group(1)), self._send(200)))
+            return self._guard(lambda: self._send(200, summarize(m.group(1))))
+        if m and m.group(2) == "/undo":
+            return self._guard(lambda: self._send(200, undo(m.group(1))))
+        if m and m.group(2) == "/chat":
+            def run():
+                message = self._body().get("message")
+                if not isinstance(message, str) or not message.strip() or len(message) > 4000:
+                    raise ValueError("Escreva uma mensagem de até 4000 caracteres.")
+                self._send(200, chat(m.group(1), message.strip()))
+            return self._guard(run)
         self._send(404, {"error": "Não encontrado."})
 
     def do_PUT(self) -> None:
@@ -196,11 +249,6 @@ class Handler(BaseHTTPRequestHandler):
             self._send(409, {"error": str(e)})
         except ValueError as e:
             self._send(400, {"error": str(e)})
-
-
-def regenerate(meeting_id: str) -> None:
-    store.meeting_dir(meeting_id)
-    raise RuntimeError("Geração da ata ainda não disponível.")
 
 
 def main() -> None:

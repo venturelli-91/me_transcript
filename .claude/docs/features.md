@@ -32,13 +32,20 @@ Cada reunião é uma pasta `meetings/AAAA-MM-DD_HHMM/` com `meta.json`, `notes.m
       `notes.md` (sem botão salvar).
 - [ ] Indicação discreta de "salvo".
 
-## F6 — Ata (DeepSeek)
-- [ ] Ao terminar a transcrição, gera `ata.md` com: Resumo, Decisões, Próximos passos
-      (com responsável quando identificável), Pontos em aberto, Destaques das suas notas.
-- [ ] As anotações do usuário guiam a estrutura e a ênfase; a transcrição completa.
-- [ ] Escrita no idioma da reunião.
-- [ ] Botão **Gerar de novo** refaz a ata (ex.: depois de editar notas ou `prompt.md`).
-- [ ] Sem chave configurada ou erro de rede: mensagem clara, transcrição preservada.
+## F6 — Resumo e conversa com a reunião (DeepSeek)
+Decisão do CEO (2026-10-26): o app resume as ideias por tópico e a pessoa conversa com
+ele para perguntar, citar ou reformular — no lugar de uma ata com seções fixas.
+
+- [ ] Ao terminar a transcrição, gera `ata.md`: um `##` por tópico discutido, com as ideias,
+      números e quem defendeu o quê, e no fim "Próximos passos" (responsável: tarefa, prazo).
+- [ ] Anotações são opcionais; quando existem, os pontos delas ganham mais espaço.
+- [ ] Escrito no idioma da reunião.
+- [ ] Caixa de mensagem por reunião: pergunta específica recebe resposta curta com o
+      horário `[hh:mm:ss]` dos trechos; pedido de mudança reescreve o resumo e diz o que mudou.
+- [ ] Cada resposta do chat tem "Incluir no resumo".
+- [ ] "Desfazer" volta o resumo à versão anterior (todas as versões ficam guardadas).
+- [ ] Conversa salva em `chat.json`; ao reabrir a reunião, ela continua.
+- [ ] Sem chave ou erro de rede: mensagem clara, transcrição e conversa preservadas.
 
 ## F7 — Aviso de reunião
 - [ ] Com a página aberta, quando Zoom, Teams ou um navegador passa a usar o microfone,
