@@ -7,7 +7,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from ata import detect, enhance, store
+from ata import detect, enhance, mail, store
 from ata.capture import Recorder
 from ata.transcribe import Transcriber, check_ready
 
@@ -112,7 +112,21 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
     except Exception as e:
         log.exception("Falha ao gerar o resumo de %s", meeting_id)
         return _set_phase("error", f"Resumo não gerado: {e} A transcrição está salva; use Gerar resumo.")
+    # Still "enhancing" while sending, so a manual click can't race the automatic email.
+    _auto_email(meeting_id)
     _set_phase("done")
+
+
+def _auto_email(meeting_id: str) -> None:
+    meeting = store.load(meeting_id)
+    if not mail.configured() or meeting.get("private") or not meeting["ata"] or meeting.get("emailed_at"):
+        return
+    try:
+        mail.send(meeting)
+    except RuntimeError as e:
+        log.warning("E-mail de %s não enviado: %s", meeting_id, e)
+        return store.set_email_status(meeting_id, str(e))
+    store.set_email_status(meeting_id)
 
 
 def _set_phase(phase: str, error: str | None = None) -> None:
@@ -132,7 +146,25 @@ def _sendable(meeting_id: str) -> dict:
 
 def summarize(meeting_id: str) -> dict:
     store.save_ata(meeting_id, enhance.summarize(_sendable(meeting_id)))
-    return store.load(meeting_id)
+    _auto_email(meeting_id)
+    return load(meeting_id)
+
+
+def email(meeting_id: str) -> dict:
+    meeting = _sendable(meeting_id)
+    if not meeting["ata"]:
+        raise RuntimeError("Gere o resumo antes de enviar por e-mail.")
+    try:
+        mail.send(meeting)
+    except RuntimeError as e:
+        store.set_email_status(meeting_id, str(e))
+        raise
+    store.set_email_status(meeting_id)
+    return load(meeting_id)
+
+
+def load(meeting_id: str) -> dict:
+    return {**store.load(meeting_id), "email_configured": mail.configured()}
 
 
 def chat(meeting_id: str, message: str) -> dict:
@@ -141,15 +173,15 @@ def chat(meeting_id: str, message: str) -> dict:
         store.save_ata(meeting_id, result["summary"])
     store.append_chat(meeting_id, {"role": "user", "content": message},
                       {"role": "assistant", "content": result["reply"], "changed_summary": bool(result["summary"])})
-    return store.load(meeting_id)
+    return load(meeting_id)
 
 
 def undo(meeting_id: str) -> dict:
     store.undo_ata(meeting_id)
-    return store.load(meeting_id)
+    return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/ata|/chat|/undo)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/ata|/chat|/undo|/email)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -198,7 +230,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, store.list_meetings())
         m = MEETING_RE.fullmatch(self.path)
         if m and not m.group(2):
-            return self._guard(lambda: self._send(200, store.load(m.group(1))))
+            return self._guard(lambda: self._send(200, load(m.group(1))))
         self._send(404, {"error": "Não encontrado."})
 
     def do_POST(self) -> None:
@@ -223,6 +255,8 @@ class Handler(BaseHTTPRequestHandler):
         m = MEETING_RE.fullmatch(self.path)
         if m and m.group(2) == "/ata":
             return self._guard(lambda: self._send(200, summarize(m.group(1))))
+        if m and m.group(2) == "/email":
+            return self._guard(lambda: self._send(200, email(m.group(1))))
         if m and m.group(2) == "/undo":
             return self._guard(lambda: self._send(200, undo(m.group(1))))
         if m and m.group(2) == "/chat":

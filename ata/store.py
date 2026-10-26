@@ -135,6 +135,18 @@ def finish(meeting_id: str, now: datetime | None = None) -> None:
     _write_meta(folder, meta)
 
 
+def set_email_status(meeting_id: str, error: str | None = None) -> None:
+    folder = meeting_dir(meeting_id)
+    with WRITE_LOCK:
+        meta = _meta(folder)
+        if error:
+            meta["email_error"] = error
+        else:
+            meta["emailed_at"] = datetime.now().isoformat(timespec="seconds")
+            meta.pop("email_error", None)
+        _write_meta(folder, meta)
+
+
 def delete_audio(meeting_id: str) -> None:
     # The transcript is the record; audio is only kept when transcription fails, to allow a retry.
     for name in ("mic.wav", "system.wav"):

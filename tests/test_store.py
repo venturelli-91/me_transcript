@@ -79,6 +79,16 @@ class StoreTest(unittest.TestCase):
         store.delete_audio(mid)
         self.assertEqual(sorted(p.name for p in folder.iterdir()), ["meta.json", "transcript.md"])
 
+    def test_email_status(self):
+        mid = store.create("", "pt")
+        store.set_email_status(mid, "sem conexão")
+        m = store.load(mid)
+        self.assertEqual((m.get("emailed_at"), m["email_error"]), (None, "sem conexão"))
+        store.set_email_status(mid)
+        m = store.load(mid)
+        self.assertIsNotNone(m["emailed_at"])
+        self.assertNotIn("email_error", m)
+
     def test_rejects_unknown_or_malicious_id(self):
         store.create("", "pt", now=datetime(2026, 10, 26, 14, 30))
         for bad in ["../etc", "2026-10-27_1430", "2026-10-26_1430\n", "x"]:

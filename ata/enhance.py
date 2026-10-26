@@ -1,11 +1,11 @@
 import http.client
 import json
-import os
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from ata.settings import env
+
 SUMMARY_PROMPT = Path(__file__).parent / "prompt.md"
 CHAT_PROMPT = Path(__file__).parent / "chat.md"
 API = "https://api.deepseek.com/chat/completions"
@@ -17,13 +17,7 @@ MAX_TRANSCRIPT = 350_000
 
 
 def api_key() -> str:
-    key = os.environ.get("DEEPSEEK_API_KEY")
-    env = ROOT / ".env"
-    if not key and env.exists():
-        for line in env.read_text(encoding="utf-8").splitlines():
-            name, _, value = line.partition("=")
-            if name.strip() == "DEEPSEEK_API_KEY":
-                key = value.strip().strip("\"'")
+    key = env("DEEPSEEK_API_KEY")
     if not key:
         raise RuntimeError("Configure DEEPSEEK_API_KEY no arquivo .env para usar o resumo.")
     return key

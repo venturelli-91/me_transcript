@@ -11,7 +11,8 @@
       ├── capture.py   PyAudioWPatch: mic + loopback  → mic.wav, system.wav
       ├── transcribe.py thread: blocos 30 s → ffmpeg → whisper-cli → segmentos
       ├── enhance.py    urllib → DeepSeek → resumo (ata.md) e conversa (chat.json)
-      └── detect.py     winreg ConsentStore → app de reunião usando o mic?
+      ├── detect.py     winreg ConsentStore → app de reunião usando o mic?
+      └── mail.py       smtplib (Gmail, senha de app) → resumo para o próprio e-mail
 ```
 
 Um processo Python, sem framework. `server.py` é o único ponto que conhece todos os
@@ -64,6 +65,7 @@ ponytail: uma sessão global — o app é de uma pessoa, uma reunião por vez.
 | `POST /api/meetings/<id>/ata` | — | reunião atualizada (gera o resumo de novo; síncrono) |
 | `POST /api/meetings/<id>/chat` | `{message}` (1–4000 caracteres) | reunião atualizada |
 | `POST /api/meetings/<id>/undo` | — | reunião atualizada · `409` sem versão anterior |
+| `POST /api/meetings/<id>/email` | — | reunião atualizada · `409` se sigilosa, sem resumo ou falha de envio |
 
 Toda escrita exige `Host` local e `Content-Type: application/json` (bloqueia DNS rebinding e
 POST de outros sites).
@@ -71,7 +73,8 @@ POST de outros sites).
 Segmento: `{"t": 83.2, "who": "Eu" | "Outros", "text": "..."}` (`t` em segundos desde o início).
 
 ## Formatos em disco
-- `meta.json`: `{"title", "lang", "private", "started_at", "ended_at"}` (ISO 8601 local).
+- `meta.json`: `{"title", "lang", "private", "started_at", "ended_at", "emailed_at"?, "email_error"?}`
+  (ISO 8601 local). O `GET` da reunião acrescenta `email_configured`.
 - `chat.json`: `[{"role": "user"|"assistant", "content", "changed_summary"?}]`.
 - `ata-history.json`: versões anteriores do resumo (pilha para "Desfazer").
 - Escritas são atômicas (`.tmp` + `os.replace`) sob um lock global.
@@ -89,3 +92,6 @@ Segmento: `{"t": 83.2, "who": "Eu" | "Outros", "text": "..."}` (`t` em segundos 
 | `ATA_MODEL` | `models/ggml-large-v3-turbo-q5_0.bin` |
 | `ATA_VAD` | `models/ggml-silero-v5.1.2.bin` |
 | `ATA_PORT` | `8765` |
+| `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` | — (opcionais; ligam o envio do resumo por e-mail) |
+
+`ata/settings.py` (`env()`) lê variáveis do ambiente e, na falta, do `.env`.

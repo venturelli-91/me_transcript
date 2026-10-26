@@ -54,3 +54,14 @@ ele para perguntar, citar ou reformular — no lugar de uma ata com seções fix
       aparece um banner (e notificação do sistema, se permitida) com **Gravar**.
 - [ ] Nunca inicia gravação sozinho.
 - [ ] Não repete o aviso para a mesma sessão de microfone.
+
+## F8 — Resumo no e-mail (Gmail)
+Decisão do CEO (2026-10-26): receber o resumo no próprio Gmail pessoal, automaticamente.
+
+- [ ] Quando o primeiro resumo de uma reunião fica pronto, ele é enviado do Gmail do usuário
+      para ele mesmo: assunto "Ata: <título> (dd/mm HH:MM)", corpo = resumo, anexo `transcricao.md`.
+- [ ] Envia uma vez por reunião; "Gerar de novo" e edições pelo chat não reenviam.
+- [ ] Botão "Enviar por e-mail" manda a versão atual quando o usuário quiser.
+- [ ] Reunião sigilosa nunca é enviada.
+- [ ] Falha de envio mostra "E-mail não enviado: motivo" e não afeta o resumo.
+- [ ] Sem `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` no `.env`, o recurso fica desligado com aviso discreto.

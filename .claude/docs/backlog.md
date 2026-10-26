@@ -65,6 +65,16 @@ Um ticket = um commit atômico (`DEV-XXXX: ...`). Fluxo por ticket: dev → `cod
 - **Testes:** `tests/test_store.py` (apaga os WAVs, mantém o texto, idempotente).
 - **Risco:** perder o áudio de uma reunião cuja transcrição falhou — por isso só apaga no sucesso.
 
+## DEV-0010 — Resumo no e-mail (F8) · `dev-integracoes` · revisão `seguranca`
+- **Escopo:** `ata/settings.py` (`env()` compartilhado, DRY com `enhance`), `ata/mail.py`
+  (SMTP_SSL Gmail, timeout 30 s, erros claros), `store.set_email_status`, envio automático
+  único (`emailed_at`) após o resumo, rota `POST /email`, botão e status na página.
+- **Testes:** `tests/test_mail.py` (mensagem, header injection no título, erros sem vazar a
+  senha, configurado/desligado), `tests/test_store.py` (status de e-mail); 1 envio real.
+- **Risco:** senha de app no `.env`; e-mail duplicado (resolvido com `emailed_at`); SMTP
+  travado (timeout).
+- **Pendente:** envio real ao Gmail do CEO (aguarda a senha de app no `.env`).
+
 ## Pendências conhecidas (baixa severidade)
 - "Incluir no resumo" aparece também em respostas sem conteúdo útil ("isso não foi falado",
   "já está no resumo"); clicar gasta uma chamada à toa. Ideia: a resposta do modelo indicar se é

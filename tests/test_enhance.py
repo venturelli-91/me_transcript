@@ -8,7 +8,7 @@ import urllib.error
 from pathlib import Path
 from unittest import mock
 
-from ata import enhance
+from ata import enhance, settings
 
 MEETING = {"title": "Kickoff", "started_at": "2026-10-26T14:30:00", "lang": "en", "notes": "- prazo",
            "transcript": "[00:00:01] **Outros:** Deadline is Friday.\n", "ata": "## Prazo\n- sexta",
@@ -57,7 +57,7 @@ class EnhanceTest(unittest.TestCase):
 
     def test_api_key_from_dotenv(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {}, clear=True), \
-                mock.patch.object(enhance, "ROOT", Path(tmp)):
+                mock.patch.object(settings, "ROOT", Path(tmp)):
             with self.assertRaises(RuntimeError):
                 enhance.api_key()
             (Path(tmp) / ".env").write_text('OTHER=1\nDEEPSEEK_API_KEY="sk-test"\n', encoding="utf-8")

@@ -129,6 +129,8 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
 .msg small { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
 .hint { color: var(--muted); font-size: 14px; margin: 0; }
 .privacy { font-size: 12.5px; padding: 0 20px 8px; }
+.mail-status { font-size: 13px; padding: 0 32px 28px; margin-top: -16px; }
+.mail-status:empty { display: none; }
 .link { border: 0; background: none; padding: 0; margin-top: 6px; color: var(--bottle); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
 #chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
 #chat-form textarea { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; max-height: 140px; }
@@ -181,7 +183,7 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
           <label><input type="radio" name="lang" value="pt" checked><span>Português</span></label>
           <label><input type="radio" name="lang" value="en"><span>English</span></label>
         </fieldset>
-        <label class="private"><input type="checkbox" id="private"> Reunião sigilosa: não enviar para a IA</label>
+        <label class="private"><input type="checkbox" id="private"> Reunião sigilosa: não enviar para a IA nem por e-mail</label>
       </form>
       <div class="live">
         <div id="clock">00:00</div>
@@ -367,8 +369,10 @@ function renderDoc() {
         <div class="toolbar">
           <button class="btn" id="regen" ${off}>${openMeeting.ata ? "Gerar de novo" : "Gerar resumo"}</button>
           ${openMeeting.can_undo ? `<button class="btn" id="undo" ${off}>Desfazer</button>` : ""}
+          ${openMeeting.email_configured ? `<button class="btn" id="mail" ${off || !openMeeting.ata ? "disabled" : ""}>Enviar por e-mail</button>` : ""}
           <span id="doc-msg" aria-live="polite">${msg}</span>
         </div>
+        <p class="hint mail-status">${mailStatus()}</p>
       </div>
       <section class="chat" aria-labelledby="chat-title">
         <h3 id="chat-title">Converse com a reunião</h3>
@@ -386,6 +390,7 @@ function renderDoc() {
     </div>`;
     $("#regen").addEventListener("click", () => docAction("ata", "Escrevendo o resumo…", "Resumo gerado."));
     $("#undo")?.addEventListener("click", () => docAction("undo", "", "Versão anterior restaurada."));
+    $("#mail")?.addEventListener("click", () => docAction("email", "Enviando…", "Enviado para o seu e-mail."));
     const input = $("#chat-input");
     input.value = draft;
     input.addEventListener("input", () => { draft = input.value; });
@@ -403,6 +408,14 @@ function renderDoc() {
 }
 
 let waiting = null, draft = "";
+function mailStatus() {
+  const m = openMeeting;
+  if (m.private) return "";
+  if (!m.email_configured) return "Envio por e-mail desligado: configure o Gmail no .env (veja o README).";
+  if (m.email_error) return `<span class="error">E-mail não enviado: ${esc(m.email_error)}</span>`;
+  if (m.emailed_at) return `Enviado para o seu Gmail em ${esc(when(m.emailed_at))} (resumo e transcrição ficam também no Google).`;
+  return m.ata ? "" : "O resumo e a transcrição vão para o seu Gmail assim que o resumo ficar pronto.";
+}
 function chatLog() {
   if (!openMeeting.chat.length && waiting !== openId) {
     return openMeeting.private ? ""
@@ -456,6 +469,7 @@ async function docAction(action, label, done) {
   } catch (err) {
     waiting = null;
     if (openId !== id) return;
+    openMeeting = await api(`/api/meetings/${id}`).catch(() => openMeeting);
     renderDoc();
     $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
   }

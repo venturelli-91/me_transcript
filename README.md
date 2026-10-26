@@ -27,6 +27,21 @@ Crie `.env` na raiz (já está no `.gitignore`):
 DEEPSEEK_API_KEY=sk-...
 ```
 
+### Resumo no seu Gmail (opcional)
+
+1. Ative a verificação em duas etapas na sua Conta Google.
+2. Crie uma senha de app em https://myaccount.google.com/apppasswords (nome: "Ata").
+3. Acrescente ao `.env`:
+
+```
+GMAIL_ADDRESS=voce@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+```
+
+Cada resumo novo chega no seu e-mail (corpo = resumo, anexo = transcrição). Reuniões sigilosas
+nunca são enviadas. Para desligar, apague as duas linhas; para revogar, remova a senha de app
+na Conta Google.
+
 ### Modelos (pasta `models/`)
 
 ```powershell
@@ -64,7 +79,8 @@ Abra http://127.0.0.1:8765 e deixe a aba aberta.
    "Gravar esta reunião". Ou clique no botão de gravar.
 2. Escolha o idioma (Português ou English). Marque **Reunião sigilosa** para não enviar nada à IA.
 3. Anote o que quiser durante a reunião (opcional). A transcrição aparece a cada ~30 s.
-4. Clique no quadrado para parar. O resumo por tópico fica pronto em segundos.
+4. Clique no quadrado para parar. O resumo por tópico fica pronto em segundos e, se o Gmail
+   estiver configurado, chega no seu e-mail.
 5. Converse no painel ao lado: perguntas, "Incluir no resumo", ajustes e **Desfazer**.
 
 Cada reunião fica em `meetings/AAAA-MM-DD_HHMM/` (`notes.md`, `transcript.md`, `ata.md`,
@@ -81,6 +97,7 @@ transcrição termina; se ela falhar, o áudio fica na pasta.
 | `ATA_VAD` | `models/ggml-silero-v5.1.2.bin` |
 | `ATA_THREADS` | `4` |
 | `ATA_PORT` | `8765` |
+| `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | — (liga o envio do resumo por e-mail) |
 
 ## Desenvolvimento
 
