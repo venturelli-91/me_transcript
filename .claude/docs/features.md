@@ -1,67 +1,67 @@
 # Features
 
-## F1 — Reuniões em pasta
-Cada reunião é uma pasta `meetings/AAAA-MM-DD_HHMM/` com `meta.json`, `notes.md`,
-`transcript.md`, `ata.md`, `mic.wav`, `system.wav`.
+## F1 — Meetings as folders
+Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md`,
+`transcript.md`, `summary.md`, `mic.wav`, `system.wav`.
 
-- [ ] Criar reunião gera a pasta e `meta.json` (`title`, `lang`, `started_at`).
-- [ ] Listar reuniões em ordem decrescente de data.
-- [ ] Abrir uma reunião antiga mostra notas, transcrição e ata.
-- [ ] Duas reuniões no mesmo minuto não colidem (sufixo `-2`).
-- [ ] Decisão do CEO (2026-10-26): `mic.wav` e `system.wav` são apagados assim que a transcrição
-      termina com sucesso; o registro é o `transcript.md`. Se a transcrição falhar, o áudio fica.
+- [ ] Creating a meeting creates the folder and `meta.json` (`title`, `lang`, `started_at`).
+- [ ] Meetings are listed in descending date order.
+- [ ] Opening an old meeting shows notes, transcript and summary.
+- [ ] Two meetings in the same minute don't collide (`-2` suffix).
+- [ ] CEO decision (2026-10-26): `mic.wav` and `system.wav` are deleted as soon as transcription
+      finishes successfully; the record is `transcript.md`. If transcription fails, the audio is kept.
 
-## F2 — Gravar e parar
-- [ ] Botão **Gravar** inicia a captura; botão **Parar** encerra. Não há auto-stop.
-- [ ] Título opcional e idioma (`pt` padrão, `en`) escolhidos antes de gravar.
-- [ ] Indicador de tempo e de nível de áudio das duas trilhas enquanto grava.
-- [ ] Só uma gravação por vez; tentar iniciar outra retorna erro claro.
+## F2 — Record and stop
+- [ ] The **Record** button starts capture; the **Stop** button ends it. There is no auto-stop.
+- [ ] Optional title and language (`pt` default, `en`) chosen before recording.
+- [ ] Elapsed time and audio level indicators for both tracks while recording.
+- [ ] Only one recording at a time; trying to start another returns a clear error.
 
-## F3 — Duas trilhas de áudio
-- [ ] `mic.wav` contém só o microfone; `system.wav` contém só o áudio do sistema
-      (loopback do dispositivo de saída padrão).
-- [ ] Funciona com Meet (navegador), Zoom e Teams sem configuração por app.
+## F3 — Two audio tracks
+- [ ] `mic.wav` contains only the microphone; `system.wav` contains only system audio
+      (loopback of the default output device).
+- [ ] Works with Meet (browser), Zoom and Teams with no per-app configuration.
 
-## F4 — Transcrição local
-- [ ] A cada ~30 s, cada trilha nova é transcrita pelo whisper.cpp no idioma escolhido.
-- [ ] Segmentos rotulados **Eu** / **Outros**, intercalados por tempo, aparecem na página
-      durante a reunião.
-- [ ] Ao parar, os blocos restantes são transcritos antes da ata.
-- [ ] Trechos de silêncio não geram texto inventado ("Legendas pela comunidade…").
+## F4 — Local transcription
+- [ ] Every ~30 s, each track's new audio is transcribed by whisper.cpp in the chosen language.
+- [ ] Segments labeled **Me** / **Others**, interleaved by time, appear on the page
+      during the meeting.
+- [ ] On stop, the remaining chunks are transcribed before the summary.
+- [ ] Silent stretches don't produce made-up text ("Subtitles by the community…").
 
-## F5 — Anotações
-- [ ] Área de texto livre durante e depois da reunião, salva automaticamente em
-      `notes.md` (sem botão salvar).
-- [ ] Indicação discreta de "salvo".
+## F5 — Notes
+- [ ] Free-text area during and after the meeting, saved automatically to
+      `notes.md` (no save button).
+- [ ] A subtle "saved" indicator.
 
-## F6 — Resumo e conversa com a reunião (DeepSeek)
-Decisão do CEO (2026-10-26): o app resume as ideias por tópico e a pessoa conversa com
-ele para perguntar, citar ou reformular — no lugar de uma ata com seções fixas.
+## F6 — Summary and chat with the meeting (DeepSeek)
+CEO decision (2026-10-26): the app summarizes the ideas by topic and the user chats with
+it to ask, quote or rephrase — instead of meeting notes with fixed sections.
 
-- [ ] Ao terminar a transcrição, gera `ata.md`: um `##` por tópico discutido, com as ideias,
-      números e quem defendeu o quê, e no fim "Próximos passos" (responsável: tarefa, prazo).
-- [ ] Anotações são opcionais; quando existem, os pontos delas ganham mais espaço.
-- [ ] Escrito no idioma da reunião.
-- [ ] Caixa de mensagem por reunião: pergunta específica recebe resposta curta com o
-      horário `[hh:mm:ss]` dos trechos; pedido de mudança reescreve o resumo e diz o que mudou.
-- [ ] Cada resposta do chat tem "Incluir no resumo".
-- [ ] "Desfazer" volta o resumo à versão anterior (todas as versões ficam guardadas).
-- [ ] Conversa salva em `chat.json`; ao reabrir a reunião, ela continua.
-- [ ] Sem chave ou erro de rede: mensagem clara, transcrição e conversa preservadas.
+- [ ] When transcription finishes, it generates `summary.md`: one `##` per topic discussed, with the ideas,
+      numbers and who argued for what, and at the end "Next steps" (owner: task, deadline).
+- [ ] Notes are optional; when present, their points get more space.
+- [ ] Written in the meeting's language.
+- [ ] Message box per meeting: a specific question gets a short answer with the
+      `[hh:mm:ss]` timestamp of the passages; a change request rewrites the summary and says what changed.
+- [ ] Each chat answer has "Add to summary".
+- [ ] "Undo" reverts the summary to the previous version (all versions are kept).
+- [ ] Chat saved to `chat.json`; when the meeting is reopened, the conversation continues.
+- [ ] No key or network error: clear message, transcript and chat preserved.
 
-## F7 — Aviso de reunião
-- [ ] Com a página aberta, quando Zoom, Teams ou um navegador passa a usar o microfone,
-      aparece um banner (e notificação do sistema, se permitida) com **Gravar**.
-- [ ] Nunca inicia gravação sozinho.
-- [ ] Não repete o aviso para a mesma sessão de microfone.
+## F7 — Meeting alert
+- [ ] With the page open, when Zoom, Teams or a browser starts using the microphone,
+      a banner appears (plus a system notification, if allowed) with **Record**.
+- [ ] Never starts recording on its own.
+- [ ] Doesn't repeat the alert for the same microphone session.
 
-## F8 — Resumo no e-mail (Gmail)
-Decisão do CEO (2026-10-26): receber o resumo no próprio Gmail pessoal, automaticamente.
+## F8 — Summary by email (Gmail)
+CEO decision (2026-10-26): receive the summary in their own personal Gmail, automatically.
 
-- [ ] Quando o primeiro resumo de uma reunião fica pronto, ele é enviado do Gmail do usuário
-      para ele mesmo: assunto "Ata: <título> (dd/mm HH:MM)", corpo = resumo, anexo `transcricao.md`.
-- [ ] Envia uma vez por reunião; "Gerar de novo" e edições pelo chat não reenviam.
-- [ ] Botão "Enviar por e-mail" manda a versão atual quando o usuário quiser.
-- [ ] Reunião sigilosa nunca é enviada.
-- [ ] Falha de envio mostra "E-mail não enviado: motivo" e não afeta o resumo.
-- [ ] Sem `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` no `.env`, o recurso fica desligado com aviso discreto.
+- [ ] When a meeting's first summary is ready, it is sent from the user's Gmail
+      to themselves: subject "Ata: <title> (dd/mm HH:MM)", body = summary, attachment `transcript.md`.
+- [ ] Sent once per meeting; "Regenerate" and chat edits don't resend.
+- [ ] A "Email it to me" button sends the current version whenever the user wants.
+- [ ] A private meeting is never sent.
+- [ ] A send failure shows "Email not sent: reason" and doesn't affect the summary.
+- [ ] Without `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` in `.env`, the feature is off with a subtle notice.

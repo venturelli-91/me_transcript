@@ -20,7 +20,7 @@ MIN_SPEECH = 0.5
 SEGMENT_RE = re.compile(r"start = ([\d.]+), end = ([\d.]+)")
 # The Vulkan build runs the model on the GPU; CPU threads only feed it, so few are enough.
 THREADS = os.environ.get("ATA_THREADS", "4")
-TRACKS = {"mic": "Eu", "system": "Outros"}
+TRACKS = {"mic": "Me", "system": "Others"}
 # Whisper invents these on near-silent audio; the VAD catches most, this catches the rest.
 HALLUCINATIONS = {
     "legendas pela comunidade amara.org",
@@ -39,7 +39,7 @@ def check_ready() -> None:
     if not shutil.which("ffmpeg"):
         missing.append("ffmpeg no PATH")
     if missing:
-        raise RuntimeError(f"Transcrição indisponível, faltando: {', '.join(missing)}. Veja o README.")
+        raise RuntimeError(f"Transcription unavailable, missing: {', '.join(missing)}. See the README.")
 
 
 def is_hallucination(text: str) -> bool:
@@ -71,9 +71,9 @@ def _run(args: list[str], timeout: int) -> str:
                               creationflags=subprocess.BELOW_NORMAL_PRIORITY_CLASS).stdout.decode(errors="replace")
     except subprocess.CalledProcessError as e:
         tail = e.stderr.decode(errors="replace").strip()[-300:]
-        raise RuntimeError(f"{Path(args[0]).name} falhou: {tail}") from None
+        raise RuntimeError(f"{Path(args[0]).name} failed: {tail}") from None
     except subprocess.TimeoutExpired:
-        raise RuntimeError(f"{Path(args[0]).name} não respondeu em {timeout} s") from None
+        raise RuntimeError(f"{Path(args[0]).name} did not respond within {timeout} s") from None
 
 
 def transcribe_window(wav: Path, start: float, duration: float, lang: str, who: str) -> list[dict]:
@@ -117,8 +117,8 @@ class Transcriber:
                 try:
                     self._window(self.done + CHUNK)
                 except Exception as e:
-                    log.exception("Falha na transcrição ao vivo")
-                    self.error = f"A transcrição ao vivo parou ({e}). O áudio continua sendo gravado."
+                    log.exception("Live transcription failed")
+                    self.error = f"Live transcription stopped ({e}). Audio is still being recorded."
                     return
 
     def finish(self, end: float) -> None:

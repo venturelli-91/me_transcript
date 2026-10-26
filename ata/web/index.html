@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,7 +30,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--bottle); outline-offset: 2px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* lista de reuniões */
+/* meeting list */
 aside { border-right: 1px solid var(--line); padding: 20px 12px; overflow-y: auto; }
 aside h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 8px 18px; color: var(--bottle); }
 aside ol { list-style: none; margin: 0; padding: 0; }
@@ -44,14 +44,14 @@ aside .empty { color: var(--muted); font-size: 13.5px; padding: 0 8px; }
 main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; height: 100vh; }
 #detected { grid-row: 1; } .deck { grid-row: 2; } .content { grid-row: 3; }
 
-/* aviso de reunião */
+/* meeting detected */
 #detected { display: none; align-items: center; gap: 12px; padding: 10px 24px; background: var(--others); color: #fff; flex-wrap: wrap; }
 #detected.show { display: flex; }
 #detected p { margin: 0; flex: 1 1 240px; }
 #detected button { border: 1px solid #fff; background: #fff; color: var(--others); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-weight: 600; }
 #detected button.ghost { background: none; color: #fff; }
 
-/* gravador */
+/* recorder */
 .deck { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding: 18px 24px; background: var(--bottle); color: var(--sheet); }
 .deck.rec { background: #2a1d1b; }
 #rec { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--sheet); background: transparent; cursor: pointer; display: grid; place-items: center; }
@@ -80,7 +80,7 @@ main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; height: 1
 #now { font-size: 14px; color: #c9d6d0; max-width: 28ch; }
 #state { font-size: 13.5px; color: #c9d6d0; text-align: right; }
 
-/* conteúdo */
+/* content */
 .content { overflow: hidden; min-height: 0; display: grid; }
 .blank { display: grid; place-content: center; text-align: center; color: var(--muted); padding: 40px; }
 .blank p { max-width: 36ch; margin: 0 auto; }
@@ -96,7 +96,7 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
 .feed { overflow-y: auto; padding: 8px 24px 24px; }
 .feed p { margin: 0 0 10px; max-width: 70ch; }
 .feed .who { font-weight: 600; color: var(--bottle); margin-right: 6px; }
-.feed .Outros .who { color: var(--others); }
+.feed .Others .who { color: var(--others); }
 .feed time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 6px; }
 .feed .waiting { color: var(--muted); }
 
@@ -163,56 +163,56 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
 <body>
 <aside>
   <h1>Ata</h1>
-  <nav aria-label="Reuniões"><ol id="list"></ol></nav>
+  <nav aria-label="Meetings"><ol id="list"></ol></nav>
 </aside>
 <main>
   <div id="detected" role="alert">
     <p id="detected-text"></p>
-    <button id="detected-rec">Gravar esta reunião</button>
-    <button id="detected-dismiss" class="ghost">Agora não</button>
+    <button id="detected-rec">Record this meeting</button>
+    <button id="detected-dismiss" class="ghost">Not now</button>
   </div>
 
   <section class="deck" id="deck" aria-label="Gravador">
-    <button id="rec" aria-label="Gravar"><span></span></button>
+    <button id="rec" aria-label="Record"><span></span></button>
     <div>
       <form class="setup" id="setup">
-        <label class="sr" for="title">Título da reunião</label>
-        <input id="title" placeholder="Sobre o que é a reunião? (opcional)" maxlength="200" autocomplete="off">
+        <label class="sr" for="title">Meeting title</label>
+        <input id="title" placeholder="What is this meeting about? (optional)" maxlength="200" autocomplete="off">
         <fieldset class="lang" style="margin:0;padding:0">
-          <legend class="sr">Idioma da reunião</legend>
-          <label><input type="radio" name="lang" value="pt" checked><span>Português</span></label>
+          <legend class="sr">Meeting language</legend>
+          <label><input type="radio" name="lang" value="pt" checked><span>Portuguese</span></label>
           <label><input type="radio" name="lang" value="en"><span>English</span></label>
         </fieldset>
-        <label class="private"><input type="checkbox" id="private"> Reunião sigilosa: não enviar para a IA nem por e-mail</label>
+        <label class="private"><input type="checkbox" id="private"> Private meeting: don't send to AI or email</label>
       </form>
       <div class="live">
         <div id="clock">00:00</div>
         <div id="now"></div>
         <div class="meters" aria-hidden="true">
-          <div class="meter"><span>Eu</span><i><b id="lv-mic"></b></i></div>
-          <div class="meter others"><span>Outros</span><i><b id="lv-system"></b></i></div>
+          <div class="meter"><span>Me</span><i><b id="lv-mic"></b></i></div>
+          <div class="meter others"><span>Others</span><i><b id="lv-system"></b></i></div>
         </div>
       </div>
     </div>
-    <div id="state" aria-live="polite">Pronto para gravar</div>
+    <div id="state" aria-live="polite">Ready to record</div>
   </section>
 
   <div class="content" id="content"></div>
 </main>
 
 <template id="tpl-blank">
-  <div class="blank"><p><strong>Nenhuma reunião aberta</strong>Grave uma nova reunião no botão acima ou abra uma da lista.</p></div>
+  <div class="blank"><p><strong>No meeting open</strong>Record a new meeting with the button above or open one from the list.</p></div>
 </template>
 
 <template id="tpl-live">
   <div class="split">
     <section class="pane">
-      <h2><label for="notes">Suas notas</label><small class="saved" aria-live="polite"></small></h2>
-      <textarea id="notes" placeholder="Anote o que importa pra você. A ata vai seguir essas notas."></textarea>
+      <h2><label for="notes">Your notes</label><small class="saved" aria-live="polite"></small></h2>
+      <textarea id="notes" placeholder="Jot down what matters to you. The summary will give these points more weight."></textarea>
     </section>
     <section class="pane">
-      <h2>Transcrição <small>atualiza a cada ~30 s</small></h2>
-      <div class="feed" id="feed"><p class="waiting">A primeira parte aparece em cerca de 30 segundos.</p></div>
+      <h2>Transcript <small>updates every ~30 s</small></h2>
+      <div class="feed" id="feed"><p class="waiting">The first part shows up in about 30 seconds.</p></div>
     </section>
   </div>
 </template>
@@ -221,10 +221,10 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
   <article class="doc">
     <header>
       <h2 id="doc-title"></h2>
-      <div role="tablist" aria-label="Partes da reunião">
-        <button role="tab" id="tab-ata" aria-controls="doc-body" data-tab="ata" aria-selected="true">Resumo</button>
-        <button role="tab" id="tab-notes" aria-controls="doc-body" data-tab="notes" aria-selected="false">Notas</button>
-        <button role="tab" id="tab-transcript" aria-controls="doc-body" data-tab="transcript" aria-selected="false">Transcrição</button>
+      <div role="tablist" aria-label="Meeting sections">
+        <button role="tab" id="tab-summary" aria-controls="doc-body" data-tab="summary" aria-selected="true">Summary</button>
+        <button role="tab" id="tab-notes" aria-controls="doc-body" data-tab="notes" aria-selected="false">Notes</button>
+        <button role="tab" id="tab-transcript" aria-controls="doc-body" data-tab="transcript" aria-selected="false">Transcript</button>
       </div>
     </header>
     <div class="body" id="doc-body" role="tabpanel"></div>
@@ -234,7 +234,7 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
 <script>
 const $ = (s, el = document) => el.querySelector(s);
 const deck = $("#deck"), content = $("#content"), stateEl = $("#state");
-let status = { phase: "idle", levels: { mic: 0, system: 0 } }, openId = null, openMeeting = null, tab = "ata";
+let status = { phase: "idle", levels: { mic: 0, system: 0 } }, openId = null, openMeeting = null, tab = "summary";
 
 const api = async (path, opts = {}) => {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
@@ -259,14 +259,14 @@ function markdown(md) {
 
 const clock = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
   return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(x).padStart(2, "0"); };
-const when = iso => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-const LANG = { pt: "Português", en: "English" };
+const when = iso => new Date(iso).toLocaleString("en-US", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+const LANG = { pt: "Portuguese", en: "English" };
 
 async function loadList() {
   const items = await api("/api/meetings");
   $("#list").innerHTML = items.length ? items.map(m =>
-    `<li><button data-id="${m.id}" aria-current="${m.id === openId}">${esc(m.title || "Reunião sem título")}<span class="when">${when(m.started_at)}${m.has_ata ? "" : ", sem resumo"}</span></button></li>`
-  ).join("") : `<li class="empty">As reuniões gravadas aparecem aqui.</li>`;
+    `<li><button data-id="${m.id}" aria-current="${m.id === openId}">${esc(m.title || "Untitled meeting")}<span class="when">${when(m.started_at)}${m.has_summary ? "" : ", no summary"}</span></button></li>`
+  ).join("") : `<li class="empty">Recorded meetings show up here.</li>`;
   $('#list [aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
 
@@ -276,11 +276,11 @@ let dirty = null, saveTimer = null, saveFailed = false;
 const savedLabel = text => { const el = $(".saved"); if (el) el.textContent = text; };
 
 function bindNotes(textarea, id) {
-  if (saveFailed) savedLabel("Não salvou. Tentando de novo…");
+  if (saveFailed) savedLabel("Not saved. Retrying…");
   textarea.addEventListener("input", () => {
     dirty = { id, notes: textarea.value };
     if (openMeeting?.id === id) openMeeting.notes = textarea.value;
-    savedLabel("Salvando…");
+    savedLabel("Saving…");
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flushNotes, 700);
   });
@@ -294,11 +294,11 @@ async function flushNotes(keepalive = false) {
   try {
     await api(`/api/meetings/${d.id}/notes`, { method: "PUT", keepalive, body: JSON.stringify({ notes: d.notes }) });
     saveFailed = false;
-    if (!dirty) savedLabel("Salvo");
+    if (!dirty) savedLabel("Saved");
   } catch (err) {
     dirty ??= d;
     saveFailed = true;
-    savedLabel(`Não salvou (${err.message}). Tentando de novo…`);
+    savedLabel(`Not saved (${err.message}). Retrying…`);
     saveTimer = setTimeout(flushNotes, 3000);
   }
 }
@@ -337,7 +337,7 @@ async function selectTab(name) {
 
 function renderDoc() {
   content.replaceChildren($("#tpl-doc").content.cloneNode(true));
-  $("#doc-title").textContent = openMeeting.title || "Reunião sem título";
+  $("#doc-title").textContent = openMeeting.title || "Untitled meeting";
   const tabs = [...content.querySelectorAll('[role="tab"]')];
   for (const t of tabs) {
     const on = t.dataset.tab === tab;
@@ -354,43 +354,43 @@ function renderDoc() {
   const body = $("#doc-body"), busy = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === openId;
   body.setAttribute("aria-labelledby", `tab-${tab}`);
   if (tab === "notes") {
-    body.innerHTML = `<section class="pane"><h2><label for="notes">Suas notas</label><small class="saved" aria-live="polite"></small></h2><textarea id="notes"></textarea></section>`;
+    body.innerHTML = `<section class="pane"><h2><label for="notes">Your notes</label><small class="saved" aria-live="polite"></small></h2><textarea id="notes"></textarea></section>`;
     $("#notes").value = openMeeting.notes;
     bindNotes($("#notes"), openId);
   } else if (tab === "transcript") {
-    body.innerHTML = `<div class="reading">${openMeeting.transcript ? markdown(openMeeting.transcript) : "<p>Sem transcrição.</p>"}</div>`;
+    body.innerHTML = `<div class="reading">${openMeeting.transcript ? markdown(openMeeting.transcript) : "<p>No transcript.</p>"}</div>`;
   } else {
-    const msg = busy ? (status.phase === "transcribing" ? "Terminando a transcrição…" : "Escrevendo o resumo…")
+    const msg = busy ? (status.phase === "transcribing" ? "Finishing the transcript…" : "Writing the summary…")
       : status.error && status.meeting_id === openId ? `<span class="error">${esc(status.error)}</span>` : "";
     const off = busy || waiting === openId || openMeeting.private ? "disabled" : "";
     body.innerHTML = `<div class="summary-view">
       <div class="summary-col">
-        <div class="reading">${openMeeting.ata ? markdown(openMeeting.ata) : `<p>${busy ? "O resumo fica pronto logo depois da transcrição." : "Esta reunião ainda não tem resumo."}</p>`}</div>
+        <div class="reading">${openMeeting.summary ? markdown(openMeeting.summary) : `<p>${busy ? "The summary is ready right after the transcript." : "This meeting has no summary yet."}</p>`}</div>
         <div class="toolbar">
-          <button class="btn" id="regen" ${off}>${openMeeting.ata ? "Gerar de novo" : "Gerar resumo"}</button>
-          ${openMeeting.can_undo ? `<button class="btn" id="undo" ${off}>Desfazer</button>` : ""}
-          ${openMeeting.email_configured ? `<button class="btn" id="mail" ${off || !openMeeting.ata ? "disabled" : ""}>Enviar por e-mail</button>` : ""}
+          <button class="btn" id="regen" ${off}>${openMeeting.summary ? "Regenerate" : "Generate summary"}</button>
+          ${openMeeting.can_undo ? `<button class="btn" id="undo" ${off}>Undo</button>` : ""}
+          ${openMeeting.email_configured ? `<button class="btn" id="mail" ${off || !openMeeting.summary ? "disabled" : ""}>Email it to me</button>` : ""}
           <span id="doc-msg" aria-live="polite">${msg}</span>
         </div>
         <p class="hint mail-status">${mailStatus()}</p>
       </div>
       <section class="chat" aria-labelledby="chat-title">
-        <h3 id="chat-title">Converse com a reunião</h3>
+        <h3 id="chat-title">Talk to the meeting</h3>
         <p class="hint privacy">${openMeeting.private
-          ? "Reunião sigilosa: resumo e conversa ficam desativados e nada é enviado para a IA."
-          : "Gerar resumo e conversar enviam a transcrição e as notas desta reunião para a DeepSeek."}</p>
+          ? "Private meeting: summary and chat are off and nothing is sent to the AI or by email."
+          : "Generating the summary and chatting send this meeting's transcript and notes to DeepSeek."}</p>
         <div class="chat-log" id="chat-log">${chatLog()}</div>
         <form id="chat-form">
           <label class="sr" for="chat-input">Mensagem</label>
-          <textarea id="chat-input" rows="2" placeholder="Pergunte algo ou peça um ajuste no resumo" ${off}></textarea>
-          <button class="btn" ${off}>Enviar</button>
+          <textarea id="chat-input" rows="2" placeholder="Ask something or request a change to the summary" ${off}></textarea>
+          <button class="btn" ${off}>Send</button>
           <span id="chat-msg" aria-live="polite"></span>
         </form>
       </section>
     </div>`;
-    $("#regen").addEventListener("click", () => docAction("ata", "Escrevendo o resumo…", "Resumo gerado."));
-    $("#undo")?.addEventListener("click", () => docAction("undo", "", "Versão anterior restaurada."));
-    $("#mail")?.addEventListener("click", () => docAction("email", "Enviando…", "Enviado para o seu e-mail."));
+    $("#regen").addEventListener("click", () => docAction("summary", "Writing the summary…", "Summary generated."));
+    $("#undo")?.addEventListener("click", () => docAction("undo", "", "Previous version restored."));
+    $("#mail")?.addEventListener("click", () => docAction("email", "Sending…", "Sent to your email."));
     const input = $("#chat-input");
     input.value = draft;
     input.addEventListener("input", () => { draft = input.value; });
@@ -400,7 +400,7 @@ function renderDoc() {
     });
     $("#chat-log").addEventListener("click", e => {
       const b = e.target.closest("button[data-include]");
-      if (b) send(`Inclua no resumo esta informação: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
+      if (b) send(`Add this to the summary: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
     });
     const log = $("#chat-log");
     log.scrollTop = log.scrollHeight;
@@ -411,22 +411,22 @@ let waiting = null, draft = "";
 function mailStatus() {
   const m = openMeeting;
   if (m.private) return "";
-  if (!m.email_configured) return "Envio por e-mail desligado: configure o Gmail no .env (veja o README).";
-  if (m.email_error) return `<span class="error">E-mail não enviado: ${esc(m.email_error)}</span>`;
-  if (m.emailed_at) return `Enviado para o seu Gmail em ${esc(when(m.emailed_at))} (resumo e transcrição ficam também no Google).`;
-  return m.ata ? "" : "O resumo e a transcrição vão para o seu Gmail assim que o resumo ficar pronto.";
+  if (!m.email_configured) return "Email is off: set up Gmail in .env (see the README).";
+  if (m.email_error) return `<span class="error">Email not sent: ${esc(m.email_error)}</span>`;
+  if (m.emailed_at) return `Sent to your Gmail on ${esc(when(m.emailed_at))} (the summary and transcript are also stored by Google).`;
+  return m.summary ? "" : "The summary and transcript go to your Gmail as soon as the summary is ready.";
 }
 function chatLog() {
   if (!openMeeting.chat.length && waiting !== openId) {
     return openMeeting.private ? ""
-      : `<p class="hint">Pergunte algo específico, como “Qual prazo o João deu?”, ou peça um ajuste, como “Deixe mais curto” ou “Foque no orçamento”.</p>`;
+      : `<p class="hint">Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter” or “Focus on the budget”.</p>`;
   }
   return openMeeting.chat.map((m, i) => m.role === "user"
     ? `<div class="msg me"><p>${esc(m.content)}</p></div>`
     : `<div class="msg bot">${markdown(m.content)}${m.changed_summary
-        ? `<small>Resumo atualizado</small>`
-        : `<button class="link" data-include="${i}">Incluir no resumo</button>`}</div>`
-  ).join("") + (waiting === openId ? `<div class="msg bot"><p class="hint">Pensando…</p></div>` : "");
+        ? `<small>Summary updated</small>`
+        : `<button class="link" data-include="${i}">Add to summary</button>`}</div>`
+  ).join("") + (waiting === openId ? `<div class="msg bot"><p class="hint">Thinking…</p></div>` : "");
 }
 
 async function send(text, typed) {
@@ -479,7 +479,7 @@ async function openMeeting_(id) {
   await flushNotes();
   openId = id;
   openMeeting = await api(`/api/meetings/${id}`);
-  tab = "ata";
+  tab = "summary";
   status.phase === "recording" && status.meeting_id === id ? renderLive() : renderDoc();
   loadList();
 }
@@ -508,23 +508,23 @@ let prevPhase = "idle", polling = null;
 const poll = () => polling ??= refresh().finally(() => { polling = null; });
 
 async function refresh() {
-  try { status = await api("/api/status"); } catch { stateEl.textContent = "Sem conexão com o Ata. O programa está rodando?"; return; }
+  try { status = await api("/api/status"); } catch { stateEl.textContent = "Cannot reach Ata. Is the program running?"; return; }
   const p = status.phase, rec = p === "recording", busy = p === "transcribing" || p === "enhancing";
   deck.classList.toggle("rec", rec);
   deck.classList.toggle("busy", busy);
-  $("#rec").setAttribute("aria-label", rec ? "Parar gravação" : "Gravar");
+  $("#rec").setAttribute("aria-label", rec ? "Stop recording" : "Record");
   $("#rec").disabled = busy;
   if (rec) $("#clock").textContent = clock(status.elapsed || 0);
   $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
   $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
   if (rec && prevPhase !== "recording" && openId !== status.meeting_id) await openMeeting_(status.meeting_id);
   const current = openMeeting?.id === status.meeting_id ? openMeeting : null;
-  $("#now").textContent = current ? `${current.title || "Reunião sem título"}, em ${LANG[current.lang]}` : "";
-  stateEl.innerHTML = rec ? (status.error ? `<span class="error">${esc(status.error)}</span>` : "Gravando. Clique no quadrado para parar.")
-    : p === "transcribing" ? "Terminando a transcrição…"
-    : p === "enhancing" ? "Escrevendo o resumo…"
-    : p === "error" ? `<span class="error">${esc(status.error || "Algo deu errado.")}</span>`
-    : "Pronto para gravar";
+  $("#now").textContent = current ? `${current.title || "Untitled meeting"}, in ${LANG[current.lang]}` : "";
+  stateEl.innerHTML = rec ? (status.error ? `<span class="error">${esc(status.error)}</span>` : "Recording. Click the square to stop.")
+    : p === "transcribing" ? "Finishing the transcript…"
+    : p === "enhancing" ? "Writing the summary…"
+    : p === "error" ? `<span class="error">${esc(status.error || "Something went wrong.")}</span>`
+    : "Ready to record";
   if (rec && status.meeting_id === openId) renderFeed();
   if (prevPhase !== p && openId === status.meeting_id) {
     if (!rec && openId) { await flushNotes(); openMeeting = await api(`/api/meetings/${openId}`); renderDoc(); }
@@ -546,9 +546,9 @@ function showDetected() {
   $("#detected").classList.toggle("show", show);
   if (!show || shownKey === d.key) return;
   shownKey = d.key;
-  $("#detected-text").textContent = `${d.app} está usando o microfone. Começou uma reunião?`;
+  $("#detected-text").textContent = `${d.app} is using the microphone. Did a meeting start?`;
   if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-    const n = new Notification("Ata", { body: `${d.app} está usando o microfone. Gravar esta reunião?` });
+    const n = new Notification("Ata", { body: `${d.app} is using the microphone. Record this meeting?` });
     n.onclick = () => { window.focus(); n.close(); };
   }
 }

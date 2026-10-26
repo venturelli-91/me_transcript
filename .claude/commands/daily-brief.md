@@ -1,21 +1,21 @@
 ---
-description: Gera o Daily CEO Brief do dia, usando o Watchdog para levantar o estado real do projeto.
+description: Generates today's Daily CEO Brief, using the Watchdog to gather the project's real state.
 ---
 
-Invoque o subagente `watchdog` para varrer o projeto atual (git, CI, PRs, tickets,
-custos de IA quando houver como medir) e monte o brief abaixo. Se alguma fonte não
-estiver disponível neste ambiente (ex.: sem `gh` configurado), diga isso em vez de
-inventar dados.
+Invoke the `watchdog` subagent to scan the current project (git, CI, PRs, tickets,
+AI costs when they can be measured) and build the brief below. If any source isn't
+available in this environment (e.g., `gh` not configured), say so instead of making up
+data.
 
 ```
 # Daily CEO Brief
 ## P0
-## Tickets ativos
-## PRs aguardando revisão
-## Falhas de CI e QA
-## Alertas e incidentes
-## Custos anormais
-## Decisões pendentes do CEO
-## Top 3 riscos
-## Próximas ações recomendadas
+## Active tickets
+## PRs awaiting review
+## CI and QA failures
+## Alerts and incidents
+## Abnormal costs
+## Pending CEO decisions
+## Top 3 risks
+## Recommended next actions
 ```

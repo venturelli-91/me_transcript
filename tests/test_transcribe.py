@@ -11,16 +11,16 @@ def item(start_ms: int, text: str) -> dict:
 
 class TranscribeTest(unittest.TestCase):
     def test_parse_offsets_and_cleans_text(self):
-        data = {"transcription": [item(0, " Bom dia,\n pessoal. "), item(4500, " Vamos lá.")]}
-        self.assertEqual(transcribe.parse_whisper(data, 60.0, "Eu"), [
-            {"t": 60.0, "who": "Eu", "text": "Bom dia, pessoal."},
-            {"t": 64.5, "who": "Eu", "text": "Vamos lá."},
+        data = {"transcription": [item(0, " Good morning,\n everyone. "), item(4500, " Let's start.")]}
+        self.assertEqual(transcribe.parse_whisper(data, 60.0, "Me"), [
+            {"t": 60.0, "who": "Me", "text": "Good morning, everyone."},
+            {"t": 64.5, "who": "Me", "text": "Let's start."},
         ])
 
     def test_drops_hallucinations(self):
         data = {"transcription": [item(0, " Legendas pela comunidade Amara.org"), item(1000, " [Música]"),
-                                  item(2000, " "), item(3000, " Fechado.")]}
-        self.assertEqual([s["text"] for s in transcribe.parse_whisper(data, 0, "Outros")], ["Fechado."])
+                                  item(2000, " "), item(3000, " Deal.")]}
+        self.assertEqual([s["text"] for s in transcribe.parse_whisper(data, 0, "Others")], ["Deal."])
 
     def test_speech_spans_from_vad_output(self):
         out = ("Detected 2 speech segments:\n"
@@ -30,8 +30,8 @@ class TranscribeTest(unittest.TestCase):
         self.assertEqual(transcribe.speech_spans("Detected 0 speech segments:\n"), [])
 
     def test_merge_interleaves_by_time(self):
-        me = [{"t": 1.0, "who": "Eu", "text": "a"}, {"t": 9.0, "who": "Eu", "text": "c"}]
-        others = [{"t": 5.0, "who": "Outros", "text": "b"}]
+        me = [{"t": 1.0, "who": "Me", "text": "a"}, {"t": 9.0, "who": "Me", "text": "c"}]
+        others = [{"t": 5.0, "who": "Others", "text": "b"}]
         self.assertEqual([s["text"] for s in transcribe.merge(me, others)], ["a", "b", "c"])
 
     def test_live_failure_resumes_on_finish(self):
@@ -40,17 +40,17 @@ class TranscribeTest(unittest.TestCase):
         def fake(wav, start, dur, lang, who):
             calls.append((wav.stem, start))
             if fail[0]:
-                raise RuntimeError("whisper-cli.exe falhou")
+                raise RuntimeError("whisper-cli.exe failed")
             return [{"t": start + 1, "who": who, "text": "x"}]
 
         got = []
         with mock.patch.object(transcribe, "transcribe_window", fake):
             t = transcribe.Transcriber(Path("x"), "pt", recorded=lambda: 40.0, on_segments=got.extend)
             t.thread.join(timeout=5)
-            self.assertIn("parou", t.error)
+            self.assertIn("stopped", t.error)
             fail[0] = False
             t.finish(40.0)
-        self.assertEqual([s["t"] for s in got if s["who"] == "Eu"], [1.0, 31.0])
+        self.assertEqual([s["t"] for s in got if s["who"] == "Me"], [1.0, 31.0])
 
     def test_finish_transcribes_remaining_windows(self):
         calls = []

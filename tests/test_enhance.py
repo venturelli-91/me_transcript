@@ -10,8 +10,8 @@ from unittest import mock
 
 from ata import enhance, settings
 
-MEETING = {"title": "Kickoff", "started_at": "2026-10-26T14:30:00", "lang": "en", "notes": "- prazo",
-           "transcript": "[00:00:01] **Outros:** Deadline is Friday.\n", "ata": "## Prazo\n- sexta",
+MEETING = {"title": "Kickoff", "started_at": "2026-10-26T14:30:00", "lang": "en", "notes": "- deadline",
+           "transcript": "[00:00:01] **Others:** Deadline is Friday.\n", "summary": "## Deadline\n- Friday",
            "chat": [{"role": "user", "content": "q1"}, {"role": "assistant", "content": "a1"}]}
 
 
@@ -28,28 +28,28 @@ class EnhanceTest(unittest.TestCase):
     def test_summary_messages(self):
         system, user = enhance.summary_messages(MEETING)
         self.assertEqual(system["content"], enhance.SUMMARY_PROMPT.read_text(encoding="utf-8"))
-        self.assertIn("Idioma: English", user["content"])
-        self.assertIn("<anotacoes>\n- prazo\n</anotacoes>", user["content"])
+        self.assertIn("Language: English", user["content"])
+        self.assertIn("<notes>\n- deadline\n</notes>", user["content"])
         self.assertIn("Deadline is Friday.", user["content"])
 
     def test_empty_parts_are_explicit(self):
         _, user = enhance.summary_messages({**MEETING, "title": "", "notes": " ", "transcript": ""})
-        self.assertIn("Título: sem título", user["content"])
-        self.assertIn("(nenhuma)", user["content"])
-        self.assertIn("(vazia)", user["content"])
+        self.assertIn("Title: untitled", user["content"])
+        self.assertIn("(none)", user["content"])
+        self.assertIn("(empty)", user["content"])
 
     def test_chat_messages_carry_summary_history_and_message(self):
-        msgs = enhance.chat_messages(MEETING, "mais curto")
-        self.assertIn("<resumo_atual>\n## Prazo\n- sexta\n</resumo_atual>", msgs[1]["content"])
+        msgs = enhance.chat_messages(MEETING, "shorter")
+        self.assertIn("<current_summary>\n## Deadline\n- Friday\n</current_summary>", msgs[1]["content"])
         self.assertEqual([m["content"] for m in msgs[-3:]],
-                         ["q1", '{"reply": "a1", "summary": null}', "mais curto"])
+                         ["q1", '{"reply": "a1", "summary": null}', "shorter"])
         self.assertTrue(all(json.loads(m["content"]) for m in msgs[2:-1] if m["role"] == "assistant"))
 
     def test_chat_parses_reply_and_optional_summary(self):
-        with mock.patch("urllib.request.urlopen", return_value=response('{"reply": "Sexta [00:00:01]", "summary": null}')):
-            self.assertEqual(enhance.chat(MEETING, "prazo?"), {"reply": "Sexta [00:00:01]", "summary": None})
-        with mock.patch("urllib.request.urlopen", return_value=response('{"reply": "Encurtei.", "summary": "## Prazo"}')):
-            self.assertEqual(enhance.chat(MEETING, "mais curto")["summary"], "## Prazo")
+        with mock.patch("urllib.request.urlopen", return_value=response('{"reply": "Friday [00:00:01]", "summary": null}')):
+            self.assertEqual(enhance.chat(MEETING, "deadline?"), {"reply": "Friday [00:00:01]", "summary": None})
+        with mock.patch("urllib.request.urlopen", return_value=response('{"reply": "Shortened.", "summary": "## Deadline"}')):
+            self.assertEqual(enhance.chat(MEETING, "shorter")["summary"], "## Deadline")
         for bad in ["not json", '{"summary": "x"}', '{"reply": 3, "summary": null}']:
             with mock.patch("urllib.request.urlopen", return_value=response(bad)):
                 with self.assertRaises(RuntimeError):
@@ -70,20 +70,20 @@ class EnhanceTest(unittest.TestCase):
         with mock.patch("urllib.request.urlopen", side_effect=err):
             with self.assertRaises(RuntimeError) as ctx:
                 enhance.summarize(MEETING)
-        self.assertIn("chave inválida", str(ctx.exception))
+        self.assertIn("invalid key", str(ctx.exception))
         self.assertNotIn("sk-secret", str(ctx.exception))
 
     def test_network_failures_become_clear_errors(self):
         for err in [ConnectionResetError(), http.client.RemoteDisconnected("x"), TimeoutError()]:
             with mock.patch("urllib.request.urlopen", side_effect=err):
-                with self.assertRaisesRegex(RuntimeError, "Sem conexão"):
+                with self.assertRaisesRegex(RuntimeError, "Cannot reach"):
                     enhance.summarize(MEETING)
         with mock.patch("urllib.request.urlopen", return_value=io.BytesIO(b"<html>")):
-            with self.assertRaisesRegex(RuntimeError, "formato inesperado"):
+            with self.assertRaisesRegex(RuntimeError, "unexpected format"):
                 enhance.summarize(MEETING)
 
     def test_rejects_huge_transcript(self):
-        with self.assertRaisesRegex(RuntimeError, "longa demais"):
+        with self.assertRaisesRegex(RuntimeError, "too long"):
             enhance.summary_messages({**MEETING, "transcript": "x" * (enhance.MAX_TRANSCRIPT + 1)})
 
 

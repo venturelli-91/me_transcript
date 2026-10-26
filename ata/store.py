@@ -62,7 +62,7 @@ def list_meetings() -> list[dict]:
                 "id": folder.name,
                 "title": meta["title"],
                 "started_at": meta["started_at"],
-                "has_ata": (folder / "ata.md").exists(),
+                "has_summary": (folder / "summary.md").exists(),
             })
     return sorted(out, key=lambda m: m["started_at"], reverse=True)
 
@@ -74,9 +74,9 @@ def load(meeting_id: str) -> dict:
         **_meta(folder),
         "notes": _read(folder, "notes.md"),
         "transcript": _read(folder, "transcript.md"),
-        "ata": _read(folder, "ata.md"),
+        "summary": _read(folder, "summary.md"),
         "chat": _read_json(folder, "chat.json"),
-        "can_undo": bool(_read_json(folder, "ata-history.json")),
+        "can_undo": bool(_read_json(folder, "summary-history.json")),
     }
 
 
@@ -93,23 +93,23 @@ def save_notes(meeting_id: str, notes: str) -> None:
     (meeting_dir(meeting_id) / "notes.md").write_text(notes, encoding="utf-8")
 
 
-def save_ata(meeting_id: str, text: str) -> None:
+def save_summary(meeting_id: str, text: str) -> None:
     folder = meeting_dir(meeting_id)
     with WRITE_LOCK:
-        previous = _read(folder, "ata.md")
+        previous = _read(folder, "summary.md")
         if previous:
-            _write_json(folder, "ata-history.json", _read_json(folder, "ata-history.json") + [previous])
-        _write(folder / "ata.md", text)
+            _write_json(folder, "summary-history.json", _read_json(folder, "summary-history.json") + [previous])
+        _write(folder / "summary.md", text)
 
 
-def undo_ata(meeting_id: str) -> None:
+def undo_summary(meeting_id: str) -> None:
     folder = meeting_dir(meeting_id)
     with WRITE_LOCK:
-        history = _read_json(folder, "ata-history.json")
+        history = _read_json(folder, "summary-history.json")
         if not history:
-            raise RuntimeError("Não há versão anterior do resumo.")
-        _write(folder / "ata.md", history.pop())
-        _write_json(folder, "ata-history.json", history)
+            raise RuntimeError("There is no previous summary version.")
+        _write(folder / "summary.md", history.pop())
+        _write_json(folder, "summary-history.json", history)
 
 
 def append_chat(meeting_id: str, *messages: dict) -> None:

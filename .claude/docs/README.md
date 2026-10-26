@@ -1,19 +1,19 @@
-# Ata — documentação
+# Ata — documentation
 
-Ata grava suas reuniões (Meet, Zoom, Teams) sem bot, transcreve localmente e, no fim,
-junta **suas anotações** com a transcrição para gerar uma ata pronta: resumo, decisões,
-próximos passos e pontos em aberto.
+Ata records your meetings (Meet, Zoom, Teams) without a bot, transcribes them locally and, at the end,
+combines **your notes** with the transcript to produce ready-to-use meeting notes: summary, decisions,
+next steps and open questions.
 
-| Documento | Para quê |
+| Document | Purpose |
 |---|---|
-| [projeto.md](projeto.md) | Visão, usuário, objetivos, não-objetivos e anti-objetivos |
-| [features.md](features.md) | Funcionalidades e critérios de aceite |
-| [arquitetura.md](arquitetura.md) | Design de código, módulos, fluxo de dados, contrato da API |
-| [adr/](adr/README.md) | Decisões arquiteturais (ADRs) |
-| [padroes-de-codigo.md](padroes-de-codigo.md) | Padrões de código, testes e commits |
-| [backlog.md](backlog.md) | Tickets e checklist de execução |
-| [trade-offs.md](trade-offs.md) | Trade-offs conscientes e riscos |
-| [engenharia-reversa-another note-taking app.md](engenharia-reversa-another note-taking app.md) | O que aprendemos com o another note-taking app e o que fizemos diferente |
-| [linkedin.md](linkedin.md) | Rascunho de post sobre o projeto |
+| [project.md](project.md) | Vision, user, goals, non-goals and anti-goals |
+| [features.md](features.md) | Features and acceptance criteria |
+| [architecture.md](architecture.md) | Code design, modules, data flow, API contract |
+| [adr/](adr/README.md) | Architecture decision records (ADRs) |
+| [code-standards.md](code-standards.md) | Code, testing and commit standards |
+| [backlog.md](backlog.md) | Tickets and execution checklist |
+| [trade-offs.md](trade-offs.md) | Deliberate trade-offs and risks |
+| [another note-taking app-reverse-engineering.md](another note-taking app-reverse-engineering.md) | What we learned from another note-taking app and what we did differently |
+| [linkedin.md](linkedin.md) | Draft post about the project |
 
-Processo de trabalho: softhouse em `CLAUDE.md` (raiz) e `.claude/agents/`.
+Documentation is English-only. Work process: the softhouse in `CLAUDE.md` (root) and `.claude/agents/`.
