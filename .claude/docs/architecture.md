@@ -95,3 +95,26 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 | `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` | — (optional; enable sending the summary by email) |
 
 `metranscript/settings.py` (`env()`) reads variables from the environment and, if missing, from `.env`.
+
+## Calendar reminders and background mode (DEV-0013)
+- `agenda.py`: fetches the secret iCal address(es) every 5 min, expands recurrences
+  (`recurring-ical-events`), keeps linked/timed/accepted future events (`upcoming()`), and decides
+  which reminders are due (`due()`: 30 min, then 2 min; one per occurrence, persisted in
+  `meetings/reminders-sent.json`). Runs in a `Watcher` thread started by `server.main()`.
+- `desktop.py`: Windows notifications (constant PowerShell script + XML in an env var; event text is
+  never code) and the `HKCU\...\Run` autostart value
+  (`pythonw.exe start.pyw`, no console; logs go to `metranscript.log`).
+- The 2-minute reminder's "Record" button opens `/?record=<token>`; the page posts the token to
+  `/api/start` (`reminder` field), which maps it to the event title and discards it.
+- A second instance (port in use) exits quietly, so autostart plus a manual start never conflict.
+
+| Method and route | Body | Response |
+|---|---|---|
+| `GET /api/agenda` | — | `{configured, events: [{key, title, start, app, link}], error}` |
+| `GET /api/settings` | — | `{autostart}` |
+| `POST /api/settings` | `{autostart: bool}` | `{autostart}` |
+| `POST /api/quit` | — | `{}` · `409` while recording or processing |
+
+| Variable | Default |
+|---|---|
+| `GOOGLE_CALENDAR_ICS` | — (secret iCal address; comma-separated for several calendars) |

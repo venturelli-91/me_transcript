@@ -65,3 +65,16 @@ CEO decision (2026-10-26): receive the summary in their own personal Gmail, auto
 - [ ] A private meeting is never sent.
 - [ ] A send failure shows "Email not sent: reason" and doesn't affect the summary.
 - [ ] Without `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` in `.env`, the feature is off with a subtle notice.
+
+## F9 — Calendar reminders
+CEO decision (2026-10-26): reminders before meetings, read from Google Calendar.
+
+- [ ] 30 minutes before a calendar event that has a Meet, Zoom or Teams link, a Windows notification
+      shows the title, time and app. A late start still gets it ("In 15 min").
+- [ ] 2 minutes before, a second notification with a **Record** button that opens MeTranscript and
+      starts recording with the event title.
+- [ ] Ignores events without a meeting link, all-day events, declined events and past events.
+- [ ] Each reminder fires once per occurrence, even across restarts.
+- [ ] "Upcoming meetings" in the sidebar lists the next linked meetings (24 h).
+- [ ] "Run in background and start with Windows" toggle and a "Quit MeTranscript" button on the page.
+- [ ] Without `GOOGLE_CALENDAR_ICS` in `.env`, reminders are off with a hint in the sidebar.

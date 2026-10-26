@@ -1,1 +1,3 @@
 PyAudioWPatch>=0.2.12
+icalendar>=7.0
+recurring-ical-events>=3.0

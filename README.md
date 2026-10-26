@@ -42,6 +42,22 @@ Each new summary arrives in your inbox (body = summary, attachment = transcript)
 are never sent. To turn it off, delete both lines; to revoke access, remove the app password
 in your Google Account.
 
+### Calendar reminders (optional)
+
+MeTranscript can remind you 30 and 2 minutes before every meeting in your Google Calendar that has a
+Meet, Zoom or Teams link; the 2-minute reminder has a **Record** button.
+
+1. In Google Calendar, open **Settings → your calendar → Integrate calendar**.
+2. Copy **Secret address in iCal format** and add it to `.env` (comma-separate several calendars):
+
+```
+GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
+```
+
+Reminders only fire while MeTranscript is running: turn on **Run in background and start with
+Windows** in the sidebar (and use **Quit MeTranscript** to stop it). Treat the secret address like a
+password; if it leaks, reset it in the same Google Calendar screen.
+
 ### Models (`models/` folder)
 
 ```powershell

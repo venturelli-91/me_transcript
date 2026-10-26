@@ -93,6 +93,19 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   notifications; Python package `ata/` → `metranscript/` (run with `python -m metranscript.server`).
 - **Tests:** `python -m unittest`; open the page and check title, header and notification text.
 
+## DEV-0013 — Calendar reminders and background mode (F9) · `dev-integracoes` · review `seguranca`
+- **Scope:** `agenda.py` (secret iCal, recurrences, link/declined/all-day filters, due reminders),
+  `desktop.py` (injection-safe toasts, autostart in `HKCU\...\Run`), `start.pyw`, server routes
+  `/api/agenda`, `/api/settings`, `/api/quit`, one-time reminder tokens on `/api/start`;
+  sidebar "Upcoming meetings", background toggle and quit button.
+- **Tests:** `tests/test_agenda.py` (filters, recurrence keys, due/late-start), `tests/test_desktop.py`
+  (texts, launcher, registry round trip); real notification shown on the machine.
+- **Risk:** secret iCal address in `.env`; a page link starting a recording (one-time token);
+  pythonw without console (log file).
+- **Security:** a calendar invite title is attacker-controlled; verified that a `$(New-Item …)` title
+  is shown as text and runs nothing (`tests/test_desktop.py` + a live toast).
+- **Pending:** real test with the CEO's calendar (needs `GOOGLE_CALENDAR_ICS`).
+
 ## Known issues (low severity)
 - "Add to summary" also appears on answers with no useful content ("that wasn't discussed",
   "it's already in the summary"); clicking it wastes a call. Idea: have the model's answer say whether

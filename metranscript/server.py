@@ -2,12 +2,15 @@ import json
 import logging
 import os
 import re
+import secrets
 import shutil
+import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metranscript import detect, enhance, mail, store
+from metranscript import agenda, desktop, detect, enhance, mail, store
 from metranscript.capture import Recorder
 from metranscript.transcribe import Transcriber, check_ready
 
@@ -18,6 +21,12 @@ MAX_BODY = 2_000_000
 PORT = int(os.environ.get("ATA_PORT", "8765"))
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 BUSY = {"recording", "transcribing", "enhancing"}
+URL = f"http://127.0.0.1:{PORT}/"
+# One-time tokens behind the "Record" button of a reminder; the page can't start a reminder recording without one.
+reminder_tokens: dict[str, tuple[str, float]] = {}
+TOKEN_TTL = 1800
+watcher: agenda.Watcher | None = None
+server: ThreadingHTTPServer | None = None
 
 
 class Session:
@@ -51,6 +60,26 @@ class Session:
 
 # ponytail: one global session, one person records one meeting at a time
 session = Session()
+
+
+def on_reminder(event: dict, minutes: int, reminder: int) -> None:
+    title, message = desktop.reminder_text(event, minutes)
+    action = None
+    if reminder == agenda.LAST_REMINDER:
+        token = secrets.token_urlsafe(16)
+        now = time.time()
+        for old in [t for t, (_, exp) in reminder_tokens.items() if exp < now]:
+            del reminder_tokens[old]
+        reminder_tokens[token] = (event["title"], now + TOKEN_TTL)
+        action = ("Record", f"{URL}?record={token}")
+    desktop.notify(title, message, URL, action)
+
+
+def quit_app() -> None:
+    with session.lock:
+        if session.phase in BUSY:
+            raise RuntimeError("Stop the recording and wait for the summary before quitting.")
+    threading.Thread(target=server.shutdown, daemon=True).start()
 
 
 def start(title: str, lang: str, private: bool) -> str:
@@ -222,8 +251,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if not self._trusted(write=False):
             return
-        if self.path == "/":
+        if self.path.split("?", 1)[0] == "/":
             return self._send(200, INDEX.read_bytes(), "text/html")
+        if self.path == "/api/agenda":
+            return self._send(200, {"configured": bool(agenda.ics_urls()), "events": watcher.events if watcher else [],
+                                    "error": watcher.error if watcher else None})
+        if self.path == "/api/settings":
+            return self._send(200, {"autostart": desktop.autostart_enabled()})
         if self.path == "/api/status":
             return self._send(200, session.snapshot())
         if self.path == "/api/meetings":
@@ -242,6 +276,11 @@ class Handler(BaseHTTPRequestHandler):
                 lang = body.get("lang", "pt")
                 title = body.get("title", "")
                 private = body.get("private", False)
+                reminder = body.get("reminder")
+                if reminder is not None:
+                    title, expires = reminder_tokens.pop(reminder, ("", 0))
+                    if expires < time.time():
+                        raise ValueError("This reminder link has expired.")
                 if lang not in LANGS:
                     raise ValueError("Language must be pt or en.")
                 if not isinstance(title, str):
@@ -252,6 +291,19 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))
+        if self.path == "/api/quit":
+            return self._guard(lambda: (quit_app(), self._send(200)))
+        if self.path == "/api/settings":
+            def run():
+                enabled = self._body().get("autostart")
+                if not isinstance(enabled, bool):
+                    raise ValueError("autostart must be true or false.")
+                try:
+                    desktop.set_autostart(enabled)
+                except OSError as e:
+                    raise RuntimeError(f"Could not change the Windows startup setting: {e}") from None
+                self._send(200, {"autostart": desktop.autostart_enabled()})
+            return self._guard(run)
         m = MEETING_RE.fullmatch(self.path)
         if m and m.group(2) == "/summary":
             return self._guard(lambda: self._send(200, summarize(m.group(1))))
@@ -294,9 +346,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    log.info("MeTranscript running at http://127.0.0.1:%d", PORT)
+    global server, watcher
+    # pythonw (start with Windows) has no console, so log to a file there.
+    logfile = None if sys.stderr else store.ROOT.parent / "metranscript.log"
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", filename=logfile)
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    except OSError:
+        log.info("MeTranscript is already running at %s", URL)
+        return
+    store.ROOT.mkdir(exist_ok=True)
+    watcher = agenda.Watcher(store.ROOT / "reminders-sent.json", on_reminder)
+    log.info("MeTranscript running at %s", URL)
     server.serve_forever()
 
 
