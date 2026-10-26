@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
-from ata import store
+from metranscript import store
 
 
 class StoreTest(unittest.TestCase):

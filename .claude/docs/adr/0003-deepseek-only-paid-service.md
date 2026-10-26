@@ -11,7 +11,7 @@ pay for DeepSeek.
 
 ## Decision
 Call `https://api.deepseek.com/chat/completions` (OpenAI format, model
-`deepseek-chat`) with the stdlib `urllib`, no SDK. The prompt lives in `ata/prompt.md`,
+`deepseek-chat`) with the stdlib `urllib`, no SDK. The prompt lives in `metranscript/prompt.md`,
 editable by the user.
 
 ## Alternatives Considered

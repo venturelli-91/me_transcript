@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src data:">
-<title>Ata</title>
+<title>MeTranscript</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,7 +162,7 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
 </head>
 <body>
 <aside>
-  <h1>Ata</h1>
+  <h1>MeTranscript</h1>
   <nav aria-label="Meetings"><ol id="list"></ol></nav>
 </aside>
 <main>
@@ -508,7 +508,7 @@ let prevPhase = "idle", polling = null;
 const poll = () => polling ??= refresh().finally(() => { polling = null; });
 
 async function refresh() {
-  try { status = await api("/api/status"); } catch { stateEl.textContent = "Cannot reach Ata. Is the program running?"; return; }
+  try { status = await api("/api/status"); } catch { stateEl.textContent = "Cannot reach MeTranscript. Is the program running?"; return; }
   const p = status.phase, rec = p === "recording", busy = p === "transcribing" || p === "enhancing";
   deck.classList.toggle("rec", rec);
   deck.classList.toggle("busy", busy);
@@ -548,7 +548,7 @@ function showDetected() {
   shownKey = d.key;
   $("#detected-text").textContent = `${d.app} is using the microphone. Did a meeting start?`;
   if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-    const n = new Notification("Ata", { body: `${d.app} is using the microphone. Record this meeting?` });
+    const n = new Notification("MeTranscript", { body: `${d.app} is using the microphone. Record this meeting?` });
     n.onclick = () => { window.focus(); n.close(); };
   }
 }

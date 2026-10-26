@@ -4,7 +4,7 @@ import ssl
 import unittest
 from unittest import mock
 
-from ata import mail
+from metranscript import mail
 
 MEETING = {"title": "Kickoff\nBcc: x@evil.com", "started_at": "2026-10-26T14:30:00",
            "summary": "## Deadline\n- Friday", "transcript": "[00:00:01] **Others:** Hi.\n"}
@@ -14,7 +14,7 @@ CREDS = {"GMAIL_ADDRESS": "me@gmail.com", "GMAIL_APP_PASSWORD": "abcd efgh ijkl 
 class MailTest(unittest.TestCase):
     def test_build_message(self):
         msg = mail.build(MEETING, "me@gmail.com")
-        self.assertEqual(msg["Subject"], "Ata: Kickoff Bcc: x@evil.com (2026-10-26 14:30)")
+        self.assertEqual(msg["Subject"], "MeTranscript: Kickoff Bcc: x@evil.com (2026-10-26 14:30)")
         self.assertIsNone(msg["Bcc"])
         self.assertEqual((msg["From"], msg["To"]), ("me@gmail.com", "me@gmail.com"))
         body, attachment = list(msg.iter_parts())
@@ -23,7 +23,7 @@ class MailTest(unittest.TestCase):
         self.assertEqual(attachment.get_payload(decode=True).decode("utf-8"), MEETING["transcript"])
 
     def test_untitled_meeting(self):
-        self.assertTrue(mail.build({**MEETING, "title": ""}, "me@gmail.com")["Subject"].startswith("Ata: Untitled meeting"))
+        self.assertTrue(mail.build({**MEETING, "title": ""}, "me@gmail.com")["Subject"].startswith("MeTranscript: Untitled meeting"))
 
     def test_configured(self):
         with mock.patch.object(mail, "env", lambda name: None):

@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from ata import transcribe
+from metranscript import transcribe
 
 
 def item(start_ms: int, text: str) -> dict:

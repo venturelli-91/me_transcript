@@ -4,7 +4,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from ata.settings import env
+from metranscript.settings import env
 
 SUMMARY_PROMPT = Path(__file__).parent / "prompt.md"
 CHAT_PROMPT = Path(__file__).parent / "chat.md"

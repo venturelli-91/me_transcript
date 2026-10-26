@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from ata import settings
+from metranscript import settings
 
 
 class SettingsTest(unittest.TestCase):

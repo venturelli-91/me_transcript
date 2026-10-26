@@ -7,11 +7,11 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from ata import detect, enhance, mail, store
-from ata.capture import Recorder
-from ata.transcribe import Transcriber, check_ready
+from metranscript import detect, enhance, mail, store
+from metranscript.capture import Recorder
+from metranscript.transcribe import Transcriber, check_ready
 
-log = logging.getLogger("ata")
+log = logging.getLogger("metranscript")
 INDEX = Path(__file__).parent / "web" / "index.html"
 LANGS = {"pt", "en"}
 MAX_BODY = 2_000_000
@@ -296,7 +296,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    log.info("Ata running at http://127.0.0.1:%d", PORT)
+    log.info("MeTranscript running at http://127.0.0.1:%d", PORT)
     server.serve_forever()
 
 

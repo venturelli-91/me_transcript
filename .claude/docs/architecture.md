@@ -94,4 +94,4 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 | `ATA_PORT` | `8765` |
 | `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` | — (optional; enable sending the summary by email) |
 
-`ata/settings.py` (`env()`) reads variables from the environment and, if missing, from `.env`.
+`metranscript/settings.py` (`env()`) reads variables from the environment and, if missing, from `.env`.

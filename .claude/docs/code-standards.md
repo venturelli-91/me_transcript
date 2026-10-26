@@ -40,7 +40,7 @@
 
 ## Language
 - Everything in the repo is in English: docs, code, comments, UI copy, prompts, commits.
-  The product name stays "Ata".
+  The product name stays "MeTranscript".
 
 ## Process (softhouse)
 Per ticket: dev for the right role → `code-reviewer` (+ `ponytail:ponytail-review`) →

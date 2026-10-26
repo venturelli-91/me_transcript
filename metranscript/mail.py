@@ -3,7 +3,7 @@ import ssl
 from datetime import datetime
 from email.message import EmailMessage
 
-from ata.settings import env
+from metranscript.settings import env
 
 HOST, PORT = "smtp.gmail.com", 465
 
@@ -16,7 +16,7 @@ def build(meeting: dict, address: str) -> EmailMessage:
     title = " ".join((meeting["title"] or "Untitled meeting").split())
     when = datetime.fromisoformat(meeting["started_at"]).strftime("%Y-%m-%d %H:%M")
     msg = EmailMessage()
-    msg["Subject"] = f"Ata: {title} ({when})"
+    msg["Subject"] = f"MeTranscript: {title} ({when})"
     msg["From"] = msg["To"] = address
     msg.set_content(meeting["summary"])
     msg.add_attachment(meeting["transcript"].encode("utf-8"), maintype="text", subtype="markdown",

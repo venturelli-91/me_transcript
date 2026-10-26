@@ -59,7 +59,7 @@ it to ask, quote or rephrase — instead of meeting notes with fixed sections.
 CEO decision (2026-10-26): receive the summary in their own personal Gmail, automatically.
 
 - [ ] When a meeting's first summary is ready, it is sent from the user's Gmail
-      to themselves: subject "Ata: <title> (dd/mm HH:MM)", body = summary, attachment `transcript.md`.
+      to themselves: subject "MeTranscript: <title> (dd/mm HH:MM)", body = summary, attachment `transcript.md`.
 - [ ] Sent once per meeting; "Regenerate" and chat edits don't resend.
 - [ ] A "Email it to me" button sends the current version whenever the user wants.
 - [ ] A private meeting is never sent.

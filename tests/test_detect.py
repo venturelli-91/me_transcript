@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from ata import detect
+from metranscript import detect
 
 
 class DetectTest(unittest.TestCase):

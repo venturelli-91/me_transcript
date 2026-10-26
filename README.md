@@ -1,4 +1,4 @@
-# Ata
+# MeTranscript
 
 Personal meeting notes for Windows. Records Meet, Zoom and Teams without a bot, transcribes on your
 computer (whisper.cpp on the GPU) and, at the end, DeepSeek summarizes the ideas by topic. Then you
@@ -30,7 +30,7 @@ DEEPSEEK_API_KEY=sk-...
 ### Summary in your Gmail (optional)
 
 1. Turn on 2-Step Verification in your Google Account.
-2. Create an app password at https://myaccount.google.com/apppasswords (name: "Ata").
+2. Create an app password at https://myaccount.google.com/apppasswords (name: "MeTranscript").
 3. Add to `.env`:
 
 ```
@@ -70,7 +70,7 @@ No GPU: download `whisper-blas-bin-x64.zip` from
 ## Usage
 
 ```powershell
-python -m ata.server
+python -m metranscript.server
 ```
 
 Open http://127.0.0.1:8765 and keep the tab open.

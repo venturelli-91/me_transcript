@@ -32,7 +32,7 @@ One Python process using the stdlib (`http.server`, `winreg`, `urllib`, `wave`,
 
 ## Consequences
 ### Positive
-- One Python dependency (PyAudioWPatch); runs with `python -m ata.server`.
+- One Python dependency (PyAudioWPatch); runs with `python -m metranscript.server`.
 ### Negative
 - The page must be open to see the meeting alert.
 ### Risks

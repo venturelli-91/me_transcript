@@ -1,6 +1,6 @@
-# Ata — documentation
+# MeTranscript — documentation
 
-Ata records your meetings (Meet, Zoom, Teams) without a bot, transcribes them locally and, at the end,
+MeTranscript records your meetings (Meet, Zoom, Teams) without a bot, transcribes them locally and, at the end,
 combines **your notes** with the transcript to produce ready-to-use meeting notes: summary, decisions,
 next steps and open questions.
 

@@ -8,7 +8,7 @@ import urllib.error
 from pathlib import Path
 from unittest import mock
 
-from ata import enhance, settings
+from metranscript import enhance, settings
 
 MEETING = {"title": "Kickoff", "started_at": "2026-10-26T14:30:00", "lang": "en", "notes": "- deadline",
            "transcript": "[00:00:01] **Others:** Deadline is Friday.\n", "summary": "## Deadline\n- Friday",

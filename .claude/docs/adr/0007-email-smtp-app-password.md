@@ -10,7 +10,7 @@ to themselves; Drive and other recipients are out of scope for now. The app is l
 server of its own and no account.
 
 ## Decision
-`ata/mail.py` sends with `smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context())`
+`metranscript/mail.py` sends with `smtplib.SMTP_SSL("smtp.gmail.com", 465, context=ssl.create_default_context())`
 (stdlib; the explicit context is required because `smtplib`'s default doesn't verify the
 server certificate — a security review finding), authenticating with
 `GMAIL_ADDRESS` + `GMAIL_APP_PASSWORD` from `.env`. Sender and recipient are the same

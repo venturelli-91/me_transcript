@@ -9,7 +9,7 @@ import threading
 from collections.abc import Callable
 from pathlib import Path
 
-log = logging.getLogger("ata")
+log = logging.getLogger("metranscript")
 ROOT = Path(__file__).resolve().parent.parent
 WHISPER = Path(os.environ.get("ATA_WHISPER", ROOT / "bin" / "vulkan" / "whisper-cli.exe"))
 VAD_CLI = WHISPER.with_name("whisper-vad-speech-segments.exe")
