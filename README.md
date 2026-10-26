@@ -68,8 +68,8 @@ Abra http://127.0.0.1:8765 e deixe a aba aberta.
 5. Converse no painel ao lado: perguntas, "Incluir no resumo", ajustes e **Desfazer**.
 
 Cada reunião fica em `meetings/AAAA-MM-DD_HHMM/` (`notes.md`, `transcript.md`, `ata.md`,
-`chat.json`, `mic.wav`, `system.wav`). Os WAVs ocupam ~1,4 GB por hora; apague-os se não
-precisar retranscrever.
+`chat.json`). O áudio (`mic.wav`, `system.wav`) só existe durante a gravação e é apagado quando a
+transcrição termina; se ela falhar, o áudio fica na pasta.
 
 ## Configuração
 

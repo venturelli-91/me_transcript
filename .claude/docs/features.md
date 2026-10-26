@@ -8,6 +8,8 @@ Cada reunião é uma pasta `meetings/AAAA-MM-DD_HHMM/` com `meta.json`, `notes.m
 - [ ] Listar reuniões em ordem decrescente de data.
 - [ ] Abrir uma reunião antiga mostra notas, transcrição e ata.
 - [ ] Duas reuniões no mesmo minuto não colidem (sufixo `-2`).
+- [ ] Decisão do CEO (2026-10-26): `mic.wav` e `system.wav` são apagados assim que a transcrição
+      termina com sucesso; o registro é o `transcript.md`. Se a transcrição falhar, o áudio fica.
 
 ## F2 — Gravar e parar
 - [ ] Botão **Gravar** inicia a captura; botão **Parar** encerra. Não há auto-stop.

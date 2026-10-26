@@ -99,6 +99,10 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
     except Exception as e:
         log.exception("Falha ao finalizar %s", meeting_id)
         return _set_phase("error", f"A transcrição não terminou ({e}). O áudio e as notas estão salvos na pasta da reunião.")
+    try:
+        store.delete_audio(meeting_id)
+    except OSError:
+        log.warning("Não foi possível apagar o áudio de %s (arquivo em uso?)", meeting_id)
     meeting = store.load(meeting_id)
     if meeting.get("private"):
         return _set_phase("done")

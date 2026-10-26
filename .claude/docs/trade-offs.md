@@ -10,6 +10,6 @@
 | Detecção pelo uso do microfone | Poucas linhas, sem código nativo | Navegador usando mic (ex.: um áudio no WhatsApp Web) também avisa | Se o falso positivo incomodar: checar título da janela |
 | Aviso só com a página aberta | Sem bandeja nem auto-start | Esquecer a página aberta = sem aviso | Se esquecer com frequência: atalho na pasta Inicializar |
 | Pasta por reunião, sem banco | Arquivos legíveis, backup trivial | Sem busca no app | Quando busca virar necessidade |
-| WAV guardado | Permite retranscrever | ~0,7 GB/h por trilha (48 kHz estéreo), ~1,4 GB/h por reunião | Apagar WAV após ata, ou converter para Opus |
+| Áudio apagado após a transcrição | Disco não cresce (só texto, poucos KB por reunião) | Não dá para retranscrever nem ouvir de novo | Se o Whisper errar demais: guardar em Opus (~15 MB/h) via ffmpeg |
 | `http.server` da stdlib | Zero dependência | Sem extras (rotas, validação) | Nunca para este escopo |
 | Parar só no botão | Previsível | Esquecer de parar grava por horas | Se acontecer: auto-stop quando o app solta o mic |

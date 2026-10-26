@@ -69,6 +69,16 @@ class StoreTest(unittest.TestCase):
         store.append_chat(mid, {"role": "user", "content": "ok"})
         self.assertEqual([c["content"] for c in store.load(mid)["chat"]], ["prazo?", "sexta", "ok"])
 
+    def test_delete_audio_keeps_text(self):
+        mid = store.create("", "pt")
+        folder = store.meeting_dir(mid)
+        (folder / "mic.wav").write_bytes(b"x")
+        (folder / "system.wav").write_bytes(b"x")
+        store.append_segments(mid, [{"t": 1, "who": "Eu", "text": "oi"}])
+        store.delete_audio(mid)
+        store.delete_audio(mid)
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ["meta.json", "transcript.md"])
+
     def test_rejects_unknown_or_malicious_id(self):
         store.create("", "pt", now=datetime(2026, 10, 26, 14, 30))
         for bad in ["../etc", "2026-10-27_1430", "2026-10-26_1430\n", "x"]:

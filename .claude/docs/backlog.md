@@ -60,6 +60,11 @@ Um ticket = um commit atômico (`DEV-XXXX: ...`). Fluxo por ticket: dev → `cod
   rodar, onde ficam as reuniões.
 - **Aceite:** alguém segue o README do zero e grava uma reunião.
 
+## DEV-0009 — Apagar o áudio após a transcrição · `dev-backend`
+- **Escopo:** `store.delete_audio()` chamado em `_finalize` depois de `transcriber.finish()`.
+- **Testes:** `tests/test_store.py` (apaga os WAVs, mantém o texto, idempotente).
+- **Risco:** perder o áudio de uma reunião cuja transcrição falhou — por isso só apaga no sucesso.
+
 ## Pendências conhecidas (baixa severidade)
 - "Incluir no resumo" aparece também em respostas sem conteúdo útil ("isso não foi falado",
   "já está no resumo"); clicar gasta uma chamada à toa. Ideia: a resposta do modelo indicar se é

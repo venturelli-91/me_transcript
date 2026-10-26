@@ -133,3 +133,9 @@ def finish(meeting_id: str, now: datetime | None = None) -> None:
     meta = _meta(folder)
     meta["ended_at"] = (now or datetime.now()).isoformat(timespec="seconds")
     _write_meta(folder, meta)
+
+
+def delete_audio(meeting_id: str) -> None:
+    # The transcript is the record; audio is only kept when transcription fails, to allow a retry.
+    for name in ("mic.wav", "system.wav"):
+        (meeting_dir(meeting_id) / name).unlink(missing_ok=True)

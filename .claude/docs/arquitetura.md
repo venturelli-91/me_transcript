@@ -77,7 +77,8 @@ Segmento: `{"t": 83.2, "who": "Eu" | "Outros", "text": "..."}` (`t` em segundos 
 - Escritas são atômicas (`.tmp` + `os.replace`) sob um lock global.
 - `transcript.md`: uma linha por segmento — `[00:01:23] **Outros:** texto`.
 - `notes.md`, `ata.md`: Markdown livre.
-- `mic.wav`, `system.wav`: PCM 16-bit no formato nativo do dispositivo.
+- `mic.wav`, `system.wav`: PCM 16-bit no formato nativo do dispositivo, só durante a gravação.
+  Apagados quando a transcrição termina com sucesso (~1,4 GB/h economizados); mantidos se ela falhar.
 
 ## Configuração
 | Variável | Padrão |
