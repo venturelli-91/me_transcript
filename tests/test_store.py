@@ -119,6 +119,36 @@ class StoreTest(unittest.TestCase):
         self.assertEqual((m["summary_body"], m["next_steps"]), ("## Topic\n- a", "- Me: x"))
         self.assertIn("## Next steps", m["summary"])
 
+    def test_rename_normalizes_and_truncates_the_title(self):
+        mid = store.create("Old", "pt")
+        store.rename(mid, "  New \n  title  ")
+        self.assertEqual(store.load(mid)["title"], "New title")
+        self.assertEqual(store.list_meetings()[0]["title"], "New title")
+        store.rename(mid, "x" * 300)
+        self.assertEqual(len(store.load(mid)["title"]), 200)
+        store.rename(mid, "")
+        self.assertEqual(store.load(mid)["title"], "")
+
+    def test_rename_keeps_other_meta(self):
+        mid = store.create("Old", "en", private=True, app="Meet")
+        store.finish(mid)
+        store.rename(mid, "New")
+        m = store.load(mid)
+        self.assertEqual((m["lang"], m["private"], m["app"]), ("en", True, "Meet"))
+        self.assertIsNotNone(m["ended_at"])
+
+    def test_delete_removes_the_whole_meeting(self):
+        mid = store.create("Gone", "pt")
+        store.save_notes(mid, "- n")
+        store.save_summary(mid, "## S")
+        keep = store.create("Keep", "pt", now=datetime(2026, 1, 1, 9, 0))
+        store.delete(mid)
+        self.assertEqual([m["id"] for m in store.list_meetings()], [keep])
+        with self.assertRaises(KeyError):
+            store.load(mid)
+        with self.assertRaises(KeyError):
+            store.delete(mid)
+
     def test_old_meta_without_app_or_private(self):
         mid = store.create("Old", "en")
         folder = store.meeting_dir(mid)

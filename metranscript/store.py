@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -158,9 +159,23 @@ def append_segments(meeting_id: str, segments: list[dict]) -> None:
 
 def finish(meeting_id: str, now: datetime | None = None) -> None:
     folder = meeting_dir(meeting_id)
-    meta = _meta(folder)
-    meta["ended_at"] = (now or datetime.now()).isoformat(timespec="seconds")
-    _write_meta(folder, meta)
+    with WRITE_LOCK:
+        meta = _meta(folder)
+        meta["ended_at"] = (now or datetime.now()).isoformat(timespec="seconds")
+        _write_meta(folder, meta)
+
+
+def rename(meeting_id: str, title: str) -> None:
+    folder = meeting_dir(meeting_id)
+    with WRITE_LOCK:
+        meta = _meta(folder)
+        meta["title"] = " ".join(title.split())[:200]
+        _write_meta(folder, meta)
+
+
+def delete(meeting_id: str) -> None:
+    with WRITE_LOCK:
+        shutil.rmtree(meeting_dir(meeting_id))
 
 
 def set_email_status(meeting_id: str, error: str | None = None) -> None:

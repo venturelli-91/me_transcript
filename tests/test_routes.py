@@ -54,7 +54,8 @@ class RoutesTest(unittest.TestCase):
 
     def test_unknown_routes_and_meetings(self):
         self.assertEqual(self.call("GET", "/nope"), (404, {"error": "Not found."}))
-        self.assertEqual(self.call("DELETE", "/api/meetings")[0], 501)
+        self.assertEqual(self.call("DELETE", "/api/meetings"), (404, {"error": "Not found."}))
+        self.assertEqual(self.call("PATCH", "/api/meetings/x")[0], 501)
         self.assertEqual(self.call("POST", "/api/meetings/2026-01-01_0000/nope", {})[0], 404)
         self.assertEqual(self.call("GET", "/api/meetings/2026-01-01_0000"), (404, {"error": "Meeting not found."}))
         self.assertEqual(self.call("GET", "/api/meetings/..%2Fetc")[0], 404)
@@ -81,6 +82,32 @@ class RoutesTest(unittest.TestCase):
         self.assertEqual(self.call("POST", "/api/stop", {}), (409, {"error": "No recording in progress."}))
         self.assertEqual(self.call("POST", "/api/devices", {"track": "mic", "name": "x"})[0], 409)
 
+    def test_rename_route(self):
+        mid = store.create("Before", "pt")
+        status, m = self.call("PUT", f"/api/meetings/{mid}/title", {"title": "  After\n title "})
+        self.assertEqual((status, m["title"]), (200, "After title"))
+        self.assertEqual(self.call("PUT", f"/api/meetings/{mid}/title", {"title": 3})[1]["error"], "Title must be text.")
+        self.assertEqual(self.call("PUT", "/api/meetings/2026-01-01_0000/title", {"title": "x"})[0], 404)
+
+    def test_delete_route(self):
+        mid = store.create("Delete me", "pt")
+        self.assertEqual(self.call("DELETE", f"/api/meetings/{mid}"), (200, {}))
+        self.assertEqual(self.call("GET", f"/api/meetings/{mid}")[0], 404)
+        self.assertEqual(self.call("DELETE", f"/api/meetings/{mid}")[0], 404)
+        self.assertEqual(self.call("DELETE", f"/api/meetings/{mid}", headers={"Host": "evil.com"})[0], 403)
+
+    def test_cannot_delete_a_meeting_that_is_being_recorded_or_processed(self):
+        mid = store.create("Busy", "pt")
+        for phase in ("recording", "transcribing", "enhancing"):
+            with mock.patch.object(server.session, "phase", phase), mock.patch.object(server.session, "meeting_id", mid):
+                status, body = self.call("DELETE", f"/api/meetings/{mid}")
+            self.assertEqual(status, 409, phase)
+            self.assertIn("Stop the recording", body["error"])
+        self.assertEqual(self.call("GET", f"/api/meetings/{mid}")[0], 200)
+        other = store.create("Other", "pt")
+        with mock.patch.object(server.session, "phase", "recording"), mock.patch.object(server.session, "meeting_id", mid):
+            self.assertEqual(self.call("DELETE", f"/api/meetings/{other}")[0], 200)
+
     def test_meeting_routes(self):
         mid = store.create("Routes", "pt")
         self.assertEqual(self.call("PUT", f"/api/meetings/{mid}/notes", {"notes": "- hi"}), (200, {}))
@@ -91,7 +118,7 @@ class RoutesTest(unittest.TestCase):
         self.assertEqual(self.call("POST", f"/api/meetings/{mid}/chat", {"message": "x" * 4001})[0], 400)
         self.assertEqual(self.call("POST", f"/api/meetings/{mid}/undo", {}), (409, {"error": "There is no previous summary version."}))
         self.assertEqual(self.call("POST", f"/api/meetings/{mid}/email", {})[0], 409)
-        self.assertEqual(self.call("GET", "/api/meetings")[1][0]["id"], mid)
+        self.assertIn(mid, [m["id"] for m in self.call("GET", "/api/meetings")[1]])
 
 
 if __name__ == "__main__":

@@ -218,12 +218,24 @@ def chat(meeting_id: str, message: str) -> dict:
     return load(meeting_id)
 
 
+def rename_meeting(meeting_id: str, title: str) -> dict:
+    store.rename(meeting_id, title)
+    return load(meeting_id)
+
+
+def delete_meeting(meeting_id: str) -> None:
+    with session.lock:
+        if session.meeting_id == meeting_id and session.phase in BUSY:
+            raise RuntimeError("Stop the recording and wait for the summary before deleting this meeting.")
+    store.delete(meeting_id)
+
+
 def undo(meeting_id: str) -> dict:
     store.undo_summary(meeting_id)
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/summary|/chat|/undo|/email)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/undo|/email)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -352,10 +364,25 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(run)
         self._send(404, {"error": "Not found."})
 
+    def do_DELETE(self) -> None:
+        if not self._trusted(write=True):
+            return
+        m = MEETING_RE.fullmatch(self.path)
+        if m and not m.group(2):
+            return self._guard(lambda: (delete_meeting(m.group(1)), self._send(200)))
+        self._send(404, {"error": "Not found."})
+
     def do_PUT(self) -> None:
         if not self._trusted(write=True):
             return
         m = MEETING_RE.fullmatch(self.path)
+        if m and m.group(2) == "/title":
+            def run():
+                title = self._body().get("title")
+                if not isinstance(title, str):
+                    raise ValueError("Title must be text.")
+                self._send(200, rename_meeting(m.group(1), title))
+            return self._guard(run)
         if m and m.group(2) == "/notes":
             def run():
                 notes = self._body().get("notes")
