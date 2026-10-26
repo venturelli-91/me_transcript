@@ -11,7 +11,7 @@ microfone em
 `HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone`.
 
 ## Decision
-`detect.py` lê essa chave com `winreg` a cada 3 s. Entradas com `LastUsedTimeStop == 0`
+`detect.py` lê essa chave com `winreg` a cada poll de `/api/status` (1 s), fora do lock da sessão. Entradas com `LastUsedTimeStop == 0`
 estão com o mic aberto; se o executável for Zoom, Teams ou um navegador, a página avisa.
 
 ## Alternatives Considered

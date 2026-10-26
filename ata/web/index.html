@@ -41,7 +41,15 @@ aside .when { font-size: 12.5px; color: var(--muted); }
 aside [aria-current="true"] .when { color: #b9cbc3; }
 aside .empty { color: var(--muted); font-size: 13.5px; padding: 0 8px; }
 
-main { display: grid; grid-template-rows: auto 1fr; min-width: 0; height: 100vh; }
+main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; height: 100vh; }
+#detected { grid-row: 1; } .deck { grid-row: 2; } .content { grid-row: 3; }
+
+/* aviso de reunião */
+#detected { display: none; align-items: center; gap: 12px; padding: 10px 24px; background: var(--others); color: #fff; flex-wrap: wrap; }
+#detected.show { display: flex; }
+#detected p { margin: 0; flex: 1 1 240px; }
+#detected button { border: 1px solid #fff; background: #fff; color: var(--others); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-weight: 600; }
+#detected button.ghost { background: none; color: #fff; }
 
 /* gravador */
 .deck { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding: 18px 24px; background: var(--bottle); color: var(--sheet); }
@@ -156,6 +164,12 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
   <nav aria-label="Reuniões"><ol id="list"></ol></nav>
 </aside>
 <main>
+  <div id="detected" role="alert">
+    <p id="detected-text"></p>
+    <button id="detected-rec">Gravar esta reunião</button>
+    <button id="detected-dismiss" class="ghost">Agora não</button>
+  </div>
+
   <section class="deck" id="deck" aria-label="Gravador">
     <button id="rec" aria-label="Gravar"><span></span></button>
     <div>
@@ -457,6 +471,7 @@ async function openMeeting_(id) {
 }
 
 async function startRec() {
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
   const lang = document.querySelector('input[name="lang"]:checked').value;
   try {
     const { id } = await api("/api/start", { method: "POST", body: JSON.stringify({ title: $("#title").value, lang, private: $("#private").checked }) });
@@ -502,7 +517,28 @@ async function refresh() {
     loadList();
   }
   prevPhase = p;
+  showDetected();
 }
+
+const seen = new Set();
+let shownKey = null;
+$("#detected-rec").addEventListener("click", () => { $("#detected").classList.remove("show"); startRec(); });
+$("#detected-dismiss").addEventListener("click", () => { seen.add(status.detected?.key); $("#detected").classList.remove("show"); });
+
+function showDetected() {
+  const d = status.detected;
+  if (d && status.phase === "recording") seen.add(d.key);
+  const show = !!d && !seen.has(d.key) && !["recording", "transcribing", "enhancing"].includes(status.phase);
+  $("#detected").classList.toggle("show", show);
+  if (!show || shownKey === d.key) return;
+  shownKey = d.key;
+  $("#detected-text").textContent = `${d.app} está usando o microfone. Começou uma reunião?`;
+  if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+    const n = new Notification("Ata", { body: `${d.app} está usando o microfone. Gravar esta reunião?` });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+}
+
 
 content.replaceChildren($("#tpl-blank").content.cloneNode(true));
 loadList();

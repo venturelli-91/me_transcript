@@ -7,7 +7,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from ata import enhance, store
+from ata import detect, enhance, store
 from ata.capture import Recorder
 from ata.transcribe import Transcriber, check_ready
 
@@ -33,7 +33,7 @@ class Session:
 
     def snapshot(self) -> dict:
         with self.lock:
-            return {
+            snap = {
                 "phase": self.phase,
                 "meeting_id": self.meeting_id,
                 "elapsed": self.recorder.elapsed() if self.recorder else 0,
@@ -43,6 +43,10 @@ class Session:
                 "detected": None,
                 "error": self.error or (self.transcriber.error if self.transcriber else None),
             }
+        # Also reported while recording, so the page can mark that mic session as already handled.
+        if snap["phase"] not in ("transcribing", "enhancing"):
+            snap["detected"] = detect.detected()
+        return snap
 
 
 # ponytail: one global session, one person records one meeting at a time
