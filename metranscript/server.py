@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from metranscript import agenda, desktop, detect, enhance, mail, store
-from metranscript.capture import Recorder
+from metranscript.capture import Recorder, list_devices
 from metranscript.transcribe import Transcriber, check_ready
 
 log = logging.getLogger("metranscript")
@@ -50,7 +50,9 @@ class Session:
                 # ponytail: full segment list every poll, fine for a few hours of meeting
                 "segments": list(self.segments),
                 "detected": None,
-                "error": self.error or (self.transcriber.error if self.transcriber else None),
+                "error": self.error or (self.recorder.warning if self.recorder else None)
+                or (self.transcriber.error if self.transcriber else None),
+                "devices": dict(self.recorder.devices) if self.recorder else None,
             }
         # Also reported while recording, so the page can mark that mic session as already handled.
         if snap["phase"] not in ("transcribing", "enhancing"):
@@ -82,7 +84,15 @@ def quit_app() -> None:
     threading.Thread(target=server.shutdown, daemon=True).start()
 
 
-def start(title: str, lang: str, private: bool) -> str:
+def switch_device(track: str, name: str) -> None:
+    with session.lock:
+        recorder = session.recorder
+    if session.phase != "recording" or recorder is None:
+        raise RuntimeError("No recording in progress.")
+    recorder.switch(track, name)
+
+
+def start(title: str, lang: str, private: bool, mic: str | None = None, speakers: str | None = None) -> str:
     with session.lock:
         if session.phase == "recording":
             raise RuntimeError("A meeting is already being recorded.")
@@ -91,7 +101,7 @@ def start(title: str, lang: str, private: bool) -> str:
         check_ready()
         meeting_id = store.create(title, lang, private)
         try:
-            recorder = Recorder(store.meeting_dir(meeting_id))
+            recorder = Recorder(store.meeting_dir(meeting_id), mic, speakers)
         except Exception as e:
             shutil.rmtree(store.meeting_dir(meeting_id))
             log.exception("Could not open audio")
@@ -258,6 +268,9 @@ class Handler(BaseHTTPRequestHandler):
                                     "error": watcher.error if watcher else None})
         if self.path == "/api/settings":
             return self._send(200, {"autostart": desktop.autostart_enabled()})
+        if self.path == "/api/devices":
+            # ponytail: a short-lived PortAudio session on the HTTP thread; fine for listing, never used to record
+            return self._guard(lambda: self._send(200, list_devices()))
         if self.path == "/api/status":
             return self._send(200, session.snapshot())
         if self.path == "/api/meetings":
@@ -287,10 +300,22 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Title must be text.")
                 if not isinstance(private, bool):
                     raise ValueError("private must be true or false.")
-                self._send(200, {"id": start(title.strip()[:200], lang, private)})
+                mic, speakers = body.get("mic"), body.get("speakers")
+                if not all(d is None or isinstance(d, str) for d in (mic, speakers)):
+                    raise ValueError("Device names must be text.")
+                self._send(200, {"id": start(title.strip()[:200], lang, private, mic or None, speakers or None)})
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))
+        if self.path == "/api/devices":
+            def run():
+                body = self._body()
+                track, name = body.get("track"), body.get("name")
+                if track not in ("mic", "system") or not isinstance(name, str) or not name:
+                    raise ValueError("Send track (mic or system) and a device name.")
+                switch_device(track, name)
+                self._send(200, session.snapshot()["devices"])
+            return self._guard(run)
         if self.path == "/api/quit":
             return self._guard(lambda: (quit_app(), self._send(200)))
         if self.path == "/api/settings":

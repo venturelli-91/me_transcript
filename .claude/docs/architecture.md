@@ -118,3 +118,20 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 | Variable | Default |
 |---|---|
 | `GOOGLE_CALENDAR_ICS` | — (secret iCal address; comma-separated for several calendars) |
+
+## Audio device selection (DEV-0014)
+- `capture.list_devices()` lists WASAPI microphones and output devices (via their `[Loopback]` twins).
+- `Recorder(folder, mic, speakers)` opens the named devices (or the defaults). **All PortAudio calls run
+  on one long-lived Recorder thread** fed by a job queue: WASAPI binds streams to the COM apartment of
+  the thread that initialized PortAudio, so opening a stream later from an HTTP thread fails with
+  `-9999 Unanticipated host error`. The same thread pads silence and watches for dead streams.
+- `Recorder.switch(track, name)` opens the new stream first and only then closes the old one; mono/stereo
+  are converted on the fly (`convert_channels`); a different sample rate is refused.
+- PortAudio enumerates devices once per session: a device plugged in mid-recording appears in the next one.
+
+| Method and route | Body | Response |
+|---|---|---|
+| `GET /api/devices` | — | `{mics: [{name, default}], speakers: [{name, default}]}` |
+| `POST /api/devices` | `{track: "mic"\|"system", name}` | devices in use · `409` if not recording, not found or incompatible |
+
+`POST /api/start` also accepts optional `mic` and `speakers` names; `/api/status` reports `devices` in use.

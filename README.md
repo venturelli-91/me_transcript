@@ -93,7 +93,8 @@ Open http://127.0.0.1:8765 and keep the tab open.
 
 1. When Zoom, Teams or the browser starts using the microphone, the "Record this meeting" alert
    appears. Or click the record button.
-2. Choose the language (Portuguese or English). Check **Private meeting: don't send to AI or email**
+2. Check the **Microphone** and **Speakers / headphones** selects (Windows defaults are preselected; you
+   can switch them mid-recording too). Choose the language (Portuguese or English). Check **Private meeting: don't send to AI or email**
    to keep it away from DeepSeek and Gmail.
 3. Take notes during the meeting if you like (optional). The transcript appears every ~30 s.
 4. Click the square to stop. The topic summary is ready in seconds and, if Gmail is

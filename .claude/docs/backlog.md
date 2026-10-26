@@ -106,6 +106,15 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   is shown as text and runs nothing (`tests/test_desktop.py` + a live toast).
 - **Pending:** real test with the CEO's calendar (needs `GOOGLE_CALENDAR_ICS`).
 
+## DEV-0014 — Choose audio devices (F10) · `dev-backend` + `dev-frontend`
+- **Scope:** `capture.list_devices`, `Recorder` with named devices, mid-recording `switch`, channel
+  conversion, dead-stream warning, single PortAudio thread; `/api/devices` GET/POST, `mic`/`speakers`
+  on `/api/start`, `devices` in `/api/status`; selects + refresh in the recorder.
+- **Tests:** `tests/test_capture.py` (channel conversion); live: switch Brio → USB headset mic and
+  headphones → USB speakers while recording, bad name → 409, tracks stay aligned.
+- **Risk:** WASAPI thread affinity (solved with the Recorder thread); devices plugged in mid-recording
+  are only listed in the next recording.
+
 ## Known issues (low severity)
 - "Add to summary" also appears on answers with no useful content ("that wasn't discussed",
   "it's already in the summary"); clicking it wastes a call. Idea: have the model's answer say whether

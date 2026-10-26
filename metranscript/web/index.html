@@ -77,6 +77,12 @@ main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; height: 1
 .lang input:checked + span { font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
 .lang label:has(input:focus-visible) { outline: 2px solid var(--sheet); outline-offset: -2px; }
 .live { display: none; gap: 18px; align-items: center; }
+.devices { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 10px; font-size: 13px; color: #c9d6d0; }
+.deck > div { min-width: 0; }
+.devices label { display: inline-flex; gap: 6px; align-items: center; min-width: 0; max-width: 100%; }
+.devices select { min-width: 0; max-width: min(260px, 100%); background: rgba(255,255,255,.08); color: var(--sheet); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 4px 6px; }
+.devices option { color: var(--ink); background: var(--sheet); }
+.devices .link { color: #c9d6d0; margin: 0; }
 .deck.rec .live, .deck.busy .live { display: flex; }
 .deck.rec .setup, .deck.busy .setup { display: none; }
 #clock { font-size: 40px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
@@ -161,6 +167,8 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
   .deck { grid-template-columns: auto 1fr; padding: 14px 16px; gap: 14px; }
   #state { grid-column: 1 / -1; text-align: left; }
   .meter { grid-template-columns: 52px 1fr; }
+  .devices label { flex: 1 1 100%; flex-wrap: wrap; }
+  .devices select { flex: 1 1 auto; max-width: 100%; }
   .split { grid-template-columns: 1fr; }
   .pane { border-right: 0; border-bottom: 1px solid var(--line); min-height: 50vh; }
   .doc header, .reading, .toolbar { padding-left: 16px; padding-right: 16px; }
@@ -211,6 +219,11 @@ textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle
           <div class="meter"><span>Me</span><i><b id="lv-mic"></b></i></div>
           <div class="meter others"><span>Others</span><i><b id="lv-system"></b></i></div>
         </div>
+      </div>
+      <div class="devices">
+        <label>Microphone <select id="dev-mic"></select></label>
+        <label>Speakers / headphones <select id="dev-system"></select></label>
+        <button type="button" class="link" id="dev-refresh">Refresh devices</button>
       </div>
     </div>
     <div id="state" aria-live="polite">Ready to record</div>
@@ -512,7 +525,8 @@ async function startRec(reminder) {
   if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
   const lang = document.querySelector('input[name="lang"]:checked').value;
   try {
-    const body = { title: $("#title").value, lang, private: $("#private").checked, ...(reminder ? { reminder } : {}) };
+    const body = { title: $("#title").value, lang, private: $("#private").checked,
+                   mic: $("#dev-mic").value, speakers: $("#dev-system").value, ...(reminder ? { reminder } : {}) };
     const { id } = await api("/api/start", { method: "POST", body: JSON.stringify(body) });
     $("#title").value = "";
     $("#private").checked = false;
@@ -545,8 +559,13 @@ async function refresh() {
   $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
   if (rec && prevPhase !== "recording" && openId !== status.meeting_id) await openMeeting_(status.meeting_id);
   const current = openMeeting?.id === status.meeting_id ? openMeeting : null;
+  for (const [track, name] of Object.entries(status.devices || {})) {
+    const sel = $(`#dev-${track}`);
+    if (document.activeElement !== sel && sel.value !== name) sel.value = name;
+  }
   $("#now").textContent = current ? `${current.title || "Untitled meeting"}, in ${LANG[current.lang]}` : "";
   if (prevPhase !== p) notice = null;
+  if (prevPhase === "recording" && !rec) loadDevices();
   stateEl.innerHTML = notice ?? (rec ? (status.error ? `<span class="error">${esc(status.error)}</span>` : "Recording. Click the square to stop.")
     : p === "transcribing" ? "Finishing the transcript…"
     : p === "enhancing" ? "Writing the summary…"
@@ -584,6 +603,40 @@ function showDetected() {
 content.replaceChildren($("#tpl-blank").content.cloneNode(true));
 loadList();
 (async function loop() { if (closed) return; await poll(); setTimeout(loop, 1000); })();
+
+function fillDevices(select, list, keepChoice) {
+  const keep = keepChoice ? select.value : "";
+  select.replaceChildren(...list.map(d => {
+    const o = document.createElement("option");
+    o.value = d.name;
+    o.textContent = d.default ? `${d.name} (default)` : d.name;
+    o.selected = keep ? d.name === keep : d.default;
+    return o;
+  }));
+}
+// Every recording starts from the Windows defaults; only "Refresh devices" keeps the current pick.
+async function loadDevices(keepChoice = false) {
+  try {
+    const d = await api("/api/devices");
+    fillDevices($("#dev-mic"), d.mics, keepChoice);
+    fillDevices($("#dev-system"), d.speakers, keepChoice);
+  } catch (err) { showError(`Could not list audio devices: ${err.message}`); }
+}
+loadDevices();
+$("#dev-refresh").addEventListener("click", () => loadDevices(true));
+for (const track of ["mic", "system"]) {
+  $(`#dev-${track}`).addEventListener("change", async e => {
+    if (status.phase !== "recording") return;
+    try {
+      await api("/api/devices", { method: "POST", body: JSON.stringify({ track, name: e.target.value }) });
+      notice = `Now recording ${track === "mic" ? "your voice" : "the call"} from ${esc(e.target.value)}.`;
+      stateEl.innerHTML = notice;
+    } catch (err) {
+      showError(err.message);
+      e.target.value = status.devices?.[track] ?? e.target.value;
+    }
+  });
+}
 
 const timeOf = iso => new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 async function loadAgenda() {

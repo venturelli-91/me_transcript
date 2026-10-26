@@ -78,3 +78,15 @@ CEO decision (2026-10-26): reminders before meetings, read from Google Calendar.
 - [ ] "Upcoming meetings" in the sidebar lists the next linked meetings (24 h).
 - [ ] "Run in background and start with Windows" toggle and a "Quit MeTranscript" button on the page.
 - [ ] Without `GOOGLE_CALENDAR_ICS` in `.env`, reminders are off with a hint in the sidebar.
+
+## F10 — Choose audio devices
+CEO decision (2026-10-26): after a recording silently used the webcam microphone (Windows switched
+the default when the headset connection dropped), the user can pick devices. Nothing is remembered.
+
+- [ ] Recorder shows **Microphone** and **Speakers / headphones** selects with the current WASAPI
+      devices; the Windows default is marked "(default)" and preselected every time.
+- [ ] "Refresh devices" re-reads the list.
+- [ ] Devices can be switched **during** a recording without stopping it; the track keeps one clock
+      (the gap is padded with silence) and the transcript continues as "Me"/"Others".
+- [ ] A device with a different sample rate than the running recording is refused with a clear message.
+- [ ] If a device stops delivering audio mid-recording, the status line asks to pick another one.
