@@ -35,6 +35,21 @@ class AudioStoreTest(ServerCase):
         self.assertIn("new", (folder / "transcript.md").read_text(encoding="utf-8"))
         self.assertIn("old", (folder / "transcript.previous.md").read_text(encoding="utf-8"))
 
+    def test_an_empty_re_transcription_never_replaces_the_transcript(self):
+        mid = self.meeting()
+        store.append_segments(mid, [{"t": 1, "who": "Me", "text": "keep me"}])
+        with self.assertRaises(RuntimeError):
+            store.replace_transcript(mid, [])
+        self.assertIn("keep me", store.load(mid)["transcript"])
+
+    def test_a_locked_audio_file_does_not_stop_the_app_from_starting(self):
+        mid = self.meeting()
+        f = store.meeting_dir(mid) / "mic.opus"
+        f.write_bytes(b"x")
+        os.utime(f, (0, 0))
+        with mock.patch.object(Path, "unlink", side_effect=PermissionError("in use")):
+            store.expire_audio()
+
     def test_old_audio_expires_and_recent_audio_stays(self):
         old, recent = self.meeting(), store.create("Other", "en")
         for mid, age_days in ((old, 31), (recent, 5)):

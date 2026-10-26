@@ -1,4 +1,5 @@
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -85,6 +86,61 @@ class MaskPatternsTest(PrivacyCase):
 
     def test_unknown_placeholders_are_left_as_they_are_on_restore(self):
         self.assertEqual(privacy.Mask().restore("see [TERM_9] and [00:01:02]"), "see [TERM_9] and [00:01:02]")
+
+
+class MaskBypassTest(PrivacyCase):
+    def test_multi_word_term_matches_across_spaces_newlines_hyphens_and_a_segment_break(self):
+        mask = self.mask("Banco Alfa")
+        for text in ("Banco  Alfa", "Banco\nAlfa", "banco-alfa", "Banco\n[00:01:02] **Me:** Alfa", "BANCO_ALFA"):
+            self.assertEqual(mask.apply(f"see {text} now"), "see [TERM_1] now", text)
+
+    def test_invisible_and_compatibility_characters_do_not_hide_a_term(self):
+        mask = self.mask("Acme", "José")
+        for text in ("Ac​me", "Ac­me", "Ａｃｍｅ", "ACME‍"):
+            self.assertEqual(mask.apply(f"x {text} y").replace("‍", ""), "x [TERM_1] y", repr(text))
+        self.assertEqual(mask.apply("José and José and Jose"), "[TERM_2] and [TERM_2] and [TERM_2]")
+
+    def test_invisible_characters_do_not_hide_an_email(self):
+        masked = privacy.Mask().apply("mail ma​ria@acme.com now")
+        self.assertEqual(masked, "mail [EMAIL_1] now")
+
+    def test_a_byte_order_mark_in_the_terms_file_does_not_disable_the_first_term(self):
+        (privacy.ROOT / "sensitive-terms.txt").write_bytes("﻿Acme\nFalcon\n".encode("utf-8"))
+        self.assertEqual(privacy.terms(), ["Acme", "Falcon"])
+
+    def test_short_misspellings_and_sound_alike_first_letters_are_caught(self):
+        mask = self.mask("Acme", "Cristiano")
+        self.assertEqual(mask.apply("Akme called Kristiano"), "[TERM_1] called [TERM_2]")
+        self.assertEqual(mask.apply("a cure is near"), "a cure is near")
+
+    def test_text_that_already_looks_like_a_code_survives_a_round_trip(self):
+        mask = self.mask("Acme")
+        text = "Acme wrote [TERM_1] and [EMAIL_7]"
+        masked = mask.apply(text)
+        self.assertEqual(mask.restore(masked), text)
+        self.assertEqual(masked.count("[TERM_1]"), 1)
+
+    def test_a_term_that_starts_with_a_hash_is_kept_and_only_hash_space_is_a_comment(self):
+        self.assertEqual(privacy.save_terms("#ProjectX\n# a note\nAcme"), ["#ProjectX", "Acme"])
+
+    def test_very_short_terms_are_rejected(self):
+        with self.assertRaises(ValueError):
+            privacy.save_terms("ab")
+
+
+class MaskSpeedTest(PrivacyCase):
+    def timed(self, mask, text):
+        start = time.perf_counter()
+        mask.apply(text)
+        return time.perf_counter() - start
+
+    def test_many_matches_stay_fast(self):
+        self.assertLess(self.timed(self.mask("Acme"), "Acme said so. " * 30000), 5)
+
+    def test_long_runs_without_a_match_stay_fast(self):
+        mask = self.mask("Acme", "Falcon", "Cristiano")
+        for text in ("a" * 300_000, "1," * 150_000, "a." * 150_000, "x" * 300_000 + "@", "9" * 300_000):
+            self.assertLess(self.timed(mask, text), 5, text[:6])
 
 
 if __name__ == "__main__":

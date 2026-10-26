@@ -205,6 +205,8 @@ def set_email_status(meeting_id: str, error: str | None = None) -> None:
 
 def replace_transcript(meeting_id: str, segments: list[dict]) -> None:
     folder = meeting_dir(meeting_id)
+    if not segments:
+        raise RuntimeError("Re-transcription found no speech; the current transcript was kept.")
     with WRITE_LOCK:
         if (folder / "transcript.md").exists():
             os.replace(folder / "transcript.md", folder / "transcript.previous.md")
@@ -215,5 +217,8 @@ def expire_audio(days: int = AUDIO_KEEP_DAYS) -> None:
     """Compressed audio is only kept for re-transcribing; a WAV (failed transcription) is never touched."""
     cutoff = time.time() - days * 86400
     for audio in ROOT.glob("*/*.opus") if ROOT.exists() else []:
-        if audio.stat().st_mtime < cutoff:
-            audio.unlink()
+        try:
+            if audio.stat().st_mtime < cutoff:
+                audio.unlink()
+        except OSError:
+            pass  # in use by a player or antivirus; the next start tries again

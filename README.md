@@ -99,13 +99,15 @@ Everything that goes to DeepSeek (summary and chat) is cleaned first, always, wi
 - Emails, links, phone and ID numbers (CPF, CNPJ, cards), money amounts and API keys are replaced by codes
   like `[EMAIL_1]` or `[AMOUNT_1]` automatically.
 - Names of clients, people and projects are replaced when you list them in Settings → **(04) Protected
-  terms** (one per line; the list lives in `sensitive-terms.txt`, which is not in git). Matching ignores
-  case and accents, and a single word that Whisper misspells ("Falkon" for "Falcon") is caught too.
+  terms** (one per line, 3+ characters, a line starting with `# ` is a comment; the list lives in
+  `sensitive-terms.txt`, which is not in git). Matching ignores case, accents and invisible characters, finds a
+  name split by a line break, and catches a single word that Whisper misspells ("Falkon" for "Falcon").
 - The answer comes back with the real names put back, on your computer. Each meeting shows how many
   items were hidden.
 
 Limits: only what is on your list or matches those patterns is hidden, and Whisper can mishear a
-multi-word name. A plan described in ordinary words is not detected. The Gmail copy of the summary uses the
+multi-word name. Letters borrowed from another alphabet (a Cyrillic "а" in "Acme") are not recognized.
+A plan described in ordinary words is not detected. The Gmail copy of the summary uses the
 real names because it goes to your own inbox.
 
 ### Models (`models/` folder)

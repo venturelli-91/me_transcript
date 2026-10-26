@@ -162,6 +162,10 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
   `[LINK_n]`, `[AMOUNT_n]`, `[ID_n]`, `[SECRET_n]`) and `restore()` puts the originals back in the reply and
   summary. Patterns run first so a term inside an email hides the whole email; then listed terms (longest
   first, case and accent insensitive, whole words) and single-word fuzzy matches (`difflib`, ratio 0.8).
+- Review hardening (DEV-0033): matching runs on a folded copy (NFKD, no accents, no invisible characters, positions
+  mapped back), multi-word terms allow any separator or a transcript line prefix between words, every pattern repeat
+  is bounded and overlap uses a byte map so a 300k-character transcript stays fast, text that already looks like a
+  code is hidden too, terms need 3+ characters.
 - Terms live in `sensitive-terms.txt` (git-ignored); `GET/PUT /api/privacy` with `{terms}`.
 - `store.set_protected()` keeps the biggest count in `meta.protected`; the article shows it.
 - The email to the user's own Gmail is not masked on purpose.
