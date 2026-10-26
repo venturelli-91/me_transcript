@@ -9,6 +9,7 @@ from pathlib import Path
 
 from ata import store
 from ata.capture import Recorder
+from ata.transcribe import Transcriber, check_ready
 
 log = logging.getLogger("ata")
 INDEX = Path(__file__).parent / "web" / "index.html"
@@ -26,6 +27,7 @@ class Session:
         self.meeting_id: str | None = None
         self.lang = "pt"
         self.recorder: Recorder | None = None
+        self.transcriber: Transcriber | None = None
         self.segments: list[dict] = []
         self.error: str | None = None
 
@@ -39,7 +41,7 @@ class Session:
                 # ponytail: full segment list every poll, fine for a few hours of meeting
                 "segments": list(self.segments),
                 "detected": None,
-                "error": self.error,
+                "error": self.error or (self.transcriber.error if self.transcriber else None),
             }
 
 
@@ -53,6 +55,7 @@ def start(title: str, lang: str) -> str:
             raise RuntimeError("Já existe uma reunião sendo gravada.")
         if session.phase in BUSY:
             raise RuntimeError("A reunião anterior ainda está sendo processada. Aguarde a ata ficar pronta.")
+        check_ready()
         meeting_id = store.create(title, lang)
         try:
             recorder = Recorder(store.meeting_dir(meeting_id))
@@ -62,7 +65,16 @@ def start(title: str, lang: str) -> str:
             raise RuntimeError(f"Não foi possível abrir o microfone ou o áudio do sistema: {e}") from None
         session.phase, session.meeting_id, session.lang = "recording", meeting_id, lang
         session.recorder, session.segments, session.error = recorder, [], None
+        # 1 s margin: the newest audio may still be in the WAV writer's buffer
+        session.transcriber = Transcriber(store.meeting_dir(meeting_id), lang, lambda: recorder.elapsed() - 1.0,
+                                          lambda segs: _add_segments(meeting_id, segs))
     return meeting_id
+
+
+def _add_segments(meeting_id: str, segments: list[dict]) -> None:
+    store.append_segments(meeting_id, segments)
+    with session.lock:
+        session.segments.extend(segments)
 
 
 def stop() -> None:
@@ -70,19 +82,20 @@ def stop() -> None:
         if session.phase != "recording":
             raise RuntimeError("Nenhuma gravação em andamento.")
         session.phase = "transcribing"
-        meeting_id, recorder = session.meeting_id, session.recorder
-        session.recorder = None
-    threading.Thread(target=_finalize, args=(meeting_id, recorder), daemon=True).start()
+        meeting_id, recorder, transcriber = session.meeting_id, session.recorder, session.transcriber
+        session.recorder = session.transcriber = None
+    threading.Thread(target=_finalize, args=(meeting_id, recorder, transcriber), daemon=True).start()
 
 
-def _finalize(meeting_id: str, recorder: Recorder) -> None:
+def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> None:
     try:
-        recorder.stop()
+        end = recorder.stop()
         store.finish(meeting_id)
+        transcriber.finish(end)
         phase, error = "done", None
     except Exception as e:
         log.exception("Falha ao finalizar %s", meeting_id)
-        phase, error = "error", f"Não foi possível finalizar a reunião: {e}"
+        phase, error = "error", f"A transcrição não terminou ({e}). O áudio e as notas estão salvos na pasta da reunião."
     with session.lock:
         session.phase, session.error = phase, error
 

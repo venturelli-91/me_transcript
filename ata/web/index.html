@@ -372,10 +372,10 @@ async function refresh() {
   if (rec) $("#clock").textContent = clock(status.elapsed || 0);
   $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
   $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
-  if (rec && !openId) await openMeeting_(status.meeting_id);
+  if (rec && prevPhase !== "recording" && openId !== status.meeting_id) await openMeeting_(status.meeting_id);
   const current = openMeeting?.id === status.meeting_id ? openMeeting : null;
   $("#now").textContent = current ? `${current.title || "Reunião sem título"}, em ${LANG[current.lang]}` : "";
-  stateEl.innerHTML = rec ? "Gravando. Clique no quadrado para parar."
+  stateEl.innerHTML = rec ? (status.error ? `<span class="error">${esc(status.error)}</span>` : "Gravando. Clique no quadrado para parar.")
     : p === "transcribing" ? "Terminando a transcrição…"
     : p === "enhancing" ? "Escrevendo a ata…"
     : p === "error" ? `<span class="error">${esc(status.error || "Algo deu errado.")}</span>`

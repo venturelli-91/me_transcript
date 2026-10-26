@@ -39,7 +39,9 @@ ponytail: uma sessão global — o app é de uma pessoa, uma reunião por vez.
 ## Fluxo de uma reunião
 1. `POST /api/start` → `store.create()` → `capture.start()` → `transcribe` inicia thread.
 2. A thread de transcrição, a cada 30 s, pega o trecho novo de cada WAV
-   (`ffmpeg -ss/-t` → 16 kHz mono) e roda `whisper-cli -l <lang> -oj`. Os segmentos com
+   (`ffmpeg -ss/-t` → 16 kHz mono) e passa pelo VAD Silero (`whisper-vad-speech-segments`); com ≥ 0,5 s de voz, roda
+   `whisper-cli -l <lang> -ot <início da voz> -oj` na janela (GPU via Vulkan), em prioridade
+   baixa do Windows. Os segmentos com
    tempo absoluto vão para `Session.segments` e para `transcript.md`.
 3. `POST /api/stop` → `capture.stop()` → transcreve o resto → `enhance.generate()` →
    `ata.md` → `phase = done`.
@@ -69,6 +71,8 @@ Segmento: `{"t": 83.2, "who": "Eu" | "Outros", "text": "..."}` (`t` em segundos 
 | Variável | Padrão |
 |---|---|
 | `DEEPSEEK_API_KEY` | — (obrigatória para a ata; lida do ambiente ou de `.env`) |
-| `ATA_WHISPER` | `bin/whisper-cli.exe` |
-| `ATA_MODEL` | `models/ggml-large-v3-turbo.bin` |
+| `ATA_WHISPER` | `bin/vulkan/whisper-cli.exe` (build Vulkan local) |
+| `ATA_THREADS` | `4` |
+| `ATA_MODEL` | `models/ggml-large-v3-turbo-q5_0.bin` |
+| `ATA_VAD` | `models/ggml-silero-v5.1.2.bin` |
 | `ATA_PORT` | `8765` |
