@@ -19,7 +19,7 @@ MAX_TRANSCRIPT = 350_000
 def api_key() -> str:
     key = env("DEEPSEEK_API_KEY")
     if not key:
-        raise RuntimeError("Set DEEPSEEK_API_KEY in the .env file to use summaries.")
+        raise RuntimeError("Add your DeepSeek key in Settings to use summaries.")
     return key
 
 

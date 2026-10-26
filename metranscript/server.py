@@ -7,10 +7,11 @@ import shutil
 import sys
 import threading
 import time
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metranscript import agenda, desktop, detect, enhance, mail, store
+from metranscript import agenda, desktop, detect, enhance, mail, settings, store
 from metranscript.capture import Recorder, list_devices
 from metranscript.transcribe import Transcriber, check_ready
 
@@ -230,6 +231,32 @@ def delete_meeting(meeting_id: str) -> None:
     store.delete(meeting_id)
 
 
+def save_config(updates: dict) -> dict:
+    """Validate everything first, then write once; secret values never leave this function."""
+    clean = {}
+    for name, value in updates.items():
+        if name not in settings.FIELDS:
+            raise ValueError("Unknown setting.")
+        if value is not None and not isinstance(value, str):
+            raise ValueError("Each value must be text or null.")
+        if os.environ.get(name):
+            raise RuntimeError(f"{name} is set as a Windows environment variable, which overrides this page.")
+        clean[name] = None if value is None else settings.validate(name, value)
+    if clean:
+        try:
+            settings.write_env(clean)
+        except OSError:
+            raise RuntimeError("Could not save the .env file.") from None
+    if "GOOGLE_CALENDAR_ICS" in clean and watcher:
+        watcher.last_fetch = None  # re-read the calendar on its next pass instead of in up to 5 minutes
+    return settings.status()
+
+
+def send_test_email() -> None:
+    mail.send({"title": "MeTranscript test email", "started_at": datetime.now().isoformat(timespec="seconds"),
+               "summary": "If you can read this, MeTranscript can email your summaries.", "transcript": ""})
+
+
 def undo(meeting_id: str) -> dict:
     store.undo_summary(meeting_id)
     return load(meeting_id)
@@ -286,6 +313,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/devices":
             # ponytail: a short-lived PortAudio session on the HTTP thread; fine for listing, never used to record
             return self._guard(lambda: self._send(200, list_devices()))
+        if self.path == "/api/config":
+            return self._send(200, settings.status())
         if self.path == "/api/status":
             return self._send(200, session.snapshot())
         if self.path == "/api/meetings":
@@ -337,6 +366,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(run)
         if self.path == "/api/quit":
             return self._guard(lambda: (quit_app(), self._send(200)))
+        if self.path == "/api/config/test-email":
+            return self._guard(lambda: (send_test_email(), self._send(200)))
         if self.path == "/api/settings":
             def run():
                 enabled = self._body().get("autostart")
@@ -375,6 +406,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self) -> None:
         if not self._trusted(write=True):
             return
+        if self.path == "/api/config":
+            return self._guard(lambda: self._send(200, save_config(self._body())))
         m = MEETING_RE.fullmatch(self.path)
         if m and m.group(2) == "/title":
             def run():

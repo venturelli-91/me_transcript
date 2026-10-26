@@ -119,7 +119,7 @@ class Watcher:
             self.error = None
         except Exception as e:
             log.warning("Could not read the calendar: %s", type(e).__name__)  # the message may contain the secret URL
-            self.error = "Could not read the calendar. Check GOOGLE_CALENDAR_ICS and your connection."
+            self.error = "Could not read the calendar. Check the calendar address in Settings and your connection."
 
     def _tick(self) -> None:
         now = datetime.now().astimezone()

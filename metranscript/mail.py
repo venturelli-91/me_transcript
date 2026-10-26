@@ -27,7 +27,7 @@ def build(meeting: dict, address: str) -> EmailMessage:
 def send(meeting: dict) -> None:
     address, password = env("GMAIL_ADDRESS"), env("GMAIL_APP_PASSWORD")
     if not (address and password):
-        raise RuntimeError("Email not configured: set GMAIL_ADDRESS and GMAIL_APP_PASSWORD in .env.")
+        raise RuntimeError("Email not configured: add your Gmail address and app password in Settings.")
     try:
         # smtplib's default context skips certificate checks; without this the app password could go to an impostor.
         with smtplib.SMTP_SSL(HOST, PORT, timeout=30, context=ssl.create_default_context()) as smtp:
