@@ -52,12 +52,22 @@ def _meta(folder: Path) -> dict:
     return json.loads((folder / "meta.json").read_text(encoding="utf-8"))
 
 
-# Same rule as splitSummary() in the page: the summary prompt ends with a "Next steps" section.
+# The summary prompt ends with a "Next steps" section; the page shows it as its own block.
 NEXT_STEPS_RE = re.compile(r"^##[ \t]+(next steps|próximos passos)[ \t]*$", re.I | re.M)
 
 
 def has_next_steps(summary: str) -> bool:
     return bool(NEXT_STEPS_RE.search(summary))
+
+
+def split_summary(md: str) -> tuple[str, str | None]:
+    """(summary without its last Next-steps section, that section's body or None if absent/empty)."""
+    last = None
+    for last in NEXT_STEPS_RE.finditer(md):
+        pass
+    if last is None:
+        return md, None
+    return md[:last.start()].strip(), md[last.end():].strip() or None
 
 
 def list_meetings() -> list[dict]:
@@ -83,12 +93,16 @@ def list_meetings() -> list[dict]:
 
 def load(meeting_id: str) -> dict:
     folder = meeting_dir(meeting_id)
+    summary = _read(folder, "summary.md")
+    summary_body, next_steps = split_summary(summary)
     return {
         "id": meeting_id,
         **_meta(folder),
         "notes": _read(folder, "notes.md"),
         "transcript": _read(folder, "transcript.md"),
-        "summary": _read(folder, "summary.md"),
+        "summary": summary,
+        "summary_body": summary_body,
+        "next_steps": next_steps,
         "chat": _read_json(folder, "chat.json"),
         "can_undo": bool(_read_json(folder, "summary-history.json")),
     }

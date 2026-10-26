@@ -140,7 +140,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - One `metranscript/web/index.html`, hash-routed: `#/` (Index) and `#/m/<id>` (Meeting article, or the
   live view when that meeting is being recorded). Unknown ids return to `#/` with a sticky error.
 - `/api/meetings` also returns `ended_at`, `private`, `app` and `has_next_steps`
-  (`store.NEXT_STEPS_RE`, mirrored in the page as `NEXT_STEPS_RE` and used by `splitSummary()`).
+  (`store.NEXT_STEPS_RE`; `store.load()` also returns `summary_body` and `next_steps`, split by `store.split_summary()`).
 - `POST /api/start` accepts an optional `app` (from the detected-meeting banner or a calendar event).
 - The recording strip is driven by the 1 s `/api/status` poll and pinned on every route; when the
   recording finishes, the page opens that meeting's article.

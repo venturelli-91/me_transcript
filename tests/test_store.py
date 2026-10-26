@@ -103,6 +103,22 @@ class StoreTest(unittest.TestCase):
         for text in ["### Next steps", "## Next steps and risks", ""]:
             self.assertFalse(store.has_next_steps(text), text)
 
+    def test_split_summary(self):
+        self.assertEqual(store.split_summary("## A\n- x\n\n## Next steps\n- Me: y"), ("## A\n- x", "- Me: y"))
+        self.assertEqual(store.split_summary("## A\n- x"), ("## A\n- x", None))
+        self.assertEqual(store.split_summary("## A\n### Next steps\n- z"), ("## A\n### Next steps\n- z", None))
+        self.assertEqual(store.split_summary("## Topic\n## próximos passos  \n- w"), ("## Topic", "- w"))
+        self.assertEqual(store.split_summary("## A\n- x\n## Next steps"), ("## A\n- x", None))
+        self.assertEqual(store.split_summary("## Next steps\n- a\n## B\n## Next steps\n- c")[1], "- c")
+        self.assertEqual(store.split_summary(""), ("", None))
+
+    def test_load_returns_the_split_summary(self):
+        mid = store.create("", "pt")
+        store.save_summary(mid, "## Topic\n- a\n\n## Next steps\n- Me: x")
+        m = store.load(mid)
+        self.assertEqual((m["summary_body"], m["next_steps"]), ("## Topic\n- a", "- Me: x"))
+        self.assertIn("## Next steps", m["summary"])
+
     def test_old_meta_without_app_or_private(self):
         mid = store.create("Old", "en")
         folder = store.meeting_dir(mid)

@@ -277,7 +277,6 @@ const $ = (s, el = document) => el.querySelector(s);
 const view = $("#view"), statusEl = $("#status");
 const BUSY = ["recording", "transcribing", "enhancing"];
 const LANG = { pt: "Portuguese", en: "English" };
-const NEXT_STEPS_RE = /^##[ \t]+(next steps|próximos passos)[ \t]*$/im;  // same rule as store.NEXT_STEPS_RE
 
 let status = { phase: "idle", levels: { mic: 0, system: 0 } };
 let meetings = [], numbers = new Map(), filter = "all";
@@ -313,15 +312,6 @@ const dateOnly = iso => new Date(iso).toLocaleDateString("en-US", { month: "shor
 const timeOf = iso => new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
 const duration = m => m.ended_at ? `${Math.max(1, Math.round((new Date(m.ended_at) - new Date(m.started_at)) / 60000))} min` : "";
 const titleOf = m => m.title || "Untitled meeting";
-
-function splitSummary(md) {
-  const re = new RegExp(NEXT_STEPS_RE.source, "gim");
-  let last = null, m;
-  while ((m = re.exec(md))) last = m;
-  if (!last) return { summary: md, nextSteps: null };
-  const after = md.slice(last.index + last[0].length).trim();
-  return { summary: md.slice(0, last.index).trim(), nextSteps: after || null };
-}
 
 // The 1 s poll never wipes a message: it stays until the user acts or the phase changes.
 function showError(msg) { notice = `<span class="error">${esc(msg)}</span>`; statusEl.innerHTML = notice; }
@@ -408,7 +398,7 @@ function renderMeeting() {
   const m = openMeeting;
   const processing = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === m.id;
   if (status.phase === "recording" && status.meeting_id === m.id) return renderLive();
-  const { summary, nextSteps } = splitSummary(m.summary || "");
+  const summary = m.summary_body, nextSteps = m.next_steps;
   const off = processing || waiting === m.id || m.private ? "disabled" : "";
   const meta = [when(m.started_at), duration(m), m.app, LANG[m.lang], mailStatus(m)].filter(Boolean);
   view.innerHTML = `
