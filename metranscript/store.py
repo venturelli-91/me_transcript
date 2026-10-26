@@ -178,6 +178,15 @@ def delete(meeting_id: str) -> None:
         shutil.rmtree(meeting_dir(meeting_id))
 
 
+def set_protected(meeting_id: str, count: int) -> None:
+    """How many names, contacts and values were hidden from the AI; keeps the biggest count seen."""
+    folder = meeting_dir(meeting_id)
+    with WRITE_LOCK:
+        meta = _meta(folder)
+        meta["protected"] = max(count, meta.get("protected", 0))
+        _write_meta(folder, meta)
+
+
 def set_email_status(meeting_id: str, error: str | None = None) -> None:
     folder = meeting_dir(meeting_id)
     with WRITE_LOCK:

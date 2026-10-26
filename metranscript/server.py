@@ -11,7 +11,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metranscript import agenda, desktop, detect, enhance, mail, settings, store
+from metranscript import agenda, desktop, detect, enhance, mail, privacy, settings, store
 from metranscript.capture import Recorder, list_devices
 from metranscript.transcribe import Transcriber, check_ready
 
@@ -151,7 +151,7 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
         return _set_phase("done")
     _set_phase("enhancing")
     try:
-        store.save_summary(meeting_id, enhance.summarize(meeting))
+        store.save_summary(meeting_id, _summary(meeting_id, meeting))
     except Exception as e:
         log.exception("Could not summarize %s", meeting_id)
         return _set_phase("error", f"Summary not generated: {e} The transcript is saved; use Generate summary.")
@@ -187,8 +187,15 @@ def _sendable(meeting_id: str) -> dict:
     return meeting
 
 
+def _summary(meeting_id: str, meeting: dict) -> str:
+    mask = privacy.Mask()
+    text = enhance.summarize(meeting, mask)
+    store.set_protected(meeting_id, len(mask))
+    return text
+
+
 def summarize(meeting_id: str) -> dict:
-    store.save_summary(meeting_id, enhance.summarize(_sendable(meeting_id)))
+    store.save_summary(meeting_id, _summary(meeting_id, _sendable(meeting_id)))
     _auto_email(meeting_id)
     return load(meeting_id)
 
@@ -211,7 +218,9 @@ def load(meeting_id: str) -> dict:
 
 
 def chat(meeting_id: str, message: str) -> dict:
-    result = enhance.chat(_sendable(meeting_id), message)
+    mask = privacy.Mask()
+    result = enhance.chat(_sendable(meeting_id), message, mask)
+    store.set_protected(meeting_id, len(mask))
     if result["summary"]:
         store.save_summary(meeting_id, result["summary"])
     store.append_chat(meeting_id, {"role": "user", "content": message},
@@ -315,6 +324,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(lambda: self._send(200, list_devices()))
         if self.path == "/api/config":
             return self._send(200, settings.status())
+        if self.path == "/api/privacy":
+            return self._send(200, {"terms": privacy.terms()})
         if self.path == "/api/status":
             return self._send(200, session.snapshot())
         if self.path == "/api/meetings":
@@ -408,6 +419,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/config":
             return self._guard(lambda: self._send(200, save_config(self._body())))
+        if self.path == "/api/privacy":
+            def run():
+                text = self._body().get("terms")
+                if not isinstance(text, str):
+                    raise ValueError("terms must be text, one term per line.")
+                self._send(200, {"terms": privacy.save_terms(text)})
+            return self._guard(run)
         m = MEETING_RE.fullmatch(self.path)
         if m and m.group(2) == "/title":
             def run():

@@ -4,6 +4,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from metranscript.privacy import Mask
 from metranscript.settings import env
 
 SUMMARY_PROMPT = Path(__file__).parent / "prompt.md"
@@ -23,10 +24,10 @@ def api_key() -> str:
     return key
 
 
-def meeting_context(meeting: dict) -> str:
+def meeting_context(meeting: dict, mask: Mask) -> str:
     if len(meeting["transcript"]) > MAX_TRANSCRIPT:
         raise RuntimeError("The transcript is too long for DeepSeek (more than ~5 h of meeting).")
-    return (
+    return mask.apply(
         f"Title: {meeting['title'] or 'untitled'}\n"
         f"Date: {meeting['started_at']}\n"
         f"Language: {LANG_NAMES[meeting['lang']]}\n\n"
@@ -35,28 +36,29 @@ def meeting_context(meeting: dict) -> str:
     )
 
 
-def summary_messages(meeting: dict) -> list[dict]:
+def summary_messages(meeting: dict, mask: Mask) -> list[dict]:
     return [
         {"role": "system", "content": SUMMARY_PROMPT.read_text(encoding="utf-8")},
-        {"role": "user", "content": meeting_context(meeting)},
+        {"role": "user", "content": meeting_context(meeting, mask)},
     ]
 
 
-def chat_messages(meeting: dict, message: str) -> list[dict]:
+def chat_messages(meeting: dict, message: str, mask: Mask) -> list[dict]:
     # ponytail: only the last HISTORY turns go to the model; summarize old turns if long chats lose context
     # Past replies go back in the same JSON shape the model must answer with, or it drifts to plain text.
     history = [
-        {"role": "assistant", "content": json.dumps({"reply": m["content"], "summary": None}, ensure_ascii=False)}
-        if m["role"] == "assistant" else {"role": "user", "content": m["content"]}
+        {"role": "assistant", "content": json.dumps({"reply": mask.apply(m["content"]), "summary": None}, ensure_ascii=False)}
+        if m["role"] == "assistant" else {"role": "user", "content": mask.apply(m["content"])}
         for m in meeting["chat"][-HISTORY:]
     ]
-    context = f"{meeting_context(meeting)}\n\n<current_summary>\n{meeting['summary'].strip() or '(not generated yet)'}\n</current_summary>"
+    summary = mask.apply(meeting["summary"].strip()) or "(not generated yet)"
+    context = f"{meeting_context(meeting, mask)}\n\n<current_summary>\n{summary}\n</current_summary>"
     return [
         {"role": "system", "content": CHAT_PROMPT.read_text(encoding="utf-8")},
         {"role": "user", "content": context},
         {"role": "assistant", "content": '{"reply": "Ask a question or request a change to the summary.", "summary": null}'},
         *history,
-        {"role": "user", "content": message},
+        {"role": "user", "content": mask.apply(message)},
     ]
 
 
@@ -84,12 +86,12 @@ def _complete(messages: list[dict], json_mode: bool = False) -> str:
         raise RuntimeError("DeepSeek replied in an unexpected format.") from None
 
 
-def summarize(meeting: dict) -> str:
-    return _complete(summary_messages(meeting))
+def summarize(meeting: dict, mask: Mask) -> str:
+    return mask.restore(_complete(summary_messages(meeting, mask)))
 
 
-def chat(meeting: dict, message: str) -> dict:
-    raw = _complete(chat_messages(meeting, message), json_mode=True)
+def chat(meeting: dict, message: str, mask: Mask) -> dict:
+    raw = _complete(chat_messages(meeting, message, mask), json_mode=True)
     try:
         data = json.loads(raw)
         reply, summary = data["reply"], data.get("summary")
@@ -97,4 +99,5 @@ def chat(meeting: dict, message: str) -> dict:
         raise RuntimeError("DeepSeek replied in an unexpected format.") from None
     if not isinstance(reply, str) or not (summary is None or isinstance(summary, str)):
         raise RuntimeError("DeepSeek replied in an unexpected format.")
-    return {"reply": reply.strip(), "summary": summary.strip() if summary and summary.strip() else None}
+    return {"reply": mask.restore(reply.strip()),
+            "summary": mask.restore(summary.strip()) if summary and summary.strip() else None}
