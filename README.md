@@ -6,6 +6,32 @@ chat with the meeting: ask something specific, add something to the summary or r
 
 Only the DeepSeek API is paid. Audio, transcripts and summaries stay in `meetings/`, in Markdown.
 
+## Screenshots
+
+The screenshots use demo meetings, not real data.
+
+**Index**: every meeting as a numbered list, with filters.
+
+![Index: the list of meetings with filters](docs/screenshots/index.png)
+
+**Meeting**: the summary by topic, the next steps, your notes and the transcript, with a resizable chat
+on the side. Times like `[00:31:12]` in the answers jump to that line of the transcript.
+
+![Meeting: summary, next steps and the chat drawer](docs/screenshots/meeting.png)
+
+**Record**: pick the language and the devices, or mark the meeting as private.
+
+![Record: the new recording sheet](docs/screenshots/record.png)
+
+**Recording**: a strip stays on top of every page with the clock, the devices in use (switch them
+mid-meeting) and level meters. Take notes while the live transcript fills in.
+
+![Recording: the pinned strip, notes and live transcript](docs/screenshots/recording.png)
+
+**Settings**: paste the keys once. They are saved to `.env` and never shown back.
+
+![Settings: DeepSeek, Gmail and calendar keys](docs/screenshots/settings.png)
+
 ## Requirements
 
 - Windows 10/11, always wearing headphones in meetings (the app doesn't remove echo).
