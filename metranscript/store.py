@@ -23,7 +23,8 @@ def _write(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
-def create(title: str, lang: str, private: bool = False, now: datetime | None = None) -> str:
+def create(title: str, lang: str, private: bool = False, now: datetime | None = None,
+           app: str | None = None) -> str:
     now = now or datetime.now()
     base = now.strftime("%Y-%m-%d_%H%M")
     # ponytail: exists()/mkdir() race ignored, one user records one meeting at a time
@@ -33,7 +34,7 @@ def create(title: str, lang: str, private: bool = False, now: datetime | None = 
         meeting_id = f"{base}-{n}"
     folder = ROOT / meeting_id
     folder.mkdir(parents=True)
-    _write_meta(folder, {"title": title, "lang": lang, "private": private,
+    _write_meta(folder, {"title": title, "lang": lang, "private": private, "app": app,
                          "started_at": now.isoformat(timespec="seconds"), "ended_at": None})
     return meeting_id
 
@@ -51,6 +52,14 @@ def _meta(folder: Path) -> dict:
     return json.loads((folder / "meta.json").read_text(encoding="utf-8"))
 
 
+# Same rule as splitSummary() in the page: the summary prompt ends with a "Next steps" section.
+NEXT_STEPS_RE = re.compile(r"^##[ \t]+(next steps|próximos passos)[ \t]*$", re.I | re.M)
+
+
+def has_next_steps(summary: str) -> bool:
+    return bool(NEXT_STEPS_RE.search(summary))
+
+
 def list_meetings() -> list[dict]:
     if not ROOT.exists():
         return []
@@ -58,11 +67,16 @@ def list_meetings() -> list[dict]:
     for folder in ROOT.iterdir():
         if folder.is_dir() and ID_RE.fullmatch(folder.name) and (folder / "meta.json").exists():
             meta = _meta(folder)
+            summary = _read(folder, "summary.md")
             out.append({
                 "id": folder.name,
                 "title": meta["title"],
                 "started_at": meta["started_at"],
-                "has_summary": (folder / "summary.md").exists(),
+                "ended_at": meta.get("ended_at"),
+                "private": bool(meta.get("private")),
+                "app": meta.get("app"),
+                "has_summary": bool(summary),
+                "has_next_steps": has_next_steps(summary),
             })
     return sorted(out, key=lambda m: m["started_at"], reverse=True)
 

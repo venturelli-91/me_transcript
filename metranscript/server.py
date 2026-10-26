@@ -92,14 +92,18 @@ def switch_device(track: str, name: str) -> None:
     recorder.switch(track, name)
 
 
-def start(title: str, lang: str, private: bool, mic: str | None = None, speakers: str | None = None) -> str:
+MEETING_APPS = {"Meet", "Zoom", "Teams", "Chrome", "Edge", "Firefox", "Brave", "Arc"}
+
+
+def start(title: str, lang: str, private: bool, mic: str | None = None, speakers: str | None = None,
+          app: str | None = None) -> str:
     with session.lock:
         if session.phase == "recording":
             raise RuntimeError("A meeting is already being recorded.")
         if session.phase in BUSY:
             raise RuntimeError("The previous meeting is still being processed. Wait for its summary to be ready.")
         check_ready()
-        meeting_id = store.create(title, lang, private)
+        meeting_id = store.create(title, lang, private, app=app)
         try:
             recorder = Recorder(store.meeting_dir(meeting_id), mic, speakers)
         except Exception as e:
@@ -301,9 +305,12 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(private, bool):
                     raise ValueError("private must be true or false.")
                 mic, speakers = body.get("mic"), body.get("speakers")
+                app = body.get("app")
+                if app is not None and app not in MEETING_APPS:
+                    raise ValueError("Unknown meeting app.")
                 if not all(d is None or isinstance(d, str) for d in (mic, speakers)):
                     raise ValueError("Device names must be text.")
-                self._send(200, {"id": start(title.strip()[:200], lang, private, mic or None, speakers or None)})
+                self._send(200, {"id": start(title.strip()[:200], lang, private, mic or None, speakers or None, app)})
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))

@@ -89,6 +89,27 @@ class StoreTest(unittest.TestCase):
         self.assertIsNotNone(m["emailed_at"])
         self.assertNotIn("email_error", m)
 
+    def test_list_has_rich_fields(self):
+        mid = store.create("Launch", "pt", private=True, app="Meet")
+        store.finish(mid)
+        store.save_summary(mid, "## Topic\n- a\n\n## Next steps\n- Me: x")
+        [m] = store.list_meetings()
+        self.assertEqual((m["app"], m["private"], m["has_summary"], m["has_next_steps"]), ("Meet", True, True, True))
+        self.assertIsNotNone(m["ended_at"])
+
+    def test_next_steps_heading_variants(self):
+        for text in ["## Next steps", "## próximos passos  ", "x\n## NEXT STEPS\n- y"]:
+            self.assertTrue(store.has_next_steps(text), text)
+        for text in ["### Next steps", "## Next steps and risks", ""]:
+            self.assertFalse(store.has_next_steps(text), text)
+
+    def test_old_meta_without_app_or_private(self):
+        mid = store.create("Old", "en")
+        folder = store.meeting_dir(mid)
+        (folder / "meta.json").write_text('{"title": "Old", "lang": "en", "started_at": "2026-10-01T09:00:00", "ended_at": null}', encoding="utf-8")
+        [m] = store.list_meetings()
+        self.assertEqual((m["app"], m["private"], m["has_next_steps"]), (None, False, False))
+
     def test_rejects_unknown_or_malicious_id(self):
         store.create("", "pt", now=datetime(2026, 10, 26, 14, 30))
         for bad in ["../etc", "2026-10-27_1430", "2026-10-26_1430\n", "x"]:
