@@ -34,7 +34,6 @@ class Session:
         self.lock = threading.Lock()
         self.phase = "idle"
         self.meeting_id: str | None = None
-        self.lang = "pt"
         self.recorder: Recorder | None = None
         self.transcriber: Transcriber | None = None
         self.segments: list[dict] = []
@@ -110,7 +109,7 @@ def start(title: str, lang: str, private: bool, mic: str | None = None, speakers
             shutil.rmtree(store.meeting_dir(meeting_id))
             log.exception("Could not open audio")
             raise RuntimeError(f"Could not open the microphone or system audio: {e}") from None
-        session.phase, session.meeting_id, session.lang = "recording", meeting_id, lang
+        session.phase, session.meeting_id = "recording", meeting_id
         session.recorder, session.segments, session.error = recorder, [], None
         # 1 s margin: the newest audio may still be in the WAV writer's buffer
         session.transcriber = Transcriber(store.meeting_dir(meeting_id), lang, lambda: recorder.elapsed() - 1.0,
