@@ -2,13 +2,13 @@ import json
 import logging
 import os
 import re
+import shutil
 import threading
-import time
-from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from ata import store
+from ata.capture import Recorder
 
 log = logging.getLogger("ata")
 INDEX = Path(__file__).parent / "web" / "index.html"
@@ -25,7 +25,7 @@ class Session:
         self.phase = "idle"
         self.meeting_id: str | None = None
         self.lang = "pt"
-        self.started = 0.0
+        self.recorder: Recorder | None = None
         self.segments: list[dict] = []
         self.error: str | None = None
 
@@ -34,8 +34,8 @@ class Session:
             return {
                 "phase": self.phase,
                 "meeting_id": self.meeting_id,
-                "elapsed": time.time() - self.started if self.phase == "recording" else 0,
-                "levels": {"mic": 0.0, "system": 0.0},
+                "elapsed": self.recorder.elapsed() if self.recorder else 0,
+                "levels": self.recorder.levels() if self.recorder else {"mic": 0.0, "system": 0.0},
                 # ponytail: full segment list every poll, fine for a few hours of meeting
                 "segments": list(self.segments),
                 "detected": None,
@@ -54,8 +54,14 @@ def start(title: str, lang: str) -> str:
         if session.phase in BUSY:
             raise RuntimeError("A reunião anterior ainda está sendo processada. Aguarde a ata ficar pronta.")
         meeting_id = store.create(title, lang)
+        try:
+            recorder = Recorder(store.meeting_dir(meeting_id))
+        except Exception as e:
+            shutil.rmtree(store.meeting_dir(meeting_id))
+            log.exception("Falha ao abrir o áudio")
+            raise RuntimeError(f"Não foi possível abrir o microfone ou o áudio do sistema: {e}") from None
         session.phase, session.meeting_id, session.lang = "recording", meeting_id, lang
-        session.started, session.segments, session.error = time.time(), [], None
+        session.recorder, session.segments, session.error = recorder, [], None
     return meeting_id
 
 
@@ -64,12 +70,14 @@ def stop() -> None:
         if session.phase != "recording":
             raise RuntimeError("Nenhuma gravação em andamento.")
         session.phase = "transcribing"
-        meeting_id = session.meeting_id
-    threading.Thread(target=_finalize, args=(meeting_id,), daemon=True).start()
+        meeting_id, recorder = session.meeting_id, session.recorder
+        session.recorder = None
+    threading.Thread(target=_finalize, args=(meeting_id, recorder), daemon=True).start()
 
 
-def _finalize(meeting_id: str) -> None:
+def _finalize(meeting_id: str, recorder: Recorder) -> None:
     try:
+        recorder.stop()
         store.finish(meeting_id)
         phase, error = "done", None
     except Exception as e:

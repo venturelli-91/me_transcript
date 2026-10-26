@@ -369,7 +369,7 @@ async function refresh() {
   deck.classList.toggle("busy", busy);
   $("#rec").setAttribute("aria-label", rec ? "Parar gravação" : "Gravar");
   $("#rec").disabled = busy;
-  if (rec || busy) $("#clock").textContent = clock(status.elapsed || 0);
+  if (rec) $("#clock").textContent = clock(status.elapsed || 0);
   $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
   $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
   if (rec && !openId) await openMeeting_(status.meeting_id);

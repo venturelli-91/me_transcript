@@ -26,7 +26,7 @@ Um ticket = um commit atômico (`DEV-XXXX: ...`). Fluxo por ticket: dev → `cod
 
 ## DEV-0004 — Captura em duas trilhas (F3) · `dev-backend`
 - **Escopo:** `ata/capture.py` (PyAudioWPatch: mic padrão + loopback do output padrão →
-  WAVs nativos; níveis RMS); ligar em `server.py`; `requirements.txt`.
+  WAVs nativos; nível de pico para o medidor); ligar em `server.py`; `requirements.txt`.
 - **Testes:** manual — vídeo tocando + fala; conferir WAVs separados.
 - **Risco:** loopback não entrega frames em silêncio — escrever silêncio para manter o
   alinhamento de tempo entre trilhas.
