@@ -90,3 +90,16 @@ the default when the headset connection dropped), the user can pick devices. Not
       (the gap is padded with silence) and the transcript continues as "Me"/"Others".
 - [ ] A device with a different sample rate than the running recording is refused with a clear message.
 - [ ] If a device stops delivering audio mid-recording, the status line asks to pick another one.
+
+## F11 — Index / Meeting / Recording UI
+CEO decision (2026-10-26): ArchiPro-inspired navigation and palette with a proportional type scale;
+direction "E · Index" chosen among five mockups. Full design:
+[specs/2026-10-26-ui-redesign-design.md](specs/2026-10-26-ui-redesign-design.md).
+
+- [ ] Index: numbered list (oldest = 01, newest first), filters All / This week / With next steps / Private.
+- [ ] Record sheet: title, language, devices (defaults preselected), private.
+- [ ] Recording strip pinned on every page: clock, stop, devices + levels, Back to recording.
+- [ ] Meeting article: (01) Summary, (02) Next steps (split from the summary), (03) Notes, (04) Transcript.
+- [ ] Chat drawer: default 380 px, drag 320 px – min(50vw, 640 px), double-click resets, ←/→ keys,
+      width remembered per browser; clickable `[hh:mm:ss]` timestamps scroll to the transcript line.
+- [ ] Works at 400 px (drawer stacks under the article), WCAG AA contrast, keyboard access.

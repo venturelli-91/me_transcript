@@ -115,6 +115,16 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
 - **Risk:** WASAPI thread affinity (solved with the Recorder thread); devices plugged in mid-recording
   are only listed in the next recording.
 
+## DEV-0015 — Meeting app and richer meetings list · `dev-backend`
+- `store.create(..., app=)`, `list_meetings()` with `ended_at`, `private`, `app`, `has_next_steps`;
+  `/api/start` accepts `app`. Tests in `tests/test_store.py`.
+
+## DEV-0016 — Index / Meeting / Recording UI (F11) · `dev-frontend`
+- Spec `.claude/docs/specs/2026-10-26-ui-redesign-design.md`, plan `.claude/docs/plans/2026-10-26-ui-redesign.md`.
+- Verified with Playwright at 1280 px and 400 px: index numbering and filters, unknown meeting,
+  empty meeting, 200-char titles, record sheet, strip across routes, stop → article, drawer clamps,
+  keyboard resize, saved width, timestamp jump, expired reminder link.
+
 ## Known issues (low severity)
 - "Add to summary" also appears on answers with no useful content ("that wasn't discussed",
   "it's already in the summary"); clicking it wastes a call. Idea: have the model's answer say whether

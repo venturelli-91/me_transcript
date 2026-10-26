@@ -8,305 +8,571 @@
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --paper: #edf0ec;
-  --sheet: #f8faf7;
-  --ink: #1a2320;
-  --muted: #5d6b66;
-  --line: #d3dad5;
-  --bottle: #1e3b34;
-  --bottle-soft: #dfe8e3;
-  --others: #3a4a8f;
-  --rec: #c2352b;
-  --ui: "Atkinson Hyperlegible Next", system-ui, sans-serif;
-  --read: "Literata", Georgia, serif;
+  --bg: #FBF8F3;
+  --surface: #FFFFFF;
+  --ink: #181818;
+  --gray: #6B6B6B;
+  --line: #E7E2DA;
+  --pill: #E5E5E5;
+  --dark: #2B2B2B;
+  --rec: #C8412F;
+  --font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --drawer: 380px;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--ui); display: grid; grid-template-columns: 260px 1fr; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font); min-height: 100vh; }
 button, input, select, textarea { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--bottle); outline-offset: 2px; }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* meeting list */
-aside { border-right: 1px solid var(--line); padding: 20px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
-aside h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 8px 6px; }
-.upcoming li { padding: 6px 8px; font-size: 14px; display: grid; gap: 1px; }
-.upcoming .when { font-variant-numeric: tabular-nums; }
-.upcoming .empty { padding: 0 8px; }
-.app-controls { margin-top: auto; display: grid; gap: 10px; padding: 12px 8px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
-.app-controls label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
-.app-controls input { margin-top: 3px; accent-color: var(--bottle); }
-.app-controls .link { justify-self: start; margin: 0; }
-aside h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 8px; color: var(--bottle); }
-aside ol { list-style: none; margin: 0; padding: 0; }
-aside li button { width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 8px; cursor: pointer; display: grid; gap: 1px; }
-aside li button:hover { background: var(--bottle-soft); }
-aside li button[aria-current="true"] { background: var(--bottle); color: var(--sheet); }
-aside .when { font-size: 12.5px; color: var(--muted); }
-aside [aria-current="true"] .when { color: #b9cbc3; }
-aside .empty { color: var(--muted); font-size: 13.5px; padding: 0 8px; }
+/* type scale: 12 / 14 / 16 / 20 / 28 / 40 */
+.t12, .lbl { font-size: 12px; }
+.t16 { font-size: 16px; line-height: 1.6; }
+.t20 { font-size: 20px; letter-spacing: -0.02em; line-height: 1.25; }
+.t28 { font-size: 28px; letter-spacing: -0.03em; line-height: 1.12; }
+.t40 { font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; }
+.lbl, .muted { color: var(--gray); }
+.error { color: var(--rec); }
 
-main { display: grid; grid-template-rows: auto auto 1fr; min-width: 0; height: 100vh; }
-#detected { grid-row: 1; } .deck { grid-row: 2; } .content { grid-row: 3; }
+/* pills */
+.pill { border: 1px solid transparent; border-radius: 999px; padding: 7px 16px; background: var(--pill); font-weight: 500; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.pill:hover { filter: brightness(.96); }
+.pill.dark { background: var(--dark); color: #fff; }
+.pill.rec { background: var(--rec); color: #fff; }
+.pill.ghost { background: transparent; border-color: var(--line); }
+.pill[aria-pressed="true"] { background: var(--dark); color: #fff; border-color: var(--dark); }
+.pill:disabled { opacity: .45; cursor: default; filter: none; }
+.link { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
+
+/* top bar */
+.top { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 14px 32px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top nav { display: flex; gap: 20px; }
+.top nav a, .top nav button { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; font-size: 14px; }
+.top nav [aria-current="page"], .top nav [aria-expanded="true"] { text-decoration: underline; text-underline-offset: 5px; }
+.wordmark { font-weight: 500; font-size: 20px; letter-spacing: -0.02em; text-decoration: none; }
+.top .right { display: flex; justify-content: flex-end; }
+body.recording .top { display: none; }
+
+/* status line */
+#status { padding: 0 32px; min-height: 0; }
+#status:not(:empty) { padding: 10px 32px; border-bottom: 1px solid var(--line); background: var(--surface); }
 
 /* meeting detected */
-#detected { display: none; align-items: center; gap: 12px; padding: 10px 24px; background: var(--others); color: #fff; flex-wrap: wrap; }
+#detected { display: none; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 32px; background: var(--dark); color: #fff; }
 #detected.show { display: flex; }
-#detected p { margin: 0; flex: 1 1 240px; }
-#detected button { border: 1px solid #fff; background: #fff; color: var(--others); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-weight: 600; }
-#detected button.ghost { background: none; color: #fff; }
+#detected p { margin: 0; flex: 1 1 260px; }
+#detected .pill { background: #fff; color: var(--ink); }
+#detected .pill.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }
 
-/* recorder */
-.deck { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding: 18px 24px; background: var(--bottle); color: var(--sheet); }
-.deck.rec { background: #2a1d1b; }
-#rec { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--sheet); background: transparent; cursor: pointer; display: grid; place-items: center; }
-#rec span { width: 26px; height: 26px; border-radius: 50%; background: var(--rec); transition: border-radius .2s, width .2s, height .2s; }
-.deck.rec #rec span { border-radius: 4px; width: 22px; height: 22px; }
-#rec:disabled { opacity: .45; cursor: default; }
-.setup { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-width: 0; }
-#title { flex: 1 1 220px; min-width: 0; max-width: 560px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 8px 10px; color: var(--sheet); }
-#title::placeholder { color: #a9bdb5; }
-.private { display: inline-flex; gap: 6px; align-items: center; font-size: 13.5px; color: #c9d6d0; cursor: pointer; }
-.private input { accent-color: var(--sheet); }
-.lang { display: inline-flex; border: 1px solid rgba(255,255,255,.25); border-radius: 6px; overflow: hidden; }
-.lang label { padding: 8px 12px; cursor: pointer; }
-.lang input { position: absolute; opacity: 0; }
-.lang input:checked + span { font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
-.lang label:has(input:focus-visible) { outline: 2px solid var(--sheet); outline-offset: -2px; }
-.live { display: none; gap: 18px; align-items: center; }
-.devices { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 10px; font-size: 13px; color: #c9d6d0; }
-.deck > div { min-width: 0; }
-.devices label { display: inline-flex; gap: 6px; align-items: center; min-width: 0; max-width: 100%; }
-.devices select { min-width: 0; max-width: min(260px, 100%); background: rgba(255,255,255,.08); color: var(--sheet); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 4px 6px; }
-.devices option { color: var(--ink); background: var(--sheet); }
-.devices .link { color: #c9d6d0; margin: 0; }
-.deck.rec .live, .deck.busy .live { display: flex; }
-.deck.rec .setup, .deck.busy .setup { display: none; }
-#clock { font-size: 40px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
-.meters { display: grid; gap: 6px; }
-.meter { display: grid; grid-template-columns: 52px 160px; align-items: center; gap: 8px; font-size: 13px; }
-.meter i { height: 8px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; display: block; }
-.meter b { display: block; height: 100%; width: 0; background: #9fd3bd; transition: width .12s linear; }
-.meter.others b { background: #a9b6f0; }
-#now { font-size: 14px; color: #c9d6d0; max-width: 28ch; }
-#state { font-size: 13.5px; color: #c9d6d0; text-align: right; }
+/* upcoming panel */
+#upcoming-panel { display: none; padding: 20px 32px 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+#upcoming-panel.open { display: block; }
+#upcoming-panel ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 0; max-width: 760px; }
+#upcoming-panel li { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+#upcoming-panel .time { font-variant-numeric: tabular-nums; }
 
-/* content */
-.content { overflow: hidden; min-height: 0; display: grid; }
-.blank { display: grid; place-content: center; text-align: center; color: var(--muted); padding: 40px; }
-.blank p { max-width: 36ch; margin: 0 auto; }
-.blank strong { display: block; color: var(--ink); font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+/* recording strip */
+#strip { display: none; position: sticky; top: 0; z-index: 6; background: var(--dark); color: #fff; padding: 14px 32px; gap: 20px; align-items: center; flex-wrap: wrap; }
+body.recording #strip { display: flex; }
+#strip .lbl { color: #C9C9C9; }
+#stop { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #fff; background: transparent; display: grid; place-items: center; cursor: pointer; flex: none; }
+#stop span { width: 14px; height: 14px; border-radius: 3px; background: var(--rec); }
+#stop:disabled { opacity: .4; cursor: default; }
+#strip .now { min-width: 0; flex: 1 1 220px; }
+#strip .now .lbl { display: block; overflow-wrap: anywhere; }
+#strip-clock { font-size: 28px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+#strip .devs { display: grid; gap: 6px; font-size: 12px; min-width: 0; flex: 0 1 360px; }
+#strip .dev { display: grid; grid-template-columns: 50px minmax(0, 1fr) 60px; gap: 8px; align-items: center; }
+#strip select { min-width: 0; width: 100%; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 3px 8px; font-size: 12px; }
+#strip select option { color: var(--ink); background: var(--surface); }
+#strip i { height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); overflow: hidden; display: block; }
+#strip i b { display: block; height: 100%; width: 0; background: #fff; transition: width .12s linear; }
+#strip .nav { display: flex; gap: 8px; }
+#strip .pill { background: transparent; color: #fff; border-color: rgba(255,255,255,.35); }
 
-.split { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
-.pane { display: grid; grid-template-rows: auto 1fr; min-height: 0; border-right: 1px solid var(--line); }
-.pane:last-child { border-right: 0; }
-.pane h2 { font-size: 13.5px; font-weight: 600; margin: 0; padding: 14px 24px 8px; color: var(--muted); display: flex; justify-content: space-between; }
-.pane h2 small { font-weight: 400; }
-textarea { border: 0; resize: none; background: var(--sheet); padding: 18px 24px; line-height: 1.6; min-height: 0; }
-textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle-soft); }
-.feed { overflow-y: auto; padding: 8px 24px 24px; }
-.feed p { margin: 0 0 10px; max-width: 70ch; }
-.feed .who { font-weight: 600; color: var(--bottle); margin-right: 6px; }
-.feed .Others .who { color: var(--others); }
-.feed time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 6px; }
-.feed .waiting { color: var(--muted); }
+/* page */
+main { padding: 32px 32px 64px; max-width: 1280px; margin: 0 auto; }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 20px; }
 
-.doc { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
-.doc header { display: flex; align-items: end; gap: 24px; padding: 18px 32px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.doc header h2 { margin: 0 auto 10px 0; font-size: 20px; font-weight: 600; }
-[role="tablist"] { display: flex; gap: 4px; }
-[role="tab"] { border: 0; background: none; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); }
-[role="tab"][aria-selected="true"] { color: var(--ink); border-color: var(--bottle); font-weight: 600; }
-.doc .body { overflow-y: auto; min-height: 0; display: grid; }
-.doc .body > * { min-height: 0; }
-.reading { font-family: var(--read); font-size: 17px; line-height: 1.7; padding: 28px 32px 48px; max-width: 72ch; }
-.reading h1, .reading h2, .reading h3 { font-family: var(--ui); line-height: 1.25; color: var(--bottle); }
-.reading h1 { font-size: 24px; } .reading h2 { font-size: 18px; margin-top: 1.8em; } .reading h3 { font-size: 16px; }
-.reading ul { padding-left: 1.2em; }
-.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 0 32px 28px; }
-.summary-view { display: grid; grid-template-columns: minmax(0, 1fr) 380px; min-height: 0; height: 100%; }
-.summary-col { overflow-y: auto; min-height: 0; }
-.chat { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; border-left: 1px solid var(--line); background: var(--sheet); }
-.chat h3 { margin: 0; padding: 16px 20px 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
-.chat-log { overflow-y: auto; padding: 4px 20px 12px; display: grid; align-content: start; gap: 10px; }
-.msg { border-radius: 8px; padding: 8px 12px; max-width: 92%; overflow-wrap: anywhere; }
-#chat-msg { grid-column: 1 / -1; font-size: 13.5px; }
-#chat-msg:empty { display: none; }
-.msg p { margin: 0 0 6px; }
-.msg p:last-child { margin: 0; }
+/* index list */
+.index { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--line); }
+.index a { display: grid; grid-template-columns: 48px minmax(0, 1fr) 90px 120px; gap: 20px; align-items: baseline; padding: 18px 0; border-top: 1px solid var(--line); text-decoration: none; }
+.index .title { font-size: 28px; letter-spacing: -0.03em; line-height: 1.12; overflow-wrap: anywhere; }
+.index a:hover .title, .index a:focus-visible .title { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+.index .no-summary .title { color: var(--gray); }
+.index .num, .index .app, .index .date { color: var(--gray); font-size: 14px; font-variant-numeric: tabular-nums; }
+.index .date { text-align: right; }
+.empty-state { padding: 48px 0; max-width: 48ch; }
+
+.settings { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.settings label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.settings input { accent-color: var(--dark); }
+
+/* meeting article */
+.article { display: grid; grid-template-columns: minmax(0, 1fr) 10px var(--drawer); gap: 0; align-items: start; }
+.body { padding-right: 40px; min-width: 0; }
+.meeting-title { font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; font-weight: 400; margin: 6px 0 12px; overflow-wrap: anywhere; }
+.meta { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--gray); margin-bottom: 28px; }
+.sec { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 24px 0; border-top: 1px solid var(--line); }
+.sec > .lbl { padding-top: 4px; }
+.reading { font-size: 16px; line-height: 1.6; max-width: 72ch; }
+.reading h1, .reading h2, .reading h3 { font-weight: 400; font-size: 20px; letter-spacing: -0.02em; line-height: 1.25; margin: 24px 0 8px; }
+.reading > :first-child { margin-top: 0; }
+.reading ul { padding-left: 1.2em; margin: 8px 0; }
+.reading li { margin: 4px 0; }
+.reading p { margin: 8px 0; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
+.actions .msg { color: var(--gray); }
+textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); border-radius: 21px; padding: 16px 18px; background: var(--surface); font-size: 16px; line-height: 1.6; resize: vertical; }
+.saved { color: var(--gray); font-size: 12px; }
+.transcript p { margin: 0 0 8px; }
+.transcript time { color: var(--gray); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.transcript .who { font-weight: 500; margin-right: 6px; }
+.transcript p.hit { background: #F3E7D6; border-radius: 6px; box-shadow: 0 0 0 6px #F3E7D6; }
+
+/* resizable drawer */
+.handle { align-self: stretch; cursor: col-resize; display: grid; place-items: center; touch-action: none; }
+.handle::after { content: ""; width: 2px; height: 48px; border-radius: 2px; background: var(--line); }
+.handle:hover::after, .handle:focus-visible::after { background: var(--gray); }
+.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: 21px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; max-height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
+.drawer header { padding: 18px 20px 4px; }
+.drawer .privacy { padding: 0 20px 10px; font-size: 12px; color: var(--gray); }
+.chat-log { overflow-y: auto; padding: 4px 20px 16px; display: grid; align-content: start; gap: 10px; }
+.msg { border-radius: 16px; padding: 10px 14px; max-width: 92%; overflow-wrap: anywhere; font-size: 14px; }
+.msg p { margin: 0 0 6px; } .msg p:last-child { margin: 0; }
 .msg ul { margin: 4px 0; padding-left: 1.1em; }
-.msg.me { justify-self: end; background: var(--bottle); color: var(--sheet); }
-.msg.bot { justify-self: start; background: var(--paper); }
-.msg small { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; }
-.hint { color: var(--muted); font-size: 14px; margin: 0; }
-.privacy { font-size: 12.5px; padding: 0 20px 8px; }
-.mail-status { font-size: 13px; padding: 0 32px 28px; margin-top: -16px; }
-.mail-status:empty { display: none; }
-.link { border: 0; background: none; padding: 0; margin-top: 6px; color: var(--bottle); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
-#chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 20px 16px; border-top: 1px solid var(--line); }
-#chat-form textarea { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; max-height: 140px; }
-.btn { border: 1px solid var(--bottle); background: none; color: var(--bottle); border-radius: 6px; padding: 7px 14px; cursor: pointer; font-weight: 500; }
-.btn:hover { background: var(--bottle-soft); }
-.btn:disabled { opacity: .5; cursor: default; }
-.error { color: var(--rec); }
-.deck .error { color: #ffb4a8; }
+.msg.me { justify-self: end; background: var(--dark); color: #fff; }
+.msg.bot { justify-self: start; background: var(--bg); }
+.msg small { display: block; margin-top: 6px; color: var(--gray); font-size: 12px; }
+.msg a[data-t] { font-variant-numeric: tabular-nums; }
+.chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.chat-form textarea { border: 1px solid var(--line); border-radius: 18px; padding: 9px 14px; background: var(--surface); resize: none; max-height: 160px; }
+#chat-msg { grid-column: 1 / -1; font-size: 12px; }
+#chat-msg:empty { display: none; }
+
+/* live view */
+.live { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.feed { background: var(--surface); border: 1px solid var(--line); border-radius: 21px; padding: 16px 18px; min-height: 240px; max-height: 60vh; overflow-y: auto; font-size: 14px; }
+.feed p { margin: 0 0 8px; }
+.feed time { color: var(--gray); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.feed .who { font-weight: 500; margin-right: 6px; }
+
+/* record sheet */
+dialog { border: 0; border-radius: 21px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgba(24, 24, 24, .35); }
+.sheet { padding: 28px 28px 24px; display: grid; gap: 18px; }
+.sheet h2 { margin: 0; font-weight: 400; }
+.field { display: grid; gap: 6px; }
+.field input[type="text"], .field select { border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; background: var(--surface); min-width: 0; width: 100%; }
+.seg { display: inline-flex; gap: 6px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+.seg input:checked + span { font-weight: 500; }
+.seg label:has(input:checked) { background: var(--dark); color: #fff; border-color: var(--dark); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+.check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.check input { accent-color: var(--dark); }
+.sheet .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.closed { min-height: 100vh; display: grid; place-content: center; padding: 32px; max-width: 60ch; margin: 0 auto; }
 
 @media (max-width: 860px) {
-  html, body { height: auto; }
-  body { display: block; }
-  aside { border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; overflow: visible; }
-  aside h1 { margin: 0 0 10px; }
-  aside { gap: 12px; }
-  aside ol { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
-  .app-controls { margin-top: 0; }
-  aside li { flex: 0 0 200px; }
-  main { height: auto; min-height: 70vh; }
-  .deck { grid-template-columns: auto 1fr; padding: 14px 16px; gap: 14px; }
-  #state { grid-column: 1 / -1; text-align: left; }
-  .meter { grid-template-columns: 52px 1fr; }
-  .devices label { flex: 1 1 100%; flex-wrap: wrap; }
-  .devices select { flex: 1 1 auto; max-width: 100%; }
-  .split { grid-template-columns: 1fr; }
-  .pane { border-right: 0; border-bottom: 1px solid var(--line); min-height: 50vh; }
-  .doc header, .reading, .toolbar { padding-left: 16px; padding-right: 16px; }
-  .summary-view { grid-template-columns: 1fr; height: auto; }
-  .chat { border-left: 0; border-top: 1px solid var(--line); }
-  .chat-log { max-height: 60vh; }
+  .top { grid-template-columns: 1fr auto; padding: 12px 16px; }
+  .top nav { grid-column: 1 / -1; order: 3; }
+  .top .wordmark { order: 1; justify-self: start; }
+  .top .right { order: 2; }
+  #status:not(:empty), #detected, #upcoming-panel { padding-left: 16px; padding-right: 16px; }
+  #strip { padding: 12px 16px; }
+  #strip .devs { flex: 1 1 100%; }
+  main { padding: 24px 16px 48px; }
+  .index a { grid-template-columns: 34px minmax(0, 1fr); gap: 4px 12px; }
+  .index .title { font-size: 20px; letter-spacing: -0.02em; }
+  .index .app, .index .date { grid-column: 2; text-align: left; font-size: 12px; }
+  .meeting-title { font-size: 28px; }
+  .article { grid-template-columns: 1fr; }
+  .handle { display: none; }
+  .body { padding-right: 0; }
+  .drawer { position: static; max-height: none; margin-top: 24px; }
+  .sec { grid-template-columns: 1fr; gap: 8px; }
+  .live { grid-template-columns: 1fr; }
+  #upcoming-panel li { grid-template-columns: 52px 1fr; }
+  #upcoming-panel li .pill { grid-column: 2; justify-self: start; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
-<aside>
-  <h1>MeTranscript</h1>
-  <nav aria-label="Meetings"><ol id="list"></ol></nav>
-  <section class="upcoming" aria-labelledby="up-title">
-    <h2 id="up-title">Upcoming meetings</h2>
-    <ol id="upcoming"></ol>
-  </section>
-  <div class="app-controls">
-    <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
-    <button class="link" id="quit">Quit MeTranscript</button>
+<div id="strip" role="region" aria-label="Recording">
+  <button id="stop" aria-label="Stop recording"><span></span></button>
+  <div class="now">
+    <span class="lbl" id="strip-label">(Recording)</span>
+    <div id="strip-clock">00:00</div>
   </div>
-</aside>
-<main>
-  <div id="detected" role="alert">
-    <p id="detected-text"></p>
-    <button id="detected-rec">Record this meeting</button>
-    <button id="detected-dismiss" class="ghost">Not now</button>
+  <div class="devs">
+    <div class="dev"><span class="lbl">Me</span><label class="sr" for="strip-mic">Microphone</label><select id="strip-mic"></select><i><b id="lv-mic"></b></i></div>
+    <div class="dev"><span class="lbl">Others</span><label class="sr" for="strip-system">Speakers or headphones</label><select id="strip-system"></select><i><b id="lv-system"></b></i></div>
   </div>
+  <div class="nav"><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
+</div>
 
-  <section class="deck" id="deck" aria-label="Recorder">
-    <button id="rec" aria-label="Record"><span></span></button>
-    <div>
-      <form class="setup" id="setup">
-        <label class="sr" for="title">Meeting title</label>
-        <input id="title" placeholder="What is this meeting about? (optional)" maxlength="200" autocomplete="off">
-        <fieldset class="lang" style="margin:0;padding:0">
-          <legend class="sr">Meeting language</legend>
-          <label><input type="radio" name="lang" value="pt" checked><span>Portuguese</span></label>
-          <label><input type="radio" name="lang" value="en"><span>English</span></label>
-        </fieldset>
-        <label class="private"><input type="checkbox" id="private"> Private meeting: don't send to AI or email</label>
-      </form>
-      <div class="live">
-        <div id="clock">00:00</div>
-        <div id="now"></div>
-        <div class="meters" aria-hidden="true">
-          <div class="meter"><span>Me</span><i><b id="lv-mic"></b></i></div>
-          <div class="meter others"><span>Others</span><i><b id="lv-system"></b></i></div>
-        </div>
-      </div>
-      <div class="devices">
-        <label>Microphone <select id="dev-mic"></select></label>
-        <label>Speakers / headphones <select id="dev-system"></select></label>
-        <button type="button" class="link" id="dev-refresh">Refresh devices</button>
+<header class="top">
+  <nav aria-label="Main">
+    <a href="#/" id="nav-index">Meetings</a>
+    <button id="nav-upcoming" aria-expanded="false" aria-controls="upcoming-panel">Upcoming</button>
+  </nav>
+  <a class="wordmark" href="#/">MeTranscript</a>
+  <div class="right"><button class="pill rec" id="record-btn">● Record</button></div>
+</header>
+
+<section id="upcoming-panel" aria-labelledby="up-title">
+  <span class="lbl" id="up-title">(Upcoming – next 24 h)</span>
+  <ol id="upcoming"></ol>
+</section>
+
+<div id="detected" role="alert">
+  <p id="detected-text"></p>
+  <button class="pill" id="detected-rec">Record this meeting</button>
+  <button class="pill ghost" id="detected-dismiss">Not now</button>
+</div>
+
+<div id="status" aria-live="polite"></div>
+<main id="view"></main>
+
+<dialog id="sheet" aria-labelledby="sheet-title">
+  <form class="sheet" method="dialog" id="sheet-form">
+    <div class="row"><span class="lbl">(New recording)</span><button class="link" value="cancel" formnovalidate>Cancel</button></div>
+    <h2 class="t28" id="sheet-title">Record a meeting</h2>
+    <div class="field">
+      <label class="lbl" for="title">Title (optional)</label>
+      <input type="text" id="title" maxlength="200" autocomplete="off" placeholder="What is this meeting about?">
+    </div>
+    <div class="field">
+      <span class="lbl" id="lang-label">Language</span>
+      <div class="seg" role="radiogroup" aria-labelledby="lang-label">
+        <label><input type="radio" name="lang" value="pt" checked><span>Portuguese</span></label>
+        <label><input type="radio" name="lang" value="en"><span>English</span></label>
       </div>
     </div>
-    <div id="state" aria-live="polite">Ready to record</div>
-  </section>
-
-  <div class="content" id="content"></div>
-</main>
-
-<template id="tpl-blank">
-  <div class="blank"><p><strong>No meeting open</strong>Record a new meeting with the button above or open one from the list.</p></div>
-</template>
-
-<template id="tpl-live">
-  <div class="split">
-    <section class="pane">
-      <h2><label for="notes">Your notes</label><small class="saved" aria-live="polite"></small></h2>
-      <textarea id="notes" placeholder="Jot down what matters to you. The summary will give these points more weight."></textarea>
-    </section>
-    <section class="pane">
-      <h2>Transcript <small>updates every ~30 s</small></h2>
-      <div class="feed" id="feed"><p class="waiting">The first part shows up in about 30 seconds.</p></div>
-    </section>
-  </div>
-</template>
-
-<template id="tpl-doc">
-  <article class="doc">
-    <header>
-      <h2 id="doc-title"></h2>
-      <div role="tablist" aria-label="Meeting sections">
-        <button role="tab" id="tab-summary" aria-controls="doc-body" data-tab="summary" aria-selected="true">Summary</button>
-        <button role="tab" id="tab-notes" aria-controls="doc-body" data-tab="notes" aria-selected="false">Notes</button>
-        <button role="tab" id="tab-transcript" aria-controls="doc-body" data-tab="transcript" aria-selected="false">Transcript</button>
-      </div>
-    </header>
-    <div class="body" id="doc-body" role="tabpanel"></div>
-  </article>
-</template>
+    <div class="field">
+      <label class="lbl" for="dev-mic">Microphone</label>
+      <select id="dev-mic"></select>
+    </div>
+    <div class="field">
+      <label class="lbl" for="dev-system">Speakers / headphones</label>
+      <select id="dev-system"></select>
+      <button type="button" class="link" id="dev-refresh" style="justify-self:start">Refresh devices</button>
+    </div>
+    <label class="check"><input type="checkbox" id="private"> Private meeting: don't send to AI or email</label>
+    <div class="row"><span id="sheet-msg" class="error" aria-live="polite"></span><button class="pill dark" value="start" id="sheet-start">Start recording</button></div>
+  </form>
+</dialog>
 
 <script>
 const $ = (s, el = document) => el.querySelector(s);
-const deck = $("#deck"), content = $("#content"), stateEl = $("#state");
-let status = { phase: "idle", levels: { mic: 0, system: 0 } }, openId = null, openMeeting = null, tab = "summary";
+const view = $("#view"), statusEl = $("#status");
+const BUSY = ["recording", "transcribing", "enhancing"];
+const LANG = { pt: "Portuguese", en: "English" };
+const NEXT_STEPS_RE = /^##[ \t]+(next steps|próximos passos)[ \t]*$/im;  // same rule as store.NEXT_STEPS_RE
+
+let status = { phase: "idle", levels: { mic: 0, system: 0 } };
+let meetings = [], numbers = new Map(), filter = "all";
+let openId = null, openMeeting = null, showAllTranscript = false;
+let waiting = null, draft = "", notice = null, closed = false, prevPhase = "idle", recordingId = null;
 
 const api = async (path, opts = {}) => {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
   return data;
 };
 
-const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
 function markdown(md) {
   let html = "", list = false;
   for (const line of md.split(/\r?\n/)) {
     const h = line.match(/^(#{1,3})\s+(.*)/), li = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/);
     if (!li && list) { html += "</ul>"; list = false; }
-    if (h) html += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
+    if (h) html += `<h${h[1].length + 1}>${inline(h[2])}</h${h[1].length + 1}>`;
     else if (li) { if (!list) { html += "<ul>"; list = true; } html += `<li>${inline(li[1].replace(/^\[[ x]\]\s*/, ""))}</li>`; }
     else if (line.trim()) html += `<p>${inline(line)}</p>`;
   }
   return html + (list ? "</ul>" : "");
 }
+const withTimeLinks = html => html.replace(/\[(\d{2}):(\d{2}):(\d{2})\]/g, (_, h, m, s) => `<a href="#" data-t="${h}${m}${s}">[${h}:${m}:${s}]</a>`);
 
 const clock = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
   return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(x).padStart(2, "0"); };
-const when = iso => new Date(iso).toLocaleString("en-US", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-const LANG = { pt: "Portuguese", en: "English" };
+const when = iso => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const dateOnly = iso => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const timeOf = iso => new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+const duration = m => m.ended_at ? `${Math.max(1, Math.round((new Date(m.ended_at) - new Date(m.started_at)) / 60000))} min` : "";
+const titleOf = m => m.title || "Untitled meeting";
 
-async function loadList() {
-  const items = await api("/api/meetings");
-  $("#list").innerHTML = items.length ? items.map(m =>
-    `<li><button data-id="${m.id}" aria-current="${m.id === openId}">${esc(m.title || "Untitled meeting")}<span class="when">${when(m.started_at)}${m.has_summary ? "" : ", no summary"}</span></button></li>`
-  ).join("") : `<li class="empty">Recorded meetings show up here.</li>`;
-  $('#list [aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+function splitSummary(md) {
+  const re = new RegExp(NEXT_STEPS_RE.source, "gim");
+  let last = null, m;
+  while ((m = re.exec(md))) last = m;
+  if (!last) return { summary: md, nextSteps: null };
+  const after = md.slice(last.index + last[0].length).trim();
+  return { summary: md.slice(0, last.index).trim(), nextSteps: after || null };
 }
 
-$("#list").addEventListener("click", e => { const b = e.target.closest("button[data-id]"); if (b) openMeeting_(b.dataset.id); });
+// The 1 s poll never wipes a message: it stays until the user acts or the phase changes.
+function showError(msg) { notice = `<span class="error">${esc(msg)}</span>`; statusEl.innerHTML = notice; }
+function showInfo(msg) { notice = esc(msg); statusEl.innerHTML = notice; }
 
+/* ---------- routing ---------- */
+function currentRoute() {
+  const m = location.hash.match(/^#\/m\/([\w-]+)$/);
+  return m ? { name: "meeting", id: m[1] } : { name: "index" };
+}
+async function route() {
+  await flushNotes();
+  const r = currentRoute();
+  $("#nav-index").toggleAttribute("aria-current", r.name === "index");
+  if (r.name === "index") { openId = openMeeting = null; return renderIndex(); }
+  try {
+    openMeeting = await api(`/api/meetings/${r.id}`);
+  } catch {
+    location.hash = "#/";
+    return showError("That meeting no longer exists.");
+  }
+  if (openId !== r.id) { showAllTranscript = false; draft = ""; }
+  openId = r.id;
+  renderMeeting();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+/* ---------- index ---------- */
+async function loadMeetings() {
+  meetings = await api("/api/meetings");
+  const byAge = [...meetings].sort((a, b) => a.started_at.localeCompare(b.started_at));
+  numbers = new Map(byAge.map((m, i) => [m.id, String(i + 1).padStart(2, "0")]));
+}
+const FILTERS = {
+  all: () => true,
+  week: m => Date.now() - new Date(m.started_at) < 7 * 864e5,
+  next: m => m.has_next_steps,
+  private: m => m.private,
+};
+async function renderIndex() {
+  try { await loadMeetings(); } catch (err) { return showError(err.message); }
+  const shown = meetings.filter(FILTERS[filter]);
+  const pill = (key, label) => `<button class="pill ghost" data-filter="${key}" aria-pressed="${filter === key}">${label}</button>`;
+  view.innerHTML = `
+    <div class="head"><span class="lbl">(Index – ${meetings.length} meeting${meetings.length === 1 ? "" : "s"})</span></div>
+    <div class="filters" role="group" aria-label="Filter meetings">${pill("all", "All")}${pill("week", "This week")}${pill("next", "With next steps")}${pill("private", "Private")}</div>
+    ${!meetings.length ? `<div class="empty-state"><p class="t20">No meetings yet.</p><p class="muted">Press Record to start your first one.</p></div>`
+      : !shown.length ? `<div class="empty-state"><p class="muted">No meetings match this filter.</p></div>`
+      : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
+          <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}</span>
+          <span class="app">${esc(m.app || "")}</span><span class="date">${dateOnly(m.started_at)}</span></a></li>`).join("")}</ol>`}
+    <div class="settings">
+      <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
+      <button class="link" id="quit">Quit MeTranscript</button>
+    </div>`;
+  view.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => { filter = b.dataset.filter; renderIndex(); }));
+  bindSettings();
+}
+
+/* ---------- meeting article ---------- */
+function mailStatus(m) {
+  if (m.private) return "Private";
+  if (!m.email_configured) return "";
+  if (m.email_error) return `<span class="error">Email not sent: ${esc(m.email_error)}</span>`;
+  if (m.emailed_at) return `Sent to Gmail ${esc(when(m.emailed_at))}`;
+  return "";
+}
+function transcriptLines(text) {
+  return text.split(/\r?\n/).filter(Boolean).map(line => {
+    const m = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\] \*\*(.+?):\*\* (.*)$/);
+    return m ? { t: `${m[1]}${m[2]}${m[3]}`, label: `${m[1]}:${m[2]}:${m[3]}`, who: m[4], text: m[5] } : { t: "", label: "", who: "", text: line };
+  });
+}
+function renderTranscript() {
+  const lines = transcriptLines(openMeeting.transcript);
+  if (!lines.length) return `<p class="muted">No transcript.</p>`;
+  const visible = showAllTranscript ? lines : lines.slice(0, 20);
+  return `<div class="transcript t14">${visible.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>
+    ${lines.length > 20 && !showAllTranscript ? `<button class="link" id="show-all">Show all ${lines.length} lines</button>` : ""}`;
+}
+
+function renderMeeting() {
+  const m = openMeeting;
+  const processing = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === m.id;
+  if (status.phase === "recording" && status.meeting_id === m.id) return renderLive();
+  const { summary, nextSteps } = splitSummary(m.summary || "");
+  const off = processing || waiting === m.id || m.private ? "disabled" : "";
+  const meta = [when(m.started_at), duration(m), m.app, LANG[m.lang], mailStatus(m)].filter(Boolean);
+  view.innerHTML = `
+    <div class="article">
+      <div class="body">
+        <a href="#/" class="lbl">← Index</a>
+        <div class="lbl" style="margin-top:20px">(Meeting – ${numbers.get(m.id) || "–"})</div>
+        <h1 class="meeting-title">${esc(titleOf(m))}</h1>
+        <div class="meta">${meta.map(x => `<span>${x}</span>`).join("")}</div>
+        <section class="sec" aria-labelledby="s1"><span class="lbl" id="s1">(01) Summary</span><div>
+          <div class="reading">${summary ? markdown(summary)
+            : `<p class="muted">${processing ? (status.phase === "transcribing" ? "Finishing the transcript…" : "Writing the summary…")
+              : m.private ? "Private meeting: no summary is generated." : "No summary yet."}</p>`}</div>
+          ${m.private ? "" : `<div class="actions">
+            <button class="pill dark" id="regen" ${off}>${m.summary ? "Regenerate" : "Generate summary"}</button>
+            ${m.can_undo ? `<button class="pill ghost" id="undo" ${off}>Undo</button>` : ""}
+            ${m.email_configured ? `<button class="pill ghost" id="mail" ${off || !m.summary ? "disabled" : ""}>Email it to me</button>` : ""}
+            <span class="msg" id="doc-msg" aria-live="polite"></span></div>`}
+        </div></section>
+        ${nextSteps ? `<section class="sec" aria-labelledby="s2"><span class="lbl" id="s2">(02) Next steps</span><div class="reading">${markdown(nextSteps)}</div></section>` : ""}
+        <section class="sec" aria-labelledby="s3"><span class="lbl" id="s3"><label for="notes">(03) Notes</label></span><div>
+          <textarea class="notes" id="notes" placeholder="Your notes for this meeting"></textarea><span class="saved" aria-live="polite"></span>
+        </div></section>
+        <section class="sec" aria-labelledby="s4"><span class="lbl" id="s4">(04) Transcript</span><div id="transcript">${renderTranscript()}</div></section>
+      </div>
+      <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="Resize chat" tabindex="0"></div>
+      <section class="drawer" aria-labelledby="chat-title">
+        <header><span class="lbl" id="chat-title">(Ask this meeting)</span></header>
+        <p class="privacy">${m.private ? "Private meeting: chat is off and nothing is sent to the AI or by email."
+          : "Asking and changing the summary send this meeting's transcript and notes to DeepSeek."}</p>
+        <div class="chat-log" id="chat-log">${chatLog()}</div>
+        <form class="chat-form" id="chat-form">
+          <label class="sr" for="chat-input">Message</label>
+          <textarea id="chat-input" rows="2" placeholder="Ask or request a change…" ${off}></textarea>
+          <button class="pill dark" ${off}>Send</button>
+          <span id="chat-msg" aria-live="polite"></span>
+        </form>
+      </section>
+    </div>`;
+  const notes = $("#notes");
+  notes.value = m.notes;
+  bindNotes(notes, m.id);
+  $("#regen")?.addEventListener("click", () => docAction("summary", "Writing the summary…", "Summary generated."));
+  $("#undo")?.addEventListener("click", () => docAction("undo", "", "Previous version restored."));
+  $("#mail")?.addEventListener("click", () => docAction("email", "Sending…", "Sent to your email."));
+  bindTranscript();
+  bindChat();
+  bindHandle();
+}
+function bindTranscript() {
+  $("#show-all")?.addEventListener("click", () => { showAllTranscript = true; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); });
+}
+function jumpTo(t) {
+  if (!showAllTranscript) { showAllTranscript = true; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); }
+  const lines = [...document.querySelectorAll(".transcript p[id]")];
+  const target = lines.filter(p => p.id.slice(2) <= t).pop() || lines[0];
+  if (!target) return;
+  target.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  target.classList.add("hit");
+  setTimeout(() => target.classList.remove("hit"), 2000);
+}
+
+/* ---------- chat ---------- */
+function chatLog() {
+  const m = openMeeting;
+  if (!m.chat.length && waiting !== m.id) {
+    return m.private ? "" : `<p class="muted t14">Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter”.</p>`;
+  }
+  return m.chat.map((c, i) => c.role === "user"
+    ? `<div class="msg me"><p>${esc(c.content)}</p></div>`
+    : `<div class="msg bot">${withTimeLinks(markdown(c.content))}${c.changed_summary
+        ? `<small>Summary updated</small>` : `<button class="link t12" data-include="${i}">Add to summary</button>`}</div>`
+  ).join("") + (waiting === m.id ? `<div class="msg bot"><p class="muted">Thinking…</p></div>` : "");
+}
+function bindChat() {
+  const input = $("#chat-input"), log = $("#chat-log");
+  input.value = draft;
+  input.addEventListener("input", () => { draft = input.value; });
+  $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send(input.value, true); });
+  input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value, true); } });
+  log.addEventListener("click", e => {
+    const t = e.target.closest("a[data-t]");
+    if (t) { e.preventDefault(); return jumpTo(t.dataset.t); }
+    const b = e.target.closest("button[data-include]");
+    if (b) send(`Add this to the summary: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
+  });
+  log.scrollTop = log.scrollHeight;
+}
+async function send(text, typed) {
+  text = text.trim();
+  if (!text || waiting) return;
+  const id = openId;
+  waiting = id;
+  if (typed) draft = "";
+  openMeeting.chat.push({ role: "user", content: text });
+  renderMeeting();
+  try {
+    const m = await api(`/api/meetings/${id}/chat`, { method: "POST", body: JSON.stringify({ message: text }) });
+    waiting = null;
+    if (openId !== id) return;
+    openMeeting = m;
+    renderMeeting();
+    $("#chat-input")?.focus();
+  } catch (err) {
+    waiting = null;
+    if (typed) draft = text;
+    if (openId !== id) return;
+    openMeeting.chat.pop();
+    renderMeeting();
+    $("#chat-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
+  }
+}
+async function docAction(action, label, done) {
+  const id = openId;
+  waiting = id;
+  renderMeeting();
+  $("#doc-msg").textContent = label;
+  try {
+    await flushNotes();
+    const m = await api(`/api/meetings/${id}/${action}`, { method: "POST" });
+    waiting = null;
+    if (openId === id) { openMeeting = m; renderMeeting(); $("#doc-msg").textContent = done; }
+  } catch (err) {
+    waiting = null;
+    if (openId !== id) return;
+    openMeeting = await api(`/api/meetings/${id}`).catch(() => openMeeting);
+    renderMeeting();
+    $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
+  }
+}
+
+/* ---------- resizable drawer ---------- */
+const DRAWER_KEY = "metranscript.drawerWidth", DRAWER_DEFAULT = 380, DRAWER_MIN = 320;
+const drawerMax = () => Math.min(innerWidth * 0.5, 640);
+function setDrawer(px, save = true) {
+  const w = Math.round(Math.min(drawerMax(), Math.max(DRAWER_MIN, px)));
+  document.documentElement.style.setProperty("--drawer", `${w}px`);
+  $("#handle")?.setAttribute("aria-valuenow", w);
+  if (save) { try { localStorage.setItem(DRAWER_KEY, w); } catch { /* storage may be blocked */ } }
+}
+function bindHandle() {
+  const h = $("#handle");
+  h.setAttribute("aria-valuemin", DRAWER_MIN);
+  h.setAttribute("aria-valuemax", Math.round(drawerMax()));
+  h.setAttribute("aria-valuenow", parseInt(getComputedStyle(document.documentElement).getPropertyValue("--drawer")));
+  h.addEventListener("pointerdown", e => {
+    h.setPointerCapture(e.pointerId);
+    const move = ev => setDrawer(innerWidth - ev.clientX - (innerWidth - h.parentElement.getBoundingClientRect().right));
+    h.addEventListener("pointermove", move);
+    h.addEventListener("pointerup", () => h.removeEventListener("pointermove", move), { once: true });
+  });
+  h.addEventListener("dblclick", () => setDrawer(DRAWER_DEFAULT));
+  h.addEventListener("keydown", e => {
+    const step = { ArrowLeft: 16, ArrowRight: -16 }[e.key];
+    if (step) { e.preventDefault(); setDrawer(parseInt(h.getAttribute("aria-valuenow")) + step); }
+  });
+}
+try { const saved = parseInt(localStorage.getItem(DRAWER_KEY)); if (saved) setDrawer(saved, false); } catch { /* storage may be blocked */ }
+
+/* ---------- notes autosave ---------- */
 let dirty = null, saveTimer = null, saveFailed = false;
 const savedLabel = text => { const el = $(".saved"); if (el) el.textContent = text; };
-
 function bindNotes(textarea, id) {
   if (saveFailed) savedLabel("Not saved. Retrying…");
   textarea.addEventListener("input", () => {
@@ -317,7 +583,6 @@ function bindNotes(textarea, id) {
     saveTimer = setTimeout(flushNotes, 700);
   });
 }
-
 async function flushNotes(keepalive = false) {
   clearTimeout(saveTimer);
   if (!dirty) return;
@@ -334,7 +599,6 @@ async function flushNotes(keepalive = false) {
     saveTimer = setTimeout(flushNotes, 3000);
   }
 }
-
 window.addEventListener("beforeunload", e => {
   if (!dirty) return;
   const failed = saveFailed;
@@ -342,270 +606,30 @@ window.addEventListener("beforeunload", e => {
   if (failed) e.preventDefault();
 });
 
+/* ---------- live view ---------- */
 function renderLive() {
-  content.replaceChildren($("#tpl-live").content.cloneNode(true));
+  view.innerHTML = `
+    <div class="live">
+      <section><label class="lbl" for="notes">(Your notes)</label><textarea class="notes" id="notes" style="margin-top:8px; min-height:320px" placeholder="Jot down what matters to you. The summary gives these points more weight."></textarea><span class="saved" aria-live="polite"></span></section>
+      <section><span class="lbl">(Live transcript – updates every ~30 s)</span><div class="feed" id="feed" style="margin-top:8px"><p class="muted">The first part shows up in about 30 seconds.</p></div></section>
+    </div>`;
   const ta = $("#notes");
   ta.value = openMeeting.notes;
-  bindNotes(ta, openId);
-  ta.focus();
+  bindNotes(ta, openMeeting.id);
   renderFeed();
 }
-
 function renderFeed() {
   const feed = $("#feed");
   if (!feed || !status.segments?.length) return;
   const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
-  feed.innerHTML = status.segments.map(s =>
-    `<p class="${esc(s.who)}"><time>${clock(s.t)}</time><span class="who">${esc(s.who)}</span>${esc(s.text)}</p>`).join("");
+  feed.innerHTML = status.segments.map(s => `<p><time>${clock(s.t)}</time><span class="who">${esc(s.who)}</span>${esc(s.text)}</p>`).join("");
   if (atBottom) feed.scrollTop = feed.scrollHeight;
 }
 
-async function selectTab(name) {
-  await flushNotes();
-  tab = name;
-  renderDoc();
-  $(`[role="tab"][data-tab="${name}"]`).focus();
-}
-
-function renderDoc() {
-  content.replaceChildren($("#tpl-doc").content.cloneNode(true));
-  $("#doc-title").textContent = openMeeting.title || "Untitled meeting";
-  const tabs = [...content.querySelectorAll('[role="tab"]')];
-  for (const t of tabs) {
-    const on = t.dataset.tab === tab;
-    t.setAttribute("aria-selected", on);
-    t.tabIndex = on ? 0 : -1;
-    t.addEventListener("click", () => selectTab(t.dataset.tab));
-  }
-  $('[role="tablist"]').addEventListener("keydown", e => {
-    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-    if (!step) return;
-    const i = tabs.findIndex(t => t.dataset.tab === tab);
-    selectTab(tabs[(i + step + tabs.length) % tabs.length].dataset.tab);
-  });
-  const body = $("#doc-body"), busy = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === openId;
-  body.setAttribute("aria-labelledby", `tab-${tab}`);
-  if (tab === "notes") {
-    body.innerHTML = `<section class="pane"><h2><label for="notes">Your notes</label><small class="saved" aria-live="polite"></small></h2><textarea id="notes"></textarea></section>`;
-    $("#notes").value = openMeeting.notes;
-    bindNotes($("#notes"), openId);
-  } else if (tab === "transcript") {
-    body.innerHTML = `<div class="reading">${openMeeting.transcript ? markdown(openMeeting.transcript) : "<p>No transcript.</p>"}</div>`;
-  } else {
-    const msg = busy ? (status.phase === "transcribing" ? "Finishing the transcript…" : "Writing the summary…")
-      : status.error && status.meeting_id === openId ? `<span class="error">${esc(status.error)}</span>` : "";
-    const off = busy || waiting === openId || openMeeting.private ? "disabled" : "";
-    body.innerHTML = `<div class="summary-view">
-      <div class="summary-col">
-        <div class="reading">${openMeeting.summary ? markdown(openMeeting.summary) : `<p>${busy ? "The summary is ready right after the transcript." : "This meeting has no summary yet."}</p>`}</div>
-        <div class="toolbar">
-          <button class="btn" id="regen" ${off}>${openMeeting.summary ? "Regenerate" : "Generate summary"}</button>
-          ${openMeeting.can_undo ? `<button class="btn" id="undo" ${off}>Undo</button>` : ""}
-          ${openMeeting.email_configured ? `<button class="btn" id="mail" ${off || !openMeeting.summary ? "disabled" : ""}>Email it to me</button>` : ""}
-          <span id="doc-msg" aria-live="polite">${msg}</span>
-        </div>
-        <p class="hint mail-status">${mailStatus()}</p>
-      </div>
-      <section class="chat" aria-labelledby="chat-title">
-        <h3 id="chat-title">Talk to the meeting</h3>
-        <p class="hint privacy">${openMeeting.private
-          ? "Private meeting: summary and chat are off and nothing is sent to the AI or by email."
-          : "Generating the summary and chatting send this meeting's transcript and notes to DeepSeek."}</p>
-        <div class="chat-log" id="chat-log">${chatLog()}</div>
-        <form id="chat-form">
-          <label class="sr" for="chat-input">Mensagem</label>
-          <textarea id="chat-input" rows="2" placeholder="Ask something or request a change to the summary" ${off}></textarea>
-          <button class="btn" ${off}>Send</button>
-          <span id="chat-msg" aria-live="polite"></span>
-        </form>
-      </section>
-    </div>`;
-    $("#regen").addEventListener("click", () => docAction("summary", "Writing the summary…", "Summary generated."));
-    $("#undo")?.addEventListener("click", () => docAction("undo", "", "Previous version restored."));
-    $("#mail")?.addEventListener("click", () => docAction("email", "Sending…", "Sent to your email."));
-    const input = $("#chat-input");
-    input.value = draft;
-    input.addEventListener("input", () => { draft = input.value; });
-    $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send(input.value, true); });
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value, true); }
-    });
-    $("#chat-log").addEventListener("click", e => {
-      const b = e.target.closest("button[data-include]");
-      if (b) send(`Add this to the summary: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
-    });
-    const log = $("#chat-log");
-    log.scrollTop = log.scrollHeight;
-  }
-}
-
-let waiting = null, draft = "";
-function mailStatus() {
-  const m = openMeeting;
-  if (m.private) return "";
-  if (!m.email_configured) return "Email is off: set up Gmail in .env (see the README).";
-  if (m.email_error) return `<span class="error">Email not sent: ${esc(m.email_error)}</span>`;
-  if (m.emailed_at) return `Sent to your Gmail on ${esc(when(m.emailed_at))} (the summary and transcript are also stored by Google).`;
-  return m.summary ? "" : "The summary and transcript go to your Gmail as soon as the summary is ready.";
-}
-function chatLog() {
-  if (!openMeeting.chat.length && waiting !== openId) {
-    return openMeeting.private ? ""
-      : `<p class="hint">Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter” or “Focus on the budget”.</p>`;
-  }
-  return openMeeting.chat.map((m, i) => m.role === "user"
-    ? `<div class="msg me"><p>${esc(m.content)}</p></div>`
-    : `<div class="msg bot">${markdown(m.content)}${m.changed_summary
-        ? `<small>Summary updated</small>`
-        : `<button class="link" data-include="${i}">Add to summary</button>`}</div>`
-  ).join("") + (waiting === openId ? `<div class="msg bot"><p class="hint">Thinking…</p></div>` : "");
-}
-
-async function send(text, typed) {
-  text = text.trim();
-  if (!text || waiting) return;
-  const id = openId;
-  waiting = id;
-  if (typed) draft = "";
-  openMeeting.chat.push({ role: "user", content: text });
-  renderDoc();
-  try {
-    const m = await api(`/api/meetings/${id}/chat`, { method: "POST", body: JSON.stringify({ message: text }) });
-    waiting = null;
-    if (openId !== id) return;
-    openMeeting = m;
-    renderDoc();
-    $("#chat-input").focus();
-    loadList();
-  } catch (err) {
-    waiting = null;
-    if (typed) draft = text;
-    if (openId !== id) return;
-    openMeeting.chat.pop();
-    renderDoc();
-    $("#chat-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
-  }
-}
-
-async function docAction(action, label, done) {
-  const id = openId;
-  waiting = id;
-  renderDoc();
-  $("#doc-msg").textContent = label;
-  try {
-    await flushNotes();
-    const m = await api(`/api/meetings/${id}/${action}`, { method: "POST" });
-    waiting = null;
-    if (openId === id) { openMeeting = m; renderDoc(); $("#doc-msg").textContent = done; }
-    loadList();
-  } catch (err) {
-    waiting = null;
-    if (openId !== id) return;
-    openMeeting = await api(`/api/meetings/${id}`).catch(() => openMeeting);
-    renderDoc();
-    $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
-  }
-}
-
-async function openMeeting_(id) {
-  await flushNotes();
-  openId = id;
-  openMeeting = await api(`/api/meetings/${id}`);
-  tab = "summary";
-  status.phase === "recording" && status.meeting_id === id ? renderLive() : renderDoc();
-  loadList();
-}
-
-// An error stays on the status line until the user acts or the recording phase changes; the 1 s poll won't wipe it.
-let notice = null, closed = false;
-const showError = msg => { notice = `<span class="error">${esc(msg)}</span>`; stateEl.innerHTML = notice; };
-
-async function startRec(reminder) {
-  notice = null;
-  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
-  const lang = document.querySelector('input[name="lang"]:checked').value;
-  try {
-    const body = { title: $("#title").value, lang, private: $("#private").checked,
-                   mic: $("#dev-mic").value, speakers: $("#dev-system").value, ...(reminder ? { reminder } : {}) };
-    const { id } = await api("/api/start", { method: "POST", body: JSON.stringify(body) });
-    $("#title").value = "";
-    $("#private").checked = false;
-    await poll();
-    await openMeeting_(id);
-  } catch (err) { showError(err.message); }
-}
-
-$("#rec").addEventListener("click", async () => {
-  if (status.phase === "recording") {
-    await flushNotes();
-    notice = null;
-    try { await api("/api/stop", { method: "POST" }); await poll(); } catch (err) { showError(err.message); }
-  } else startRec();
-});
-$("#setup").addEventListener("submit", e => { e.preventDefault(); startRec(); });
-
-let prevPhase = "idle", polling = null;
-const poll = () => polling ??= refresh().finally(() => { polling = null; });
-
-async function refresh() {
-  try { status = await api("/api/status"); } catch { stateEl.textContent = "Cannot reach MeTranscript. Is the program running?"; return; }
-  const p = status.phase, rec = p === "recording", busy = p === "transcribing" || p === "enhancing";
-  deck.classList.toggle("rec", rec);
-  deck.classList.toggle("busy", busy);
-  $("#rec").setAttribute("aria-label", rec ? "Stop recording" : "Record");
-  $("#rec").disabled = busy;
-  if (rec) $("#clock").textContent = clock(status.elapsed || 0);
-  $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
-  $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
-  if (rec && prevPhase !== "recording" && openId !== status.meeting_id) await openMeeting_(status.meeting_id);
-  const current = openMeeting?.id === status.meeting_id ? openMeeting : null;
-  for (const [track, name] of Object.entries(status.devices || {})) {
-    const sel = $(`#dev-${track}`);
-    if (document.activeElement !== sel && sel.value !== name) sel.value = name;
-  }
-  $("#now").textContent = current ? `${current.title || "Untitled meeting"}, in ${LANG[current.lang]}` : "";
-  if (prevPhase !== p) notice = null;
-  if (prevPhase === "recording" && !rec) loadDevices();
-  stateEl.innerHTML = notice ?? (rec ? (status.error ? `<span class="error">${esc(status.error)}</span>` : "Recording. Click the square to stop.")
-    : p === "transcribing" ? "Finishing the transcript…"
-    : p === "enhancing" ? "Writing the summary…"
-    : p === "error" ? `<span class="error">${esc(status.error || "Something went wrong.")}</span>`
-    : "Ready to record");
-  if (rec && status.meeting_id === openId) renderFeed();
-  if (prevPhase !== p && openId === status.meeting_id) {
-    if (!rec && openId) { await flushNotes(); openMeeting = await api(`/api/meetings/${openId}`); renderDoc(); }
-    loadList();
-  }
-  prevPhase = p;
-  showDetected();
-}
-
-const seen = new Set();
-let shownKey = null;
-$("#detected-rec").addEventListener("click", () => { $("#detected").classList.remove("show"); startRec(); });
-$("#detected-dismiss").addEventListener("click", () => { seen.add(status.detected?.key); $("#detected").classList.remove("show"); });
-
-function showDetected() {
-  const d = status.detected;
-  if (d && status.phase === "recording") seen.add(d.key);
-  const show = !!d && !seen.has(d.key) && !["recording", "transcribing", "enhancing"].includes(status.phase);
-  $("#detected").classList.toggle("show", show);
-  if (!show || shownKey === d.key) return;
-  shownKey = d.key;
-  $("#detected-text").textContent = `${d.app} is using the microphone. Did a meeting start?`;
-  if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-    const n = new Notification("MeTranscript", { body: `${d.app} is using the microphone. Record this meeting?` });
-    n.onclick = () => { window.focus(); n.close(); };
-  }
-}
-
-
-content.replaceChildren($("#tpl-blank").content.cloneNode(true));
-loadList();
-(async function loop() { if (closed) return; await poll(); setTimeout(loop, 1000); })();
-
-function fillDevices(select, list, keepChoice) {
-  const keep = keepChoice ? select.value : "";
+/* ---------- devices ---------- */
+let deviceList = { mics: [], speakers: [] };
+function fillDevices(select, list, keepChoice, current) {
+  const keep = current || (keepChoice ? select.value : "");
   select.replaceChildren(...list.map(d => {
     const o = document.createElement("option");
     o.value = d.name;
@@ -616,21 +640,17 @@ function fillDevices(select, list, keepChoice) {
 }
 // Every recording starts from the Windows defaults; only "Refresh devices" keeps the current pick.
 async function loadDevices(keepChoice = false) {
-  try {
-    const d = await api("/api/devices");
-    fillDevices($("#dev-mic"), d.mics, keepChoice);
-    fillDevices($("#dev-system"), d.speakers, keepChoice);
-  } catch (err) { showError(`Could not list audio devices: ${err.message}`); }
+  try { deviceList = await api("/api/devices"); } catch (err) { return showError(`Could not list audio devices: ${err.message}`); }
+  fillDevices($("#dev-mic"), deviceList.mics, keepChoice);
+  fillDevices($("#dev-system"), deviceList.speakers, keepChoice);
 }
-loadDevices();
 $("#dev-refresh").addEventListener("click", () => loadDevices(true));
 for (const track of ["mic", "system"]) {
-  $(`#dev-${track}`).addEventListener("change", async e => {
+  $(`#strip-${track}`).addEventListener("change", async e => {
     if (status.phase !== "recording") return;
     try {
       await api("/api/devices", { method: "POST", body: JSON.stringify({ track, name: e.target.value }) });
-      notice = `Now recording ${track === "mic" ? "your voice" : "the call"} from ${esc(e.target.value)}.`;
-      stateEl.innerHTML = notice;
+      showInfo(`Now recording ${track === "mic" ? "your voice" : "the call"} from ${e.target.value}.`);
     } catch (err) {
       showError(err.message);
       e.target.value = status.devices?.[track] ?? e.target.value;
@@ -638,43 +658,176 @@ for (const track of ["mic", "system"]) {
   });
 }
 
-const timeOf = iso => new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+/* ---------- record sheet ---------- */
+const sheet = $("#sheet");
+let sheetPrefill = {};
+async function openRecordSheet(prefill = {}) {
+  if (BUSY.includes(status.phase)) return showError("A recording is already in progress.");
+  sheetPrefill = prefill;
+  $("#title").value = prefill.title || "";
+  $("#private").checked = false;
+  $("#sheet-msg").textContent = "";
+  sheet.showModal();
+  $("#title").focus();
+  await loadDevices();
+}
+$("#sheet-form").addEventListener("submit", async e => {
+  if (e.submitter?.value !== "start") return;
+  e.preventDefault();
+  const ok = await startRec({ title: $("#title").value, app: sheetPrefill.app,
+    lang: document.querySelector('input[name="lang"]:checked').value, private: $("#private").checked,
+    mic: $("#dev-mic").value, speakers: $("#dev-system").value });
+  if (ok) sheet.close();
+});
+async function startRec(body) {
+  notice = null;
+  if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  try {
+    const { id } = await api("/api/start", { method: "POST", body: JSON.stringify(body) });
+    recordingId = id;
+    await poll();
+    location.hash = `#/m/${id}`;
+    return true;
+  } catch (err) {
+    if (sheet.open) $("#sheet-msg").textContent = err.message; else showError(err.message);
+    return false;
+  }
+}
+$("#record-btn").addEventListener("click", () => openRecordSheet());
+$("#stop").addEventListener("click", async () => {
+  await flushNotes();
+  notice = null;
+  try { await api("/api/stop", { method: "POST" }); await poll(); } catch (err) { showError(err.message); }
+});
+
+/* ---------- status polling ---------- */
+let polling = null;
+const poll = () => polling ??= refresh().finally(() => { polling = null; });
+async function refresh() {
+  try { status = await api("/api/status"); } catch { statusEl.textContent = "Cannot reach MeTranscript. Is the program running?"; return; }
+  const p = status.phase, rec = p === "recording", busy = BUSY.includes(p);
+  document.body.classList.toggle("recording", busy);
+  if (busy) {
+    recordingId = status.meeting_id;
+    const m = meetings.find(x => x.id === status.meeting_id) || (openMeeting?.id === status.meeting_id ? openMeeting : null);
+    $("#strip-label").textContent = rec ? `(Recording – ${m ? titleOf(m) : "meeting"})`
+      : p === "transcribing" ? "(Finishing the transcript…)" : "(Writing the summary…)";
+    $("#strip-clock").textContent = clock(status.elapsed || 0);
+    $("#stop").disabled = !rec;
+    $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
+    $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
+    const onIt = openId === status.meeting_id;
+    $("#strip-back").hidden = onIt;
+    $("#strip-back").href = `#/m/${status.meeting_id}`;
+    if (rec && status.devices) {
+      if (prevPhase !== "recording" || !$("#strip-mic").options.length) {
+        if (!deviceList.mics.length) { try { deviceList = await api("/api/devices"); } catch { /* shown on next action */ } }
+        fillDevices($("#strip-mic"), deviceList.mics, false, status.devices.mic);
+        fillDevices($("#strip-system"), deviceList.speakers, false, status.devices.system);
+      }
+      for (const [track, name] of Object.entries(status.devices)) {
+        const sel = $(`#strip-${track}`);
+        if (document.activeElement !== sel && sel.value !== name) sel.value = name;
+      }
+    }
+  }
+  if (prevPhase !== p) notice = null;
+  statusEl.innerHTML = notice ?? (status.error ? `<span class="error">${esc(status.error)}</span>` : "");
+  if (rec && openId === status.meeting_id) {
+    if (!$("#feed")) renderLive();
+    renderFeed();
+  }
+  const finished = BUSY.includes(prevPhase) && !busy;
+  if (prevPhase !== p && openId === status.meeting_id && openId && !finished) {
+    await flushNotes();
+    openMeeting = await api(`/api/meetings/${openId}`).catch(() => openMeeting);
+    renderMeeting();
+  }
+  if (finished && recordingId) {
+    const id = recordingId;
+    recordingId = null;
+    if (location.hash === `#/m/${id}`) route(); else location.hash = `#/m/${id}`;
+  }
+  if (currentRoute().name === "index" && prevPhase !== p) renderIndex();
+  prevPhase = p;
+  showDetected();
+}
+
+/* ---------- meeting detected ---------- */
+const seen = new Set();
+let shownKey = null;
+$("#detected-rec").addEventListener("click", () => { $("#detected").classList.remove("show"); openRecordSheet({ app: status.detected?.app }); });
+$("#detected-dismiss").addEventListener("click", () => { seen.add(status.detected?.key); $("#detected").classList.remove("show"); });
+function showDetected() {
+  const d = status.detected;
+  if (d && status.phase === "recording") seen.add(d.key);
+  const show = !!d && !seen.has(d.key) && !BUSY.includes(status.phase);
+  $("#detected").classList.toggle("show", show);
+  if (!show || shownKey === d.key) return;
+  shownKey = d.key;
+  $("#detected-text").textContent = `${d.app} is using the microphone. Did a meeting start?`;
+  if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+    const n = new Notification("MeTranscript", { body: `${d.app} is using the microphone. Record this meeting?` });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+}
+
+/* ---------- upcoming (calendar) ---------- */
+let agenda = { configured: false, events: [], error: null };
 async function loadAgenda() {
   if (closed) return;
-  try {
-    const a = await api("/api/agenda");
-    $("#upcoming").innerHTML = !a.configured
-      ? `<li class="empty">Add GOOGLE_CALENDAR_ICS to .env to get reminders 30 and 2 minutes before meetings (see the README).</li>`
-      : a.error ? `<li class="empty error">${esc(a.error)}</li>`
-      : a.events.length ? a.events.slice(0, 5).map(e =>
-          `<li><span>${esc(e.title)}</span><span class="when">${timeOf(e.start)}, ${esc(e.app)}</span></li>`).join("")
-      : `<li class="empty">No meetings with a video link in the next 24 hours.</li>`;
-  } catch { /* the status line already says the app is unreachable */ }
+  try { agenda = await api("/api/agenda"); } catch { return; }
+  $("#nav-upcoming").textContent = agenda.events.length ? `Upcoming (${agenda.events.length})` : "Upcoming";
+  $("#upcoming").innerHTML = !agenda.configured
+    ? `<li><span></span><span class="muted">Add GOOGLE_CALENDAR_ICS to .env to get reminders 30 and 2 minutes before meetings (see the README).</span></li>`
+    : agenda.error ? `<li><span></span><span class="error">${esc(agenda.error)}</span></li>`
+    : agenda.events.length ? agenda.events.map((e, i) => `<li><span class="time">${timeOf(e.start)}</span><span>${esc(e.title)} <span class="muted">${esc(e.app)}</span></span><button class="pill ghost" data-event="${i}">Record</button></li>`).join("")
+    : `<li><span></span><span class="muted">No meetings with a video link in the next 24 hours.</span></li>`;
 }
-loadAgenda();
-setInterval(loadAgenda, 60000);
-
-api("/api/settings").then(s => { $("#autostart").checked = s.autostart; }).catch(() => {});
-$("#autostart").addEventListener("change", async e => {
-  try { e.target.checked = (await api("/api/settings", { method: "POST", body: JSON.stringify({ autostart: e.target.checked }) })).autostart; }
-  catch (err) { e.target.checked = !e.target.checked; showError(err.message); }
+$("#nav-upcoming").addEventListener("click", e => {
+  const open = $("#upcoming-panel").classList.toggle("open");
+  e.currentTarget.setAttribute("aria-expanded", open);
 });
-$("#quit").addEventListener("click", async () => {
-  try {
-    await flushNotes();
-    await api("/api/quit", { method: "POST" });
-    closed = true;
-    document.body.style.display = "grid";
-    document.body.style.gridTemplateColumns = "1fr";
-    document.body.innerHTML = `<main class="blank"><p><strong>MeTranscript is closed</strong>Start it again at the next Windows sign-in (if enabled) or with <code style="white-space: nowrap">python -m metranscript.server</code>.</p></main>`;
-  } catch (err) { showError(err.message); }
+$("#upcoming").addEventListener("click", e => {
+  const b = e.target.closest("button[data-event]");
+  if (!b) return;
+  const ev = agenda.events[b.dataset.event];
+  $("#upcoming-panel").classList.remove("open");
+  $("#nav-upcoming").setAttribute("aria-expanded", "false");
+  openRecordSheet({ title: ev.title, app: ev.app });
 });
 
-const reminderToken = new URLSearchParams(location.search).get("record");
-if (reminderToken) {
-  history.replaceState(null, "", "/");
-  startRec(reminderToken);
+/* ---------- settings / quit ---------- */
+function bindSettings() {
+  const box = $("#autostart");
+  api("/api/settings").then(s => { box.checked = s.autostart; }).catch(() => {});
+  box.addEventListener("change", async e => {
+    try { e.target.checked = (await api("/api/settings", { method: "POST", body: JSON.stringify({ autostart: e.target.checked }) })).autostart; }
+    catch (err) { e.target.checked = !e.target.checked; showError(err.message); }
+  });
+  $("#quit").addEventListener("click", async () => {
+    try {
+      await flushNotes();
+      await api("/api/quit", { method: "POST" });
+      closed = true;
+      document.body.innerHTML = `<div class="closed"><p class="t28">MeTranscript is closed</p><p class="muted">Start it again at the next Windows sign-in (if enabled) or with <code style="white-space:nowrap">python -m metranscript.server</code>.</p></div>`;
+    } catch (err) { showError(err.message); }
+  });
 }
+
+/* ---------- start ---------- */
+(async function boot() {
+  await loadMeetings().catch(() => {});
+  await route();
+  loadAgenda();
+  setInterval(loadAgenda, 60000);
+  (async function loop() { if (closed) return; await poll(); setTimeout(loop, 1000); })();
+  const reminderToken = new URLSearchParams(location.search).get("record");
+  if (reminderToken) {
+    history.replaceState(null, "", "/" + location.hash);
+    startRec({ reminder: reminderToken, lang: "pt" });
+  }
+})();
 </script>
 </body>
 </html>

@@ -91,15 +91,19 @@ python -m metranscript.server
 
 Open http://127.0.0.1:8765 and keep the tab open.
 
-1. When Zoom, Teams or the browser starts using the microphone, the "Record this meeting" alert
-   appears. Or click the record button.
-2. Check the **Microphone** and **Speakers / headphones** selects (Windows defaults are preselected; you
-   can switch them mid-recording too). Choose the language (Portuguese or English). Check **Private meeting: don't send to AI or email**
-   to keep it away from DeepSeek and Gmail.
-3. Take notes during the meeting if you like (optional). The transcript appears every ~30 s.
-4. Click the square to stop. The topic summary is ready in seconds and, if Gmail is
-   configured, arrives in your inbox.
-5. Chat in the side panel: questions, "Add to summary", tweaks and **Undo**.
+1. The home page is the **Index**: every meeting as a numbered list, with filters (All, This week,
+   With next steps, Private).
+2. Press **● Record** (or "Record this meeting" when Zoom, Teams or a browser starts using the
+   microphone, or "Record" on an upcoming calendar meeting). Pick title, language, microphone and
+   speakers (Windows defaults are preselected), and tick **Private meeting** to keep it away from
+   DeepSeek and Gmail.
+3. While recording, a dark strip stays on top of every page: clock, stop button, the devices in use
+   (switch them there mid-meeting) and level meters. Take notes next to the live transcript; you can
+   browse other meetings and come back with **Back to recording**.
+4. Click the square to stop. The meeting opens as an article: (01) Summary, (02) Next steps,
+   (03) Notes and (04) Transcript; if Gmail is configured, the summary also arrives in your inbox.
+5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions with clickable
+   timestamps, "Add to summary", tweaks and **Undo**.
 
 Each meeting lives in `meetings/YYYY-MM-DD_HHMM/` (`notes.md`, `transcript.md`, `summary.md`,
 `chat.json`). The audio (`mic.wav`, `system.wav`) only exists during recording and is deleted when

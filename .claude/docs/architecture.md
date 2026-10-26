@@ -135,3 +135,12 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 | `POST /api/devices` | `{track: "mic"\|"system", name}` | devices in use · `409` if not recording, not found or incompatible |
 
 `POST /api/start` also accepts optional `mic` and `speakers` names; `/api/status` reports `devices` in use.
+
+## Page structure (DEV-0016)
+- One `metranscript/web/index.html`, hash-routed: `#/` (Index) and `#/m/<id>` (Meeting article, or the
+  live view when that meeting is being recorded). Unknown ids return to `#/` with a sticky error.
+- `/api/meetings` also returns `ended_at`, `private`, `app` and `has_next_steps`
+  (`store.NEXT_STEPS_RE`, mirrored in the page as `NEXT_STEPS_RE` and used by `splitSummary()`).
+- `POST /api/start` accepts an optional `app` (from the detected-meeting banner or a calendar event).
+- The recording strip is driven by the 1 s `/api/status` poll and pinned on every route; when the
+  recording finishes, the page opens that meeting's article.
