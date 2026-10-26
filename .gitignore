@@ -1,0 +1,12 @@
+!.claude/
+.claude/settings.local.json
+
+venturelli-house/
+
+meetings/
+bin/
+models/
+.env
+__pycache__/
+*.pyc
+.venv/
