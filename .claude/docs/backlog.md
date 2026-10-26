@@ -136,6 +136,12 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   point to Settings. Tests: `tests/test_config.py`, `tests/test_config_routes.py` (shared server fixture
   in `tests/http_case.py`). Verified in a sandbox instance so the real `.env` was never touched.
 
+## DEV-0029 / DEV-0030 — Protect sensitive data (F14) · `dev-fullstack` · review `seguranca`
+- `privacy.py` (`Mask`: contacts, amounts, IDs and keys by pattern, then listed terms and one-word fuzzy matches),
+  used for every DeepSeek request; `/api/privacy`; `meta.protected` count; record sheet and Index lose the
+  "Private" option (old private meetings stay blocked). Tests: `tests/test_privacy.py`, `tests/test_privacy_routes.py`,
+  `tests/test_enhance.py`.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

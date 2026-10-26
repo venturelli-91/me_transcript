@@ -62,7 +62,7 @@ CEO decision (2026-10-26): receive the summary in their own personal Gmail, auto
       to themselves: subject "MeTranscript: <title> (dd/mm HH:MM)", body = summary, attachment `transcript.md`.
 - [ ] Sent once per meeting; "Regenerate" and chat edits don't resend.
 - [ ] A "Email it to me" button sends the current version whenever the user wants.
-- [ ] A private meeting is never sent.
+- [ ] A meeting flagged private by an older version is never sent.
 - [ ] A send failure shows "Email not sent: reason" and doesn't affect the summary.
 - [ ] Without `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` in `.env`, the feature is off with a subtle notice.
 
@@ -96,8 +96,8 @@ CEO decision (2026-10-26): ArchiPro-inspired navigation and palette with a propo
 direction "E · Index" chosen among five mockups. Full design:
 [specs/2026-10-26-ui-redesign-design.md](specs/2026-10-26-ui-redesign-design.md).
 
-- [ ] Index: numbered list (oldest = 01, newest first), filters All / This week / With next steps / Private.
-- [ ] Record sheet: title, language, devices (defaults preselected), private.
+- [ ] Index: numbered list (oldest = 01, newest first), filters All / This week / With next steps.
+- [ ] Record sheet: title, language, devices (defaults preselected).
 - [ ] Recording strip pinned on every page: clock, stop, devices + levels, Back to recording.
 - [ ] Meeting article: (01) Summary, (02) Next steps (split from the summary), (03) Notes, (04) Transcript.
 - [ ] Chat drawer: default 380 px, drag 320 px – min(50vw, 640 px), double-click resets, ←/→ keys,

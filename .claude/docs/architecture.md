@@ -147,6 +147,15 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - The recording strip is driven by the 1 s `/api/status` poll and pinned on every route; when the
   recording finishes, the page opens that meeting's article.
 
+## Sensitive data protection (DEV-0029)
+- `privacy.Mask` is created per DeepSeek request. `apply()` swaps text for codes (`[TERM_n]`, `[EMAIL_n]`,
+  `[LINK_n]`, `[AMOUNT_n]`, `[ID_n]`, `[SECRET_n]`) and `restore()` puts the originals back in the reply and
+  summary. Patterns run first so a term inside an email hides the whole email; then listed terms (longest
+  first, case and accent insensitive, whole words) and single-word fuzzy matches (`difflib`, ratio 0.8).
+- Terms live in `sensitive-terms.txt` (git-ignored); `GET/PUT /api/privacy` with `{terms}`.
+- `store.set_protected()` keeps the biggest count in `meta.protected`; the article shows it.
+- The email to the user's own Gmail is not masked on purpose.
+
 ## Settings page (DEV-0026)
 - `settings.py`: `FIELDS` (the four editable keys and whether each is secret), `validate()` (single line,
   no spaces in the DeepSeek key, a full email address, `https://` calendar addresses; error messages never

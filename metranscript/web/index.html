@@ -177,6 +177,7 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
 .cfg-row { display: flex; gap: 16px; align-items: baseline; font-size: 14px; }
 .help { margin: 0; font-size: 12px; }
 .field input:disabled { background: var(--bg); color: var(--gray); }
+.field textarea { border: 1px solid var(--line); border-radius: 21px; padding: 12px 14px; background: var(--surface); width: 100%; font: inherit; resize: vertical; }
 .field input[type="text"], .field input[type="password"], .field select { border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; background: var(--surface); min-width: 0; width: 100%; }
 .seg { display: inline-flex; gap: 6px; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
@@ -285,7 +286,6 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
       <select id="dev-system"></select>
       <button type="button" class="link" id="dev-refresh" style="justify-self:start">Refresh devices</button>
     </div>
-    <label class="check"><input type="checkbox" id="private"> Private meeting: don't send to AI or email</label>
     <div class="row"><span id="sheet-msg" class="error" aria-live="polite"></span><button class="pill dark" value="start" id="sheet-start">Start recording</button></div>
   </form>
 </dialog>
@@ -372,7 +372,6 @@ const FILTERS = {
   all: () => true,
   week: m => Date.now() - new Date(m.started_at) < 7 * 864e5,
   next: m => m.has_next_steps,
-  private: m => m.private,
 };
 async function renderIndex() {
   try { await loadMeetings(); } catch (err) { return showError(err.message); }
@@ -380,7 +379,7 @@ async function renderIndex() {
   const pill = (key, label) => `<button class="pill ghost" data-filter="${key}" aria-pressed="${filter === key}">${label}</button>`;
   view.innerHTML = `
     <div class="head"><span class="lbl">(Index – ${meetings.length} meeting${meetings.length === 1 ? "" : "s"})</span></div>
-    <div class="filters" role="group" aria-label="Filter meetings">${pill("all", "All")}${pill("week", "This week")}${pill("next", "With next steps")}${pill("private", "Private")}</div>
+    <div class="filters" role="group" aria-label="Filter meetings">${pill("all", "All")}${pill("week", "This week")}${pill("next", "With next steps")}</div>
     ${!meetings.length ? `<div class="empty-state"><p class="t20">No meetings yet.</p><p class="muted">Press Record to start your first one.</p></div>`
       : !shown.length ? `<div class="empty-state"><p class="muted">No meetings match this filter.</p></div>`
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
@@ -448,7 +447,7 @@ function renderMeeting() {
       <section class="drawer" aria-labelledby="chat-title">
         <header><span class="lbl" id="chat-title">(Ask this meeting)</span></header>
         <p class="privacy">${m.private ? "Private meeting: chat is off and nothing is sent to the AI or by email."
-          : "Asking and changing the summary send this meeting's transcript and notes to DeepSeek."}</p>
+          : `Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.${m.protected ? ` Hidden so far: ${m.protected}.` : ""}`}</p>
         <div class="chat-log" id="chat-log">${chatLog()}</div>
         <form class="chat-form" id="chat-form">
           <label class="sr" for="chat-input">Message</label>
@@ -725,7 +724,6 @@ async function openRecordSheet(prefill = {}) {
   if (BUSY.includes(status.phase)) return showError("A recording is already in progress.");
   sheetPrefill = prefill;
   $("#title").value = prefill.title || "";
-  $("#private").checked = false;
   $("#sheet-msg").textContent = "";
   sheet.showModal();
   $("#title").focus();
@@ -735,7 +733,7 @@ $("#sheet-cancel").addEventListener("click", () => sheet.close());
 $("#sheet-form").addEventListener("submit", async e => {
   e.preventDefault();
   const ok = await startRec({ title: $("#title").value, app: sheetPrefill.app,
-    lang: document.querySelector('input[name="lang"]:checked').value, private: $("#private").checked,
+    lang: document.querySelector('input[name="lang"]:checked').value,
     mic: $("#dev-mic").value, speakers: $("#dev-system").value });
   if (ok) sheet.close();
 });
@@ -891,8 +889,8 @@ const SETTINGS = [
 const stateText = f => f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set";
 
 async function renderSettings() {
-  let cfg;
-  try { cfg = await api("/api/config"); } catch (err) { return showError(err.message); }
+  let cfg, terms;
+  try { [cfg, { terms }] = await Promise.all([api("/api/config"), api("/api/privacy")]); } catch (err) { return showError(err.message); }
   const field = d => {
     const f = cfg[d.name];
     return `<div class="field">
@@ -913,7 +911,13 @@ async function renderSettings() {
         ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>Send a test email</button></div>` : ""}</div></section>`).join("")}
       <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">Save settings</button></div>
     </form>
-    <section class="sec"><span class="lbl">(04) App</span><div class="settings">
+    <section class="sec"><span class="lbl">(04) Protected terms</span><div class="cfg-fields">
+      <form id="terms-form"><div class="field">
+        <label class="lbl" for="terms">Names, clients and projects to hide</label>
+        <textarea id="terms" rows="8" spellcheck="false" placeholder="One per line, for example a client or project name">${esc(terms.join("\n"))}</textarea>
+        <p class="muted help">Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.</p></div>
+        <div class="actions"><button class="pill dark" id="terms-save">Save terms</button></div></form></div></section>
+    <section class="sec"><span class="lbl">(05) App</span><div class="settings">
       <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
       <button class="link" id="quit">Quit MeTranscript</button></div></section>`;
   $("#cfg-form").addEventListener("submit", async e => {
@@ -925,6 +929,11 @@ async function renderSettings() {
     }
     if (!Object.keys(updates).length) return showInfo("Nothing to save.");
     try { await api("/api/config", { method: "PUT", body: JSON.stringify(updates) }); await renderSettings(); showInfo("Settings saved."); }
+    catch (err) { showError(err.message); }
+  });
+  $("#terms-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await api("/api/privacy", { method: "PUT", body: JSON.stringify({ terms: $("#terms").value }) }); await renderSettings(); showInfo("Terms saved."); }
     catch (err) { showError(err.message); }
   });
   view.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {

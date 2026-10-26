@@ -19,7 +19,7 @@ on the side. Times like `[00:31:12]` in the answers jump to that line of the tra
 
 ![Meeting: summary, next steps and the chat drawer](docs/screenshots/meeting.png)
 
-**Record**: pick the language and the devices, or mark the meeting as private.
+**Record**: pick the language and the devices.
 
 ![Record: the new recording sheet](docs/screenshots/record.png)
 
@@ -73,8 +73,7 @@ GMAIL_ADDRESS=you@gmail.com
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
 ```
 
-Each new summary arrives in your inbox (body = summary, attachment = transcript). Private meetings
-are never sent. To turn it off, delete both lines; to revoke access, remove the app password
+Each new summary arrives in your inbox (body = summary, attachment = transcript). To turn it off, delete both lines; to revoke access, remove the app password
 in your Google Account.
 
 ### Calendar reminders (optional)
@@ -90,8 +89,24 @@ GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
 ```
 
 Reminders only fire while MeTranscript is running: turn on **Run in background and start with
-Windows** in Settings → **(04) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
+Windows** in Settings → **(05) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
 password; if it leaks, reset it in the same Google Calendar screen.
+
+### Protecting sensitive data
+
+Everything that goes to DeepSeek (summary and chat) is cleaned first, always, with no switch to turn it off:
+
+- Emails, links, phone and ID numbers (CPF, CNPJ, cards), money amounts and API keys are replaced by codes
+  like `[EMAIL_1]` or `[AMOUNT_1]` automatically.
+- Names of clients, people and projects are replaced when you list them in Settings → **(04) Protected
+  terms** (one per line; the list lives in `sensitive-terms.txt`, which is not in git). Matching ignores
+  case and accents, and a single word that Whisper misspells ("Falkon" for "Falcon") is caught too.
+- The answer comes back with the real names put back, on your computer. Each meeting shows how many
+  items were hidden.
+
+Limits: only what is on your list or matches those patterns is hidden, and Whisper can mishear a
+multi-word name. A plan described in ordinary words is not detected. The Gmail copy of the summary uses the
+real names because it goes to your own inbox.
 
 ### Models (`models/` folder)
 
@@ -127,11 +142,10 @@ python -m metranscript.server
 Open http://127.0.0.1:8765 and keep the tab open.
 
 1. The home page is the **Index**: every meeting as a numbered list, with filters (All, This week,
-   With next steps, Private).
+   With next steps).
 2. Press **● Record** (or "Record this meeting" when Zoom, Teams or a browser starts using the
    microphone, or "Record" on an upcoming calendar meeting). Pick title, language, microphone and
-   speakers (Windows defaults are preselected), and tick **Private meeting** to keep it away from
-   DeepSeek and Gmail.
+   speakers (Windows defaults are preselected).
 3. While recording, a dark strip stays on top of every page: clock, stop button, the devices in use
    (switch them there mid-meeting) and level meters. Take notes next to the live transcript; you can
    browse other meetings and come back with **Back to recording**.
