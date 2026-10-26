@@ -110,12 +110,13 @@ class Mask:
         spans: list[tuple[int, int, str, str, str]] = []
 
         def add(m_start: int, m_end: int, kind: str, key: str, original: str | None = None) -> None:
-            if not any(taken[m_start:m_end]):
-                taken[m_start:m_end] = b"\x01" * (m_end - m_start)
-                a, b = index[m_start], index[m_end - 1] + 1
-                while b < len(text) and unicodedata.category(text[b]) in ("Mn", "Cf"):
-                    b += 1  # a trailing accent mark or zero-width character belongs to the hidden word
-                spans.append((a, b, kind, key, original if original is not None else text[a:b]))
+            if all(taken[m_start:m_end]):
+                return  # already hidden by an earlier match
+            taken[m_start:m_end] = b"\x01" * (m_end - m_start)
+            a, b = index[m_start], index[m_end - 1] + 1
+            while b < len(text) and unicodedata.category(text[b]) in ("Mn", "Cf"):
+                b += 1  # a trailing accent mark or zero-width character belongs to the hidden word
+            spans.append((a, b, kind, key, original if original is not None else text[a:b]))
 
         # Text that already looks like a code is hidden too, so a stored [TERM_1] can't be mistaken for a real one.
         for m in LOOKS_LIKE_CODE_RE.finditer(folded):
@@ -145,8 +146,19 @@ class Mask:
                     if abs(len(word) - len(key)) <= 2 and difflib.SequenceMatcher(None, word, key).ratio() >= ratio:
                         add(m.start(), m.end(), "TERM", key, term)
                         break
+        # Matches that overlap are merged, never dropped, so no piece of either is left in clear.
+        merged: list[tuple[int, int, str, str, str]] = []
+        for span in sorted(spans):
+            if merged and span[0] < merged[-1][1]:
+                prev = merged[-1]
+                if span[1] > prev[1]:
+                    longer = span if span[1] - span[0] > prev[1] - prev[0] else prev
+                    whole = text[prev[0]:span[1]]
+                    merged[-1] = (prev[0], span[1], longer[2], whole, whole)
+                continue
+            merged.append(span)
         out, pos = [], 0
-        for a, b, kind, key, original in sorted(spans):
+        for a, b, kind, key, original in merged:
             out += [text[pos:a], self._code(kind, key, original)]
             pos = b
         return "".join(out) + text[pos:]

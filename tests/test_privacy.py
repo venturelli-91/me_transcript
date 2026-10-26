@@ -159,5 +159,19 @@ class LongTokenTest(PrivacyCase):
         self.assertLess(time.perf_counter() - start, 5)
 
 
+class OverlapTest(PrivacyCase):
+    def test_overlapping_matches_are_merged_into_one_hidden_region(self):
+        key = "deadbeef" * 13
+        self.assertEqual(privacy.Mask().apply(f"see {key}@x.com now"), "see [SECRET_1] now")
+
+    def test_a_term_that_overlaps_a_contact_hides_both_completely(self):
+        masked = self.mask("Acme Corp").apply("mail to Corp.Acme.Corp@acme.com or call Acme Corp")
+        self.assertNotIn("acme", masked.lower())
+        self.assertNotIn("corp", masked.lower())
+
+    def test_a_term_inside_a_contact_keeps_the_contact_as_one_code(self):
+        self.assertEqual(self.mask("Acme").apply("write to ana@acme.com"), "write to [EMAIL_1]")
+
+
 if __name__ == "__main__":
     unittest.main()
