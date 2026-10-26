@@ -157,8 +157,11 @@ Open http://127.0.0.1:8765 and keep the tab open.
    removes the whole folder).
 
 Each meeting lives in `meetings/YYYY-MM-DD_HHMM/` (`notes.md`, `transcript.md`, `summary.md`,
-`chat.json`). The audio (`mic.wav`, `system.wav`) only exists during recording and is deleted when
-transcription finishes; if it fails, the audio stays in the folder.
+`chat.json`). When transcription finishes, the audio is compressed to `mic.opus` and `system.opus`
+(about 11 MB per hour each) so you can press **Re-transcribe** later, for example after adding a name to
+your protected terms; the old transcript is kept as `transcript.previous.md` and the summary is rewritten
+(Undo brings the old one back). The compressed audio is deleted after 30 days. If transcription fails, the
+original WAV stays in the folder.
 
 ## Configuration
 

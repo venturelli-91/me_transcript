@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import wave
 from collections.abc import Callable
 from pathlib import Path
 
@@ -80,6 +81,32 @@ def _run(args: list[str], timeout: int) -> str:
         raise RuntimeError(f"{Path(args[0]).name} failed: {tail}") from None
     except subprocess.TimeoutExpired:
         raise RuntimeError(f"{Path(args[0]).name} did not respond within {timeout} s") from None
+
+
+def to_opus(wav: Path) -> Path:
+    """Speech at 24 kbit/s is ~11 MB per hour per track, enough to transcribe again later."""
+    out = wav.with_suffix(".opus")
+    _run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-c:a", "libopus", "-b:a", "24k",
+          "-application", "voip", str(out)], timeout=600)
+    return out
+
+
+def retranscribe(folder: Path, lang: str) -> list[dict]:
+    """Transcribe a finished meeting again from its saved audio (WAV or Opus)."""
+    sources = {track: next((f for ext in (".wav", ".opus") if (f := folder / f"{track}{ext}").exists()), None)
+               for track in TRACKS}
+    if not all(sources.values()):
+        raise RuntimeError("This meeting has no saved audio.")
+    with tempfile.TemporaryDirectory() as tmp:
+        length = 0.0
+        for track, src in sources.items():
+            wav = Path(tmp) / f"{track}.wav"
+            _run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-ac", "1", "-ar", "16000", str(wav)], timeout=600)
+            with wave.open(str(wav)) as w:
+                length = max(length, w.getnframes() / w.getframerate())
+        segments: list[dict] = []
+        Transcriber(Path(tmp), lang, recorded=lambda: 0.0, on_segments=segments.extend).finish(length)
+        return sorted(segments, key=lambda s: s["t"])
 
 
 def union(*tracks: list[tuple[float, float]]) -> list[tuple[float, float]]:

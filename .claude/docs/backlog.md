@@ -142,6 +142,13 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   "Private" option (old private meetings stay blocked). Tests: `tests/test_privacy.py`, `tests/test_privacy_routes.py`,
   `tests/test_enhance.py`.
 
+## DEV-0031 / DEV-0032 — Whisper quality and Opus audio · `dev-backend` + `dev-frontend`
+- `transcribe.pick_cut/union` (windows end in pauses), `vocabulary()` + previous-window tail as `--prompt`
+  (a plain sentence beat a bare list in a real run), `to_opus`, `retranscribe`; `store.replace_transcript`,
+  `store.expire_audio` (30 days), `POST /api/meetings/<id>/retranscribe`, Re-transcribe button. `store.delete_audio`
+  (DEV-0009) is replaced by compression. Checked with real whisper.cpp: `-d` cuts the window, Opus is 23x smaller
+  and transcribes the same text. Not measured on real meeting audio yet.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

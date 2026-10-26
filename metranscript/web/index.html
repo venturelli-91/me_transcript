@@ -434,6 +434,7 @@ function renderMeeting() {
           ${m.private ? "" : `<div class="actions">
             <button class="pill dark" id="regen" ${off}>${m.summary ? "Regenerate" : "Generate summary"}</button>
             ${m.can_undo ? `<button class="pill ghost" id="undo" ${off}>Undo</button>` : ""}
+            ${m.has_audio ? `<button class="pill ghost" id="retranscribe" ${off} title="Transcribe the saved audio again, then rewrite the summary">Re-transcribe</button>` : ""}
             ${m.email_configured ? `<button class="pill ghost" id="mail" ${off || !m.summary ? "disabled" : ""}>Email it to me</button>` : ""}
             <span class="msg" id="doc-msg" aria-live="polite"></span></div>`}
         </div></section>
@@ -462,6 +463,11 @@ function renderMeeting() {
   bindNotes(notes, m.id);
   $("#regen")?.addEventListener("click", () => docAction("summary", "Writing the summary…", "Summary generated."));
   $("#undo")?.addEventListener("click", () => docAction("undo", "", "Previous version restored."));
+  $("#retranscribe")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    try { await api(`/api/meetings/${openId}/retranscribe`, { method: "POST" }); await poll(); }
+    catch (err) { e.target.disabled = false; $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`; }
+  });
   $("#mail")?.addEventListener("click", () => docAction("email", "Sending…", "Sent to your email."));
   $("#rename").addEventListener("click", startRename);
   $("#delete").addEventListener("click", () => {

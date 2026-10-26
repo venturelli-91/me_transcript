@@ -10,6 +10,8 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
 - [ ] Two meetings in the same minute don't collide (`-2` suffix).
 - [ ] CEO decision (2026-10-26): `mic.wav` and `system.wav` are deleted as soon as transcription
       finishes successfully; the record is `transcript.md`. If transcription fails, the audio is kept.
+- [ ] Update (DEV-0032): instead of deleting, the WAVs are compressed to `mic.opus` / `system.opus`
+      (24 kbit/s) and expire after 30 days; a failed compression keeps the WAV.
 
 ## F2 — Record and stop
 - [ ] The **Record** button starts capture; the **Stop** button ends it. There is no auto-stop.
@@ -28,6 +30,12 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
       during the meeting.
 - [ ] On stop, the remaining chunks are transcribed before the summary.
 - [ ] Silent stretches don't produce made-up text ("Subtitles by the community…").
+- [ ] (DEV-0031) A window ends in the latest pause of both speakers (at least 0.5 s, after 12 s) instead
+      of every 30 s sharp, so words aren't cut.
+- [ ] (DEV-0031) Whisper gets a sentence with the protected terms and the end of the previous window
+      of the same speaker, so names are spelled consistently.
+- [ ] (DEV-0032) **Re-transcribe** on a meeting with saved audio redoes the transcript (the old one is
+      kept as `transcript.previous.md`) and rewrites the summary.
 
 ## F5 — Notes
 - [ ] Free-text area during and after the meeting, saved automatically to

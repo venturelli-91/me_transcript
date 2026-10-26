@@ -11,7 +11,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metranscript import agenda, desktop, detect, enhance, mail, privacy, settings, store
+from metranscript import agenda, desktop, detect, enhance, mail, privacy, settings, store, transcribe
 from metranscript.capture import Recorder, list_devices
 from metranscript.transcribe import Transcriber, check_ready
 
@@ -142,10 +142,24 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
     except Exception as e:
         log.exception("Could not finish %s", meeting_id)
         return _set_phase("error", f"Transcription did not finish ({e}). Audio and notes are saved in the meeting folder.")
-    try:
-        store.delete_audio(meeting_id)
-    except OSError:
-        log.warning("Could not delete audio of %s (file in use?)", meeting_id)
+    _archive_audio(meeting_id)
+    _summarize_and_finish(meeting_id)
+
+
+def _archive_audio(meeting_id: str) -> None:
+    """Keep the audio as small Opus files (they expire, see store.expire_audio); a failed encode keeps the WAV."""
+    folder = store.meeting_dir(meeting_id)
+    for track in store.TRACKS:
+        wav = folder / f"{track}.wav"
+        try:
+            if wav.exists():
+                transcribe.to_opus(wav)
+                wav.unlink()
+        except (RuntimeError, OSError) as e:
+            log.warning("Could not compress the audio of %s (%s); the WAV stays", meeting_id, e)
+
+
+def _summarize_and_finish(meeting_id: str) -> None:
     meeting = store.load(meeting_id)
     if meeting.get("private"):
         return _set_phase("done")
@@ -158,6 +172,27 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
     # Still "enhancing" while sending, so a manual click can't race the automatic email.
     _auto_email(meeting_id)
     _set_phase("done")
+
+
+def retranscribe(meeting_id: str) -> None:
+    with session.lock:
+        if session.phase in BUSY:
+            raise RuntimeError("Wait until the current recording is processed.")
+        meeting = store.load(meeting_id)
+        if not meeting["has_audio"]:
+            raise RuntimeError("This meeting has no saved audio.")
+        check_ready()
+        session.phase, session.meeting_id, session.error = "transcribing", meeting_id, None
+    threading.Thread(target=_retranscribe, args=(meeting_id, meeting["lang"]), daemon=True).start()
+
+
+def _retranscribe(meeting_id: str, lang: str) -> None:
+    try:
+        store.replace_transcript(meeting_id, transcribe.retranscribe(store.meeting_dir(meeting_id), lang))
+    except Exception as e:
+        log.exception("Could not re-transcribe %s", meeting_id)
+        return _set_phase("error", f"Re-transcription failed ({e}). The previous transcript is untouched.")
+    _summarize_and_finish(meeting_id)
 
 
 def _auto_email(meeting_id: str) -> None:
@@ -271,7 +306,7 @@ def undo(meeting_id: str) -> dict:
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/undo|/email)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/undo|/email|/retranscribe)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -395,6 +430,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(lambda: self._send(200, summarize(m.group(1))))
         if m and m.group(2) == "/email":
             return self._guard(lambda: self._send(200, email(m.group(1))))
+        if m and m.group(2) == "/retranscribe":
+            return self._guard(lambda: (retranscribe(m.group(1)), self._send(200)))
         if m and m.group(2) == "/undo":
             return self._guard(lambda: self._send(200, undo(m.group(1))))
         if m and m.group(2) == "/chat":
@@ -466,6 +503,7 @@ def main() -> None:
         log.info("MeTranscript is already running at %s", URL)
         return
     store.ROOT.mkdir(exist_ok=True)
+    store.expire_audio()
     watcher = agenda.Watcher(store.ROOT / "reminders-sent.json", on_reminder)
     log.info("MeTranscript running at %s", URL)
     server.serve_forever()

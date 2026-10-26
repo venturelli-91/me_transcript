@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent / "meetings"
 ID_RE = re.compile(r"\d{4}-\d{2}-\d{2}_\d{4}(-\d+)?")
 # ponytail: one global lock for read-modify-write of meeting files; per-meeting locks if it ever contends
 WRITE_LOCK = threading.Lock()
+AUDIO_KEEP_DAYS = 30
+TRACKS = ("mic", "system")
 
 
 def meeting_dir(meeting_id: str) -> Path:
@@ -106,6 +109,7 @@ def load(meeting_id: str) -> dict:
         "next_steps": next_steps,
         "chat": _read_json(folder, "chat.json"),
         "can_undo": bool(_read_json(folder, "summary-history.json")),
+        "has_audio": any((folder / f"{t}{ext}").exists() for t in TRACKS for ext in (".wav", ".opus")),
     }
 
 
@@ -199,7 +203,17 @@ def set_email_status(meeting_id: str, error: str | None = None) -> None:
         _write_meta(folder, meta)
 
 
-def delete_audio(meeting_id: str) -> None:
-    # The transcript is the record; audio is only kept when transcription fails, to allow a retry.
-    for name in ("mic.wav", "system.wav"):
-        (meeting_dir(meeting_id) / name).unlink(missing_ok=True)
+def replace_transcript(meeting_id: str, segments: list[dict]) -> None:
+    folder = meeting_dir(meeting_id)
+    with WRITE_LOCK:
+        if (folder / "transcript.md").exists():
+            os.replace(folder / "transcript.md", folder / "transcript.previous.md")
+        _write(folder / "transcript.md", "".join(format_segment(s) + "\n" for s in segments))
+
+
+def expire_audio(days: int = AUDIO_KEEP_DAYS) -> None:
+    """Compressed audio is only kept for re-transcribing; a WAV (failed transcription) is never touched."""
+    cutoff = time.time() - days * 86400
+    for audio in ROOT.glob("*/*.opus") if ROOT.exists() else []:
+        if audio.stat().st_mtime < cutoff:
+            audio.unlink()

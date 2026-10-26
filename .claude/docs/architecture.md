@@ -147,6 +147,16 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - The recording strip is driven by the 1 s `/api/status` poll and pinned on every route; when the
   recording finishes, the page opens that meeting's article.
 
+## Transcription windows and audio (DEV-0031, DEV-0032)
+- Each window is analyzed first (ffmpeg clip + Silero VAD for both tracks); `pick_cut` ends it in the latest
+  pause of the union of both speakers' speech, then whisper runs with `-ot <speech start> -d <to the cut>`.
+- `--prompt` = "This meeting mentions <terms>." (language of the meeting) + the last 200 characters of that
+  speaker's previous window.
+- After a successful transcription the WAVs become Opus (`transcribe.to_opus`) and `store.expire_audio()` removes
+  Opus files older than 30 days at start. `POST /api/meetings/<id>/retranscribe` decodes the saved audio,
+  replaces the transcript (`transcript.previous.md` keeps the old one) and rewrites the summary; `409` if busy
+  or there is no audio.
+
 ## Sensitive data protection (DEV-0029)
 - `privacy.Mask` is created per DeepSeek request. `apply()` swaps text for codes (`[TERM_n]`, `[EMAIL_n]`,
   `[LINK_n]`, `[AMOUNT_n]`, `[ID_n]`, `[SECRET_n]`) and `restore()` puts the originals back in the reply and

@@ -69,16 +69,6 @@ class StoreTest(unittest.TestCase):
         store.append_chat(mid, {"role": "user", "content": "ok"})
         self.assertEqual([c["content"] for c in store.load(mid)["chat"]], ["deadline?", "Friday", "ok"])
 
-    def test_delete_audio_keeps_text(self):
-        mid = store.create("", "pt")
-        folder = store.meeting_dir(mid)
-        (folder / "mic.wav").write_bytes(b"x")
-        (folder / "system.wav").write_bytes(b"x")
-        store.append_segments(mid, [{"t": 1, "who": "Me", "text": "hi"}])
-        store.delete_audio(mid)
-        store.delete_audio(mid)
-        self.assertEqual(sorted(p.name for p in folder.iterdir()), ["meta.json", "transcript.md"])
-
     def test_email_status(self):
         mid = store.create("", "pt")
         store.set_email_status(mid, "no connection")
