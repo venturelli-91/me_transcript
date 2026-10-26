@@ -23,7 +23,7 @@ HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 BUSY = {"recording", "transcribing", "enhancing"}
 URL = f"http://127.0.0.1:{PORT}/"
 # One-time tokens behind the "Record" button of a reminder; the page can't start a reminder recording without one.
-reminder_tokens: dict[str, tuple[str, float]] = {}
+reminder_tokens: dict[str, tuple[str, str | None, float]] = {}
 TOKEN_TTL = 1800
 watcher: agenda.Watcher | None = None
 server: ThreadingHTTPServer | None = None
@@ -70,9 +70,9 @@ def on_reminder(event: dict, minutes: int, reminder: int) -> None:
     if reminder == agenda.LAST_REMINDER:
         token = secrets.token_urlsafe(16)
         now = time.time()
-        for old in [t for t, (_, exp) in reminder_tokens.items() if exp < now]:
+        for old in [t for t, (_, _, exp) in reminder_tokens.items() if exp < now]:
             del reminder_tokens[old]
-        reminder_tokens[token] = (event["title"], now + TOKEN_TTL)
+        reminder_tokens[token] = (event["title"], event.get("app"), now + TOKEN_TTL)
         action = ("Record", f"{URL}?record={token}")
     desktop.notify(title, message, URL, action)
 
@@ -293,9 +293,11 @@ class Handler(BaseHTTPRequestHandler):
                 lang = body.get("lang", "pt")
                 title = body.get("title", "")
                 private = body.get("private", False)
+                app = body.get("app")
                 reminder = body.get("reminder")
                 if reminder is not None:
-                    title, expires = reminder_tokens.pop(reminder, ("", 0))
+                    title, reminder_app, expires = reminder_tokens.pop(reminder, ("", None, 0))
+                    app = app or reminder_app
                     if expires < time.time():
                         raise ValueError("This reminder link has expired.")
                 if lang not in LANGS:
@@ -305,7 +307,6 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(private, bool):
                     raise ValueError("private must be true or false.")
                 mic, speakers = body.get("mic"), body.get("speakers")
-                app = body.get("app")
                 if app is not None and app not in MEETING_APPS:
                     raise ValueError("Unknown meeting app.")
                 if not all(d is None or isinstance(d, str) for d in (mic, speakers)):

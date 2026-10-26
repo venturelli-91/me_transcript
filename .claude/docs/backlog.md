@@ -126,6 +126,15 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   keyboard resize, saved width, timestamp jump, expired reminder link.
 
 ## Known issues (low severity)
+- UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
+  article; the recording strip shows a placeholder title for recordings started in another tab until the
+  Index is visited; an Index re-render can briefly cover the live view right after starting from the
+  Index; `m.app` is not escaped in the article meta line (server-validated); filter pills lose keyboard
+  focus after each click; "No summary yet." shows when the summary starts with the next-steps heading;
+  the chat bubble class `.msg` also styles `#doc-msg`; `###` headings render unstyled; the chat draft
+  is cleared when a recording finishes while another article is open; notes typed during a phase
+  re-render can be overwritten by the older fetched copy; translated next-steps headings such as
+  "Próximas etapas" do not match the split regex.
 - "Add to summary" also appears on answers with no useful content ("that wasn't discussed",
   "it's already in the summary"); clicking it wastes a call. Idea: have the model's answer say whether
   it can be added.

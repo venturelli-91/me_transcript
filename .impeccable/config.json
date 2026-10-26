@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "metranscript/web/index.html"
+        ],
+        "createdAt": "2026-10-26T22:24:29.245Z",
+        "reason": "user chose the ArchiPro palette (warm off-white #FBF8F3) during the UI redesign brainstorm"
+      }
+    ]
+  }
+}
