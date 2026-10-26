@@ -1,0 +1,193 @@
+import json
+import logging
+import os
+import re
+import threading
+import time
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+from ata import store
+
+log = logging.getLogger("ata")
+INDEX = Path(__file__).parent / "web" / "index.html"
+LANGS = {"pt", "en"}
+MAX_BODY = 2_000_000
+PORT = int(os.environ.get("ATA_PORT", "8765"))
+HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
+BUSY = {"recording", "transcribing", "enhancing"}
+
+
+class Session:
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.phase = "idle"
+        self.meeting_id: str | None = None
+        self.lang = "pt"
+        self.started = 0.0
+        self.segments: list[dict] = []
+        self.error: str | None = None
+
+    def snapshot(self) -> dict:
+        with self.lock:
+            return {
+                "phase": self.phase,
+                "meeting_id": self.meeting_id,
+                "elapsed": time.time() - self.started if self.phase == "recording" else 0,
+                "levels": {"mic": 0.0, "system": 0.0},
+                # ponytail: full segment list every poll, fine for a few hours of meeting
+                "segments": list(self.segments),
+                "detected": None,
+                "error": self.error,
+            }
+
+
+# ponytail: one global session, one person records one meeting at a time
+session = Session()
+
+
+def start(title: str, lang: str) -> str:
+    with session.lock:
+        if session.phase == "recording":
+            raise RuntimeError("Já existe uma reunião sendo gravada.")
+        if session.phase in BUSY:
+            raise RuntimeError("A reunião anterior ainda está sendo processada. Aguarde a ata ficar pronta.")
+        meeting_id = store.create(title, lang)
+        session.phase, session.meeting_id, session.lang = "recording", meeting_id, lang
+        session.started, session.segments, session.error = time.time(), [], None
+    return meeting_id
+
+
+def stop() -> None:
+    with session.lock:
+        if session.phase != "recording":
+            raise RuntimeError("Nenhuma gravação em andamento.")
+        session.phase = "transcribing"
+        meeting_id = session.meeting_id
+    threading.Thread(target=_finalize, args=(meeting_id,), daemon=True).start()
+
+
+def _finalize(meeting_id: str) -> None:
+    try:
+        store.finish(meeting_id)
+        phase, error = "done", None
+    except Exception as e:
+        log.exception("Falha ao finalizar %s", meeting_id)
+        phase, error = "error", f"Não foi possível finalizar a reunião: {e}"
+    with session.lock:
+        session.phase, session.error = phase, error
+
+
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/ata)?")
+
+
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt: str, *args) -> None:
+        log.debug(fmt, *args)
+
+    def _send(self, status: int, body: object = None, content_type: str = "application/json") -> None:
+        data = body if isinstance(body, bytes) else json.dumps(body if body is not None else {}, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _body(self) -> dict:
+        length = int(self.headers.get("Content-Length") or 0)
+        if not 0 <= length <= MAX_BODY:
+            raise ValueError("Tamanho do corpo inválido.")
+        try:
+            data = json.loads(self.rfile.read(length) or b"{}")
+        except json.JSONDecodeError:
+            raise ValueError("JSON inválido.") from None
+        if not isinstance(data, dict):
+            raise ValueError("JSON deve ser um objeto.")
+        return data
+
+    def _trusted(self, write: bool) -> bool:
+        # Blocks DNS rebinding (Host) and cross-site form posts (JSON forces a CORS preflight we never answer).
+        if self.headers.get("Host") not in HOSTS:
+            self._send(403, {"error": "Host não permitido."})
+            return False
+        if write and self.headers.get_content_type() != "application/json":
+            self._send(415, {"error": "Use Content-Type: application/json."})
+            return False
+        return True
+
+    def do_GET(self) -> None:
+        if not self._trusted(write=False):
+            return
+        if self.path == "/":
+            return self._send(200, INDEX.read_bytes(), "text/html")
+        if self.path == "/api/status":
+            return self._send(200, session.snapshot())
+        if self.path == "/api/meetings":
+            return self._send(200, store.list_meetings())
+        m = MEETING_RE.fullmatch(self.path)
+        if m and not m.group(2):
+            return self._guard(lambda: self._send(200, store.load(m.group(1))))
+        self._send(404, {"error": "Não encontrado."})
+
+    def do_POST(self) -> None:
+        if not self._trusted(write=True):
+            return
+        if self.path == "/api/start":
+            def run():
+                body = self._body()
+                lang = body.get("lang", "pt")
+                title = body.get("title", "")
+                if lang not in LANGS:
+                    raise ValueError("Idioma deve ser pt ou en.")
+                if not isinstance(title, str):
+                    raise ValueError("O título deve ser texto.")
+                self._send(200, {"id": start(title.strip()[:200], lang)})
+            return self._guard(run)
+        if self.path == "/api/stop":
+            return self._guard(lambda: (stop(), self._send(200)))
+        m = MEETING_RE.fullmatch(self.path)
+        if m and m.group(2) == "/ata":
+            return self._guard(lambda: (regenerate(m.group(1)), self._send(200)))
+        self._send(404, {"error": "Não encontrado."})
+
+    def do_PUT(self) -> None:
+        if not self._trusted(write=True):
+            return
+        m = MEETING_RE.fullmatch(self.path)
+        if m and m.group(2) == "/notes":
+            def run():
+                notes = self._body().get("notes")
+                if not isinstance(notes, str):
+                    raise ValueError("notes deve ser texto.")
+                store.save_notes(m.group(1), notes)
+                self._send(200)
+            return self._guard(run)
+        self._send(404, {"error": "Não encontrado."})
+
+    def _guard(self, fn) -> None:
+        try:
+            fn()
+        except KeyError:
+            self._send(404, {"error": "Reunião não encontrada."})
+        except RuntimeError as e:
+            self._send(409, {"error": str(e)})
+        except ValueError as e:
+            self._send(400, {"error": str(e)})
+
+
+def regenerate(meeting_id: str) -> None:
+    store.meeting_dir(meeting_id)
+    raise RuntimeError("Geração da ata ainda não disponível.")
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    log.info("Ata em http://127.0.0.1:%d", PORT)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

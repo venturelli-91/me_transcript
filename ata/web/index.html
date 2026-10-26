@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ata</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #edf0ec;
+  --sheet: #f8faf7;
+  --ink: #1a2320;
+  --muted: #5d6b66;
+  --line: #d3dad5;
+  --bottle: #1e3b34;
+  --bottle-soft: #dfe8e3;
+  --others: #3a4a8f;
+  --rec: #c2352b;
+  --ui: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --read: "Literata", Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--ui); display: grid; grid-template-columns: 260px 1fr; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--bottle); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* lista de reuniões */
+aside { border-right: 1px solid var(--line); padding: 20px 12px; overflow-y: auto; }
+aside h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 0 8px 18px; color: var(--bottle); }
+aside ol { list-style: none; margin: 0; padding: 0; }
+aside li button { width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 8px; cursor: pointer; display: grid; gap: 1px; }
+aside li button:hover { background: var(--bottle-soft); }
+aside li button[aria-current="true"] { background: var(--bottle); color: var(--sheet); }
+aside .when { font-size: 12.5px; color: var(--muted); }
+aside [aria-current="true"] .when { color: #b9cbc3; }
+aside .empty { color: var(--muted); font-size: 13.5px; padding: 0 8px; }
+
+main { display: grid; grid-template-rows: auto 1fr; min-width: 0; height: 100vh; }
+
+/* gravador */
+.deck { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding: 18px 24px; background: var(--bottle); color: var(--sheet); }
+.deck.rec { background: #2a1d1b; }
+#rec { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--sheet); background: transparent; cursor: pointer; display: grid; place-items: center; }
+#rec span { width: 26px; height: 26px; border-radius: 50%; background: var(--rec); transition: border-radius .2s, width .2s, height .2s; }
+.deck.rec #rec span { border-radius: 4px; width: 22px; height: 22px; }
+#rec:disabled { opacity: .45; cursor: default; }
+.setup { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.setup input { flex: 1 1 220px; min-width: 0; max-width: 560px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 8px 10px; color: var(--sheet); }
+.setup input::placeholder { color: #a9bdb5; }
+.lang { display: inline-flex; border: 1px solid rgba(255,255,255,.25); border-radius: 6px; overflow: hidden; }
+.lang label { padding: 8px 12px; cursor: pointer; }
+.lang input { position: absolute; opacity: 0; }
+.lang input:checked + span { font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.lang label:has(input:focus-visible) { outline: 2px solid var(--sheet); outline-offset: -2px; }
+.live { display: none; gap: 18px; align-items: center; }
+.deck.rec .live, .deck.busy .live { display: flex; }
+.deck.rec .setup, .deck.busy .setup { display: none; }
+#clock { font-size: 40px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+.meters { display: grid; gap: 6px; }
+.meter { display: grid; grid-template-columns: 52px 160px; align-items: center; gap: 8px; font-size: 13px; }
+.meter i { height: 8px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; display: block; }
+.meter b { display: block; height: 100%; width: 0; background: #9fd3bd; transition: width .12s linear; }
+.meter.others b { background: #a9b6f0; }
+#now { font-size: 14px; color: #c9d6d0; max-width: 28ch; }
+#state { font-size: 13.5px; color: #c9d6d0; text-align: right; }
+
+/* conteúdo */
+.content { overflow: hidden; min-height: 0; display: grid; }
+.blank { display: grid; place-content: center; text-align: center; color: var(--muted); padding: 40px; }
+.blank p { max-width: 36ch; margin: 0 auto; }
+.blank strong { display: block; color: var(--ink); font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
+.pane { display: grid; grid-template-rows: auto 1fr; min-height: 0; border-right: 1px solid var(--line); }
+.pane:last-child { border-right: 0; }
+.pane h2 { font-size: 13.5px; font-weight: 600; margin: 0; padding: 14px 24px 8px; color: var(--muted); display: flex; justify-content: space-between; }
+.pane h2 small { font-weight: 400; }
+textarea { border: 0; resize: none; background: var(--sheet); padding: 18px 24px; line-height: 1.6; min-height: 0; }
+textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bottle-soft); }
+.feed { overflow-y: auto; padding: 8px 24px 24px; }
+.feed p { margin: 0 0 10px; max-width: 70ch; }
+.feed .who { font-weight: 600; color: var(--bottle); margin-right: 6px; }
+.feed .Outros .who { color: var(--others); }
+.feed time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 6px; }
+.feed .waiting { color: var(--muted); }
+
+.doc { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
+.doc header { display: flex; align-items: end; gap: 24px; padding: 18px 32px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.doc header h2 { margin: 0 auto 10px 0; font-size: 20px; font-weight: 600; }
+[role="tablist"] { display: flex; gap: 4px; }
+[role="tab"] { border: 0; background: none; padding: 8px 12px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); }
+[role="tab"][aria-selected="true"] { color: var(--ink); border-color: var(--bottle); font-weight: 600; }
+.doc .body { overflow-y: auto; min-height: 0; display: grid; }
+.doc .body > * { min-height: 0; }
+.reading { font-family: var(--read); font-size: 17px; line-height: 1.7; padding: 28px 32px 48px; max-width: 72ch; }
+.reading h1, .reading h2, .reading h3 { font-family: var(--ui); line-height: 1.25; color: var(--bottle); }
+.reading h1 { font-size: 24px; } .reading h2 { font-size: 18px; margin-top: 1.8em; } .reading h3 { font-size: 16px; }
+.reading ul { padding-left: 1.2em; }
+.toolbar { display: flex; gap: 12px; align-items: center; padding: 0 32px 28px; }
+.btn { border: 1px solid var(--bottle); background: none; color: var(--bottle); border-radius: 6px; padding: 7px 14px; cursor: pointer; font-weight: 500; }
+.btn:hover { background: var(--bottle-soft); }
+.btn:disabled { opacity: .5; cursor: default; }
+.error { color: var(--rec); }
+
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  body { display: block; }
+  aside { border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; overflow: visible; }
+  aside h1 { margin: 0 0 10px; }
+  aside ol { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  aside li { flex: 0 0 200px; }
+  main { height: auto; min-height: 70vh; }
+  .deck { grid-template-columns: auto 1fr; padding: 14px 16px; gap: 14px; }
+  #state { grid-column: 1 / -1; text-align: left; }
+  .meter { grid-template-columns: 52px 1fr; }
+  .split { grid-template-columns: 1fr; }
+  .pane { border-right: 0; border-bottom: 1px solid var(--line); min-height: 50vh; }
+  .doc header, .reading, .toolbar { padding-left: 16px; padding-right: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<aside>
+  <h1>Ata</h1>
+  <nav aria-label="Reuniões"><ol id="list"></ol></nav>
+</aside>
+<main>
+  <section class="deck" id="deck" aria-label="Gravador">
+    <button id="rec" aria-label="Gravar"><span></span></button>
+    <div>
+      <form class="setup" id="setup">
+        <label class="sr" for="title">Título da reunião</label>
+        <input id="title" placeholder="Sobre o que é a reunião? (opcional)" maxlength="200" autocomplete="off">
+        <fieldset class="lang" style="margin:0;padding:0">
+          <legend class="sr">Idioma da reunião</legend>
+          <label><input type="radio" name="lang" value="pt" checked><span>Português</span></label>
+          <label><input type="radio" name="lang" value="en"><span>English</span></label>
+        </fieldset>
+      </form>
+      <div class="live">
+        <div id="clock">00:00</div>
+        <div id="now"></div>
+        <div class="meters" aria-hidden="true">
+          <div class="meter"><span>Eu</span><i><b id="lv-mic"></b></i></div>
+          <div class="meter others"><span>Outros</span><i><b id="lv-system"></b></i></div>
+        </div>
+      </div>
+    </div>
+    <div id="state" aria-live="polite">Pronto para gravar</div>
+  </section>
+
+  <div class="content" id="content"></div>
+</main>
+
+<template id="tpl-blank">
+  <div class="blank"><p><strong>Nenhuma reunião aberta</strong>Grave uma nova reunião no botão acima ou abra uma da lista.</p></div>
+</template>
+
+<template id="tpl-live">
+  <div class="split">
+    <section class="pane">
+      <h2><label for="notes">Suas notas</label><small class="saved" aria-live="polite"></small></h2>
+      <textarea id="notes" placeholder="Anote o que importa pra você. A ata vai seguir essas notas."></textarea>
+    </section>
+    <section class="pane">
+      <h2>Transcrição <small>atualiza a cada ~30 s</small></h2>
+      <div class="feed" id="feed"><p class="waiting">A primeira parte aparece em cerca de 30 segundos.</p></div>
+    </section>
+  </div>
+</template>
+
+<template id="tpl-doc">
+  <article class="doc">
+    <header>
+      <h2 id="doc-title"></h2>
+      <div role="tablist" aria-label="Partes da reunião">
+        <button role="tab" id="tab-ata" aria-controls="doc-body" data-tab="ata" aria-selected="true">Ata</button>
+        <button role="tab" id="tab-notes" aria-controls="doc-body" data-tab="notes" aria-selected="false">Notas</button>
+        <button role="tab" id="tab-transcript" aria-controls="doc-body" data-tab="transcript" aria-selected="false">Transcrição</button>
+      </div>
+    </header>
+    <div class="body" id="doc-body" role="tabpanel"></div>
+  </article>
+</template>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const deck = $("#deck"), content = $("#content"), stateEl = $("#state");
+let status = { phase: "idle", levels: { mic: 0, system: 0 } }, openId = null, openMeeting = null, tab = "ata";
+
+const api = async (path, opts = {}) => {
+  const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+  return data;
+};
+
+const esc = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+function markdown(md) {
+  let html = "", list = false;
+  for (const line of md.split(/\r?\n/)) {
+    const h = line.match(/^(#{1,3})\s+(.*)/), li = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/);
+    if (!li && list) { html += "</ul>"; list = false; }
+    if (h) html += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
+    else if (li) { if (!list) { html += "<ul>"; list = true; } html += `<li>${inline(li[1].replace(/^\[[ x]\]\s*/, ""))}</li>`; }
+    else if (line.trim()) html += `<p>${inline(line)}</p>`;
+  }
+  return html + (list ? "</ul>" : "");
+}
+
+const clock = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(x).padStart(2, "0"); };
+const when = iso => new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+const LANG = { pt: "Português", en: "English" };
+
+async function loadList() {
+  const items = await api("/api/meetings");
+  $("#list").innerHTML = items.length ? items.map(m =>
+    `<li><button data-id="${m.id}" aria-current="${m.id === openId}">${esc(m.title || "Reunião sem título")}<span class="when">${when(m.started_at)}${m.has_ata ? "" : ", sem ata"}</span></button></li>`
+  ).join("") : `<li class="empty">As reuniões gravadas aparecem aqui.</li>`;
+  $('#list [aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+$("#list").addEventListener("click", e => { const b = e.target.closest("button[data-id]"); if (b) openMeeting_(b.dataset.id); });
+
+let dirty = null, saveTimer = null, saveFailed = false;
+const savedLabel = text => { const el = $(".saved"); if (el) el.textContent = text; };
+
+function bindNotes(textarea, id) {
+  if (saveFailed) savedLabel("Não salvou. Tentando de novo…");
+  textarea.addEventListener("input", () => {
+    dirty = { id, notes: textarea.value };
+    if (openMeeting?.id === id) openMeeting.notes = textarea.value;
+    savedLabel("Salvando…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushNotes, 700);
+  });
+}
+
+async function flushNotes(keepalive = false) {
+  clearTimeout(saveTimer);
+  if (!dirty) return;
+  const d = dirty;
+  dirty = null;
+  try {
+    await api(`/api/meetings/${d.id}/notes`, { method: "PUT", keepalive, body: JSON.stringify({ notes: d.notes }) });
+    saveFailed = false;
+    if (!dirty) savedLabel("Salvo");
+  } catch (err) {
+    dirty ??= d;
+    saveFailed = true;
+    savedLabel(`Não salvou (${err.message}). Tentando de novo…`);
+    saveTimer = setTimeout(flushNotes, 3000);
+  }
+}
+
+window.addEventListener("beforeunload", e => {
+  if (!dirty) return;
+  const failed = saveFailed;
+  flushNotes(true);
+  if (failed) e.preventDefault();
+});
+
+function renderLive() {
+  content.replaceChildren($("#tpl-live").content.cloneNode(true));
+  const ta = $("#notes");
+  ta.value = openMeeting.notes;
+  bindNotes(ta, openId);
+  ta.focus();
+  renderFeed();
+}
+
+function renderFeed() {
+  const feed = $("#feed");
+  if (!feed || !status.segments?.length) return;
+  const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
+  feed.innerHTML = status.segments.map(s =>
+    `<p class="${esc(s.who)}"><time>${clock(s.t)}</time><span class="who">${esc(s.who)}</span>${esc(s.text)}</p>`).join("");
+  if (atBottom) feed.scrollTop = feed.scrollHeight;
+}
+
+async function selectTab(name) {
+  await flushNotes();
+  tab = name;
+  renderDoc();
+  $(`[role="tab"][data-tab="${name}"]`).focus();
+}
+
+function renderDoc() {
+  content.replaceChildren($("#tpl-doc").content.cloneNode(true));
+  $("#doc-title").textContent = openMeeting.title || "Reunião sem título";
+  const tabs = [...content.querySelectorAll('[role="tab"]')];
+  for (const t of tabs) {
+    const on = t.dataset.tab === tab;
+    t.setAttribute("aria-selected", on);
+    t.tabIndex = on ? 0 : -1;
+    t.addEventListener("click", () => selectTab(t.dataset.tab));
+  }
+  $('[role="tablist"]').addEventListener("keydown", e => {
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (!step) return;
+    const i = tabs.findIndex(t => t.dataset.tab === tab);
+    selectTab(tabs[(i + step + tabs.length) % tabs.length].dataset.tab);
+  });
+  const body = $("#doc-body"), busy = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === openId;
+  body.setAttribute("aria-labelledby", `tab-${tab}`);
+  if (tab === "notes") {
+    body.innerHTML = `<section class="pane"><h2><label for="notes">Suas notas</label><small class="saved" aria-live="polite"></small></h2><textarea id="notes"></textarea></section>`;
+    $("#notes").value = openMeeting.notes;
+    bindNotes($("#notes"), openId);
+  } else if (tab === "transcript") {
+    body.innerHTML = `<div class="reading">${openMeeting.transcript ? markdown(openMeeting.transcript) : "<p>Sem transcrição.</p>"}</div>`;
+  } else {
+    const msg = busy ? (status.phase === "transcribing" ? "Terminando a transcrição…" : "Escrevendo a ata…")
+      : status.error && status.meeting_id === openId ? `<span class="error">${esc(status.error)}</span>` : "";
+    body.innerHTML = `<div><div class="reading">${openMeeting.ata ? markdown(openMeeting.ata) : `<p>${busy ? "A ata fica pronta logo depois da transcrição." : "Esta reunião ainda não tem ata."}</p>`}</div>
+      <div class="toolbar"><button class="btn" id="regen" ${busy ? "disabled" : ""}>${openMeeting.ata ? "Gerar de novo" : "Gerar ata"}</button><span aria-live="polite">${msg}</span></div></div>`;
+    $("#regen").addEventListener("click", regenerate);
+  }
+}
+
+async function openMeeting_(id) {
+  await flushNotes();
+  openId = id;
+  openMeeting = await api(`/api/meetings/${id}`);
+  tab = "ata";
+  status.phase === "recording" && status.meeting_id === id ? renderLive() : renderDoc();
+  loadList();
+}
+
+async function regenerate() {
+  $("#regen").disabled = true;
+  try { await flushNotes(); await api(`/api/meetings/${openId}/ata`, { method: "POST" }); await poll(); }
+  catch (err) { $(".toolbar span").innerHTML = `<span class="error">${esc(err.message)}</span>`; $("#regen").disabled = false; }
+}
+
+async function startRec() {
+  const lang = document.querySelector('input[name="lang"]:checked').value;
+  try {
+    const { id } = await api("/api/start", { method: "POST", body: JSON.stringify({ title: $("#title").value, lang }) });
+    $("#title").value = "";
+    await poll();
+    await openMeeting_(id);
+  } catch (err) { stateEl.innerHTML = `<span class="error">${esc(err.message)}</span>`; }
+}
+
+$("#rec").addEventListener("click", async () => {
+  if (status.phase === "recording") {
+    await flushNotes();
+    try { await api("/api/stop", { method: "POST" }); await poll(); } catch (err) { stateEl.textContent = err.message; }
+  } else startRec();
+});
+$("#setup").addEventListener("submit", e => { e.preventDefault(); startRec(); });
+
+let prevPhase = "idle", polling = null;
+const poll = () => polling ??= refresh().finally(() => { polling = null; });
+
+async function refresh() {
+  try { status = await api("/api/status"); } catch { stateEl.textContent = "Sem conexão com o Ata. O programa está rodando?"; return; }
+  const p = status.phase, rec = p === "recording", busy = p === "transcribing" || p === "enhancing";
+  deck.classList.toggle("rec", rec);
+  deck.classList.toggle("busy", busy);
+  $("#rec").setAttribute("aria-label", rec ? "Parar gravação" : "Gravar");
+  $("#rec").disabled = busy;
+  if (rec || busy) $("#clock").textContent = clock(status.elapsed || 0);
+  $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
+  $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
+  if (rec && !openId) await openMeeting_(status.meeting_id);
+  const current = openMeeting?.id === status.meeting_id ? openMeeting : null;
+  $("#now").textContent = current ? `${current.title || "Reunião sem título"}, em ${LANG[current.lang]}` : "";
+  stateEl.innerHTML = rec ? "Gravando. Clique no quadrado para parar."
+    : p === "transcribing" ? "Terminando a transcrição…"
+    : p === "enhancing" ? "Escrevendo a ata…"
+    : p === "error" ? `<span class="error">${esc(status.error || "Algo deu errado.")}</span>`
+    : "Pronto para gravar";
+  if (rec && status.meeting_id === openId) renderFeed();
+  if (prevPhase !== p && openId === status.meeting_id) {
+    if (!rec && openId) { await flushNotes(); openMeeting = await api(`/api/meetings/${openId}`); renderDoc(); }
+    loadList();
+  }
+  prevPhase = p;
+}
+
+content.replaceChildren($("#tpl-blank").content.cloneNode(true));
+loadList();
+(async function loop() { await poll(); setTimeout(loop, 1000); })();
+</script>
+</body>
+</html>
