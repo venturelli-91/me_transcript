@@ -146,3 +146,17 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - `POST /api/start` accepts an optional `app` (from the detected-meeting banner or a calendar event).
 - The recording strip is driven by the 1 s `/api/status` poll and pinned on every route; when the
   recording finishes, the page opens that meeting's article.
+
+## Settings page (DEV-0026)
+- `settings.py`: `FIELDS` (the four editable keys and whether each is secret), `validate()` (single line,
+  no spaces in the DeepSeek key, a full email address, `https://` calendar addresses; error messages never
+  contain the value), `status()` (`set` / `locked` / `value` only for the non-secret Gmail address) and
+  `write_env()` (replaces the file atomically through `.env.tmp`, keeps unrelated lines, drops duplicates).
+- `server.save_config()` validates every field before writing once; a key set in the Windows environment
+  is refused with `409`; saving the calendar address resets the watcher so it re-reads at once.
+
+| Method and route | Body | Response |
+|---|---|---|
+| `GET /api/config` | — | `{NAME: {set, locked, value}}` (value only for `GMAIL_ADDRESS`) |
+| `PUT /api/config` | `{NAME: "value" \| null}` | same shape · `400` invalid · `409` locked |
+| `POST /api/config/test-email` | — | `{}` · `409` with the reason if the email can't be sent |

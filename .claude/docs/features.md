@@ -114,3 +114,16 @@ From the ponytail audit (2026-10-26): the only way to remove a meeting was delet
 - [ ] A meeting that is being recorded, transcribed or summarized cannot be deleted (the button is
       disabled and the API answers `409`).
 - [ ] Deleting an older meeting renumbers the ones after it in the Index (numbers are by age).
+
+## F13 — Settings page for the keys
+Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand was the main friction.
+
+- [ ] `#/settings` (top bar) lists DeepSeek key, Gmail address, Gmail app password and calendar address,
+      plus the background-mode toggle and Quit.
+- [ ] Secrets are never sent back: each shows "Saved" / "Not set"; the Gmail address is shown in full.
+- [ ] Save writes only the filled fields to `.env`, keeps every other line, and applies without restart
+      (the calendar is re-read right away).
+- [ ] **Remove** deletes a key; invalid values are rejected with a clear message (single line, https://
+      calendar addresses, a full email address) and nothing is written.
+- [ ] A key set as a Windows environment variable is shown as locked.
+- [ ] **Send a test email** sends one message to the configured address.

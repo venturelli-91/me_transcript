@@ -19,9 +19,18 @@ Only the DeepSeek API is paid. Audio, transcripts and summaries stay in `meeting
 python -m pip install -r requirements.txt
 ```
 
+### Keys: use the Settings page
+
+Open **Settings** in the top bar and paste your keys there; they are written to the `.env` file at the
+project root (already in `.gitignore`) and the page never shows them back. Each key appears as
+"Saved" / "Not set", and **Remove** deletes it. Changes apply without restarting. A key set as a
+Windows environment variable overrides `.env`, so that field is locked on the page.
+
+You can still edit `.env` by hand; the names are below.
+
 ### DeepSeek key
 
-Create `.env` at the root (it's already in `.gitignore`):
+In Settings → **(01) AI summaries**, or in `.env`:
 
 ```
 DEEPSEEK_API_KEY=sk-...
@@ -31,7 +40,7 @@ DEEPSEEK_API_KEY=sk-...
 
 1. Turn on 2-Step Verification in your Google Account.
 2. Create an app password at https://myaccount.google.com/apppasswords (name: "MeTranscript").
-3. Add to `.env`:
+3. Paste both in Settings → **(02) Gmail** (use **Send a test email** to check), or add to `.env`:
 
 ```
 GMAIL_ADDRESS=you@gmail.com
@@ -48,14 +57,14 @@ MeTranscript can remind you 30 and 2 minutes before every meeting in your Google
 Meet, Zoom or Teams link; the 2-minute reminder has a **Record** button.
 
 1. In Google Calendar, open **Settings → your calendar → Integrate calendar**.
-2. Copy **Secret address in iCal format** and add it to `.env` (comma-separate several calendars):
+2. Copy **Secret address in iCal format** and paste it in Settings → **(03) Calendar**, or add it to `.env` (comma-separate several calendars):
 
 ```
 GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
 ```
 
 Reminders only fire while MeTranscript is running: turn on **Run in background and start with
-Windows** in the sidebar (and use **Quit MeTranscript** to stop it). Treat the secret address like a
+Windows** in Settings → **(04) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
 password; if it leaks, reset it in the same Google Calendar screen.
 
 ### Models (`models/` folder)

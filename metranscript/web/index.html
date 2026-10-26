@@ -109,7 +109,7 @@ main { padding: 32px 32px 64px; max-width: 1280px; margin: 0 auto; }
 .index .date { text-align: right; }
 .empty-state { padding: 48px 0; max-width: 48ch; }
 
-.settings { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.settings { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
 .settings label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
 .settings input { accent-color: var(--dark); }
 
@@ -173,7 +173,11 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
 .sheet { padding: 28px 28px 24px; display: grid; gap: 18px; }
 .sheet h2 { margin: 0; font-weight: 400; }
 .field { display: grid; gap: 6px; }
-.field input[type="text"], .field select { border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; background: var(--surface); min-width: 0; width: 100%; }
+.cfg-fields { display: grid; gap: 22px; max-width: 520px; }
+.cfg-row { display: flex; gap: 16px; align-items: baseline; font-size: 14px; }
+.help { margin: 0; font-size: 12px; }
+.field input:disabled { background: var(--bg); color: var(--gray); }
+.field input[type="text"], .field input[type="password"], .field select { border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; background: var(--surface); min-width: 0; width: 100%; }
 .seg { display: inline-flex; gap: 6px; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
 .seg label { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
@@ -229,6 +233,7 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
   <nav aria-label="Main">
     <a href="#/" id="nav-index">Meetings</a>
     <button id="nav-upcoming" aria-expanded="false" aria-controls="upcoming-panel">Upcoming</button>
+    <a href="#/settings" id="nav-settings">Settings</a>
   </nav>
   <a class="wordmark" href="#/">MeTranscript</a>
   <div class="right"><button class="pill rec" id="record-btn">● Record</button></div>
@@ -332,14 +337,18 @@ function showInfo(msg) { notice = esc(msg); statusEl.innerHTML = notice; }
 
 /* ---------- routing ---------- */
 function currentRoute() {
+  if (location.hash === "#/settings") return { name: "settings" };
   const m = location.hash.match(/^#\/m\/([\w-]+)$/);
   return m ? { name: "meeting", id: m[1] } : { name: "index" };
 }
 async function route() {
   await flushNotes();
   const r = currentRoute();
-  $("#nav-index").toggleAttribute("aria-current", r.name === "index");
+  for (const [nav, name] of [["#nav-index", "index"], ["#nav-settings", "settings"]]) {
+    if (r.name === name) $(nav).setAttribute("aria-current", "page"); else $(nav).removeAttribute("aria-current");
+  }
   if (r.name === "index") { openId = openMeeting = null; return renderIndex(); }
+  if (r.name === "settings") { openId = openMeeting = null; return renderSettings(); }
   try {
     openMeeting = await api(`/api/meetings/${r.id}`);
   } catch {
@@ -377,12 +386,8 @@ async function renderIndex() {
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
           <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}</span>
           <span class="app">${esc(m.app || "")}</span><span class="date">${dateOnly(m.started_at)}</span></a></li>`).join("")}</ol>`}
-    <div class="settings">
-      <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
-      <button class="link" id="quit">Quit MeTranscript</button>
-    </div>`;
+    `;
   view.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => { filter = b.dataset.filter; renderIndex(); }));
-  bindSettings();
 }
 
 /* ---------- meeting article ---------- */
@@ -834,7 +839,7 @@ async function loadAgenda() {
   try { agenda = await api("/api/agenda"); } catch { return; }
   $("#nav-upcoming").textContent = agenda.events.length ? `Upcoming (${agenda.events.length})` : "Upcoming";
   $("#upcoming").innerHTML = !agenda.configured
-    ? `<li><span></span><span class="muted">Add GOOGLE_CALENDAR_ICS to .env to get reminders 30 and 2 minutes before meetings (see the README).</span></li>`
+    ? `<li><span></span><span class="muted">Add your calendar address in <a href="#/settings">Settings</a> to get reminders 30 and 2 minutes before meetings.</span></li>`
     : agenda.error ? `<li><span></span><span class="error">${esc(agenda.error)}</span></li>`
     : agenda.events.length ? agenda.events.map((e, i) => `<li><span class="time">${timeOf(e.start)}</span><span>${esc(e.title)} <span class="muted">${esc(e.app)}</span></span><button class="pill ghost" data-event="${i}">Record</button></li>`).join("")
     : `<li><span></span><span class="muted">No meetings with a video link in the next 24 hours.</span></li>`;
@@ -868,6 +873,72 @@ function bindSettings() {
       document.body.innerHTML = `<div class="closed"><p class="t28">MeTranscript is closed</p><p class="muted">Start it again at the next Windows sign-in (if enabled) or with <code style="white-space:nowrap">python -m metranscript.server</code>.</p></div>`;
     } catch (err) { showError(err.message); }
   });
+}
+
+
+/* ---------- settings ---------- */
+const SETTINGS = [
+  { num: "(01) AI summaries", fields: [
+    { name: "DEEPSEEK_API_KEY", label: "DeepSeek API key", secret: true, help: "Used for summaries and chat. Create a key at platform.deepseek.com." }] },
+  { num: "(02) Gmail", testEmail: true, fields: [
+    { name: "GMAIL_ADDRESS", label: "Gmail address", secret: false },
+    { name: "GMAIL_APP_PASSWORD", label: "App password", secret: true,
+      help: "Turn on 2-Step Verification in your Google Account, then create an app password at myaccount.google.com/apppasswords." }] },
+  { num: "(03) Calendar", fields: [
+    { name: "GOOGLE_CALENDAR_ICS", label: "Secret address in iCal format", secret: true,
+      help: "Google Calendar → Settings → your calendar → Integrate calendar. Treat this address like a password." }] },
+];
+const stateText = f => f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set";
+
+async function renderSettings() {
+  let cfg;
+  try { cfg = await api("/api/config"); } catch (err) { return showError(err.message); }
+  const field = d => {
+    const f = cfg[d.name];
+    return `<div class="field">
+      <label class="lbl" for="cfg-${d.name}">${d.label}</label>
+      <input id="cfg-${d.name}" data-name="${d.name}" type="${d.secret ? "password" : "text"}" autocomplete="${d.secret ? "new-password" : "off"}"
+        spellcheck="false" placeholder="${f.set ? (d.secret ? "Saved. Type a new value to replace it" : "") : "Not set"}"
+        value="${d.secret ? "" : esc(f.value || "")}" ${f.locked ? "disabled" : ""}>
+      <div class="cfg-row"><span class="${f.set ? "" : "muted"}">${stateText(f)}</span>
+        ${f.set && !f.locked ? `<button type="button" class="link danger" data-remove="${d.name}">Remove</button>` : ""}</div>
+      ${d.help ? `<p class="muted help">${d.help}</p>` : ""}</div>`;
+  };
+  view.innerHTML = `
+    <div class="head"><span class="lbl">(Settings)</span></div>
+    <h1 class="meeting-title">Settings</h1>
+    <p class="muted" style="max-width:60ch">Keys are stored only in the .env file on this computer. This page never shows them back.</p>
+    <form id="cfg-form" autocomplete="off">
+      ${SETTINGS.map(s => `<section class="sec"><span class="lbl">${s.num}</span><div class="cfg-fields">${s.fields.map(field).join("")}
+        ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>Send a test email</button></div>` : ""}</div></section>`).join("")}
+      <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">Save settings</button></div>
+    </form>
+    <section class="sec"><span class="lbl">(04) App</span><div class="settings">
+      <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
+      <button class="link" id="quit">Quit MeTranscript</button></div></section>`;
+  $("#cfg-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const updates = {};
+    for (const input of view.querySelectorAll("input[data-name]")) {
+      const v = input.value.trim(), f = cfg[input.dataset.name];
+      if (!input.disabled && v && v !== (f.value || "")) updates[input.dataset.name] = v;
+    }
+    if (!Object.keys(updates).length) return showInfo("Nothing to save.");
+    try { await api("/api/config", { method: "PUT", body: JSON.stringify(updates) }); await renderSettings(); showInfo("Settings saved."); }
+    catch (err) { showError(err.message); }
+  });
+  view.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
+    try { await api("/api/config", { method: "PUT", body: JSON.stringify({ [b.dataset.remove]: null }) }); await renderSettings(); showInfo("Removed."); }
+    catch (err) { showError(err.message); }
+  }));
+  $("#test-email")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    showInfo("Sending the test email…");
+    try { await api("/api/config/test-email", { method: "POST" }); showInfo("Test email sent. Check your inbox."); }
+    catch (err) { showError(err.message); }
+    e.target.disabled = false;
+  });
+  bindSettings();
 }
 
 /* ---------- start ---------- */

@@ -130,6 +130,12 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   `DELETE /api/meetings/<id>`, `409` while recording/processing; Rename (inline) and Delete (confirmation
   dialog) on the article. Tests in `tests/test_store.py` and `tests/test_routes.py`.
 
+## DEV-0026 — Settings page for the keys (F13) · `dev-fullstack` · review `seguranca`
+- `settings.validate/status/write_env`, `/api/config` GET/PUT and `/api/config/test-email`, `#/settings`
+  view (moves the autostart toggle and Quit out of the Index); user-facing "set it in .env" messages now
+  point to Settings. Tests: `tests/test_config.py`, `tests/test_config_routes.py` (shared server fixture
+  in `tests/http_case.py`). Verified in a sandbox instance so the real `.env` was never touched.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the
