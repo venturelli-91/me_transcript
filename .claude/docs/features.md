@@ -103,3 +103,14 @@ direction "E · Index" chosen among five mockups. Full design:
 - [ ] Chat drawer: default 380 px, drag 320 px – min(50vw, 640 px), double-click resets, ←/→ keys,
       width remembered per browser; clickable `[hh:mm:ss]` timestamps scroll to the transcript line.
 - [ ] Works at 400 px (drawer stacks under the article), WCAG AA contrast, keyboard access.
+
+## F12 — Rename and delete a meeting
+From the ponytail audit (2026-10-26): the only way to remove a meeting was deleting its folder by hand.
+
+- [ ] **Rename** on the article swaps the title for an input: Enter saves, Esc cancels, blur saves; the
+      title is trimmed, whitespace collapsed, capped at 200 characters; the Index shows it.
+- [ ] **Delete** opens a confirmation ("…will be removed from this computer. This can't be undone.");
+      the focus starts on Cancel; confirming removes the whole meeting folder and returns to the Index.
+- [ ] A meeting that is being recorded, transcribed or summarized cannot be deleted (the button is
+      disabled and the API answers `409`).
+- [ ] Deleting an older meeting renumbers the ones after it in the Index (numbers are by age).

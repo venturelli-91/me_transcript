@@ -104,6 +104,8 @@ Open http://127.0.0.1:8765 and keep the tab open.
    (03) Notes and (04) Transcript; if Gmail is configured, the summary also arrives in your inbox.
 5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions with clickable
    timestamps, "Add to summary", tweaks and **Undo**.
+6. **Rename** or **Delete** a meeting from the links above its title (deleting asks for confirmation and
+   removes the whole folder).
 
 Each meeting lives in `meetings/YYYY-MM-DD_HHMM/` (`notes.md`, `transcript.md`, `summary.md`,
 `chat.json`). The audio (`mic.wav`, `system.wav`) only exists during recording and is deleted when

@@ -64,6 +64,8 @@ ponytail: one global session — the app is for one person, one meeting at a tim
 | `PUT /api/meetings/<id>/notes` | `{notes}` | `{}` |
 | `POST /api/meetings/<id>/summary` | — | updated meeting (regenerates the summary; synchronous) |
 | `POST /api/meetings/<id>/chat` | `{message}` (1–4000 characters) | updated meeting |
+| `PUT /api/meetings/<id>/title` | `{title}` | updated meeting |
+| `DELETE /api/meetings/<id>` | — | `{}` · `409` while that meeting is recording or processing |
 | `POST /api/meetings/<id>/undo` | — | updated meeting · `409` if there is no previous version |
 | `POST /api/meetings/<id>/email` | — | updated meeting · `409` if private, no summary, or send failure |
 

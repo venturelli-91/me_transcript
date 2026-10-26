@@ -125,6 +125,11 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   empty meeting, 200-char titles, record sheet, strip across routes, stop → article, drawer clamps,
   keyboard resize, saved width, timestamp jump, expired reminder link.
 
+## DEV-0024 — Rename and delete a meeting (F12) · `dev-fullstack`
+- `store.rename` / `store.delete` (under the write lock, `finish` now locked too), `PUT .../title` and
+  `DELETE /api/meetings/<id>`, `409` while recording/processing; Rename (inline) and Delete (confirmation
+  dialog) on the article. Tests in `tests/test_store.py` and `tests/test_routes.py`.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

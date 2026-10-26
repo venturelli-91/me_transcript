@@ -116,6 +116,11 @@ main { padding: 32px 32px 64px; max-width: 1280px; margin: 0 auto; }
 /* meeting article */
 .article { display: grid; grid-template-columns: minmax(0, 1fr) 10px var(--drawer); gap: 0; align-items: start; }
 .body { padding-right: 40px; min-width: 0; }
+.toolrow { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.tools { display: flex; gap: 18px; }
+.link.danger { color: var(--rec); }
+.link:disabled { color: var(--gray); cursor: default; text-decoration: none; }
+input.rename { display: block; width: 100%; margin: 6px 0 12px; font: inherit; font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; border: 1px solid var(--line); border-radius: 21px; padding: 4px 18px; background: var(--surface); }
 .meeting-title { font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; font-weight: 400; margin: 6px 0 12px; overflow-wrap: anywhere; }
 .meta { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--gray); margin-bottom: 28px; }
 .sec { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 24px 0; border-top: 1px solid var(--line); }
@@ -193,7 +198,7 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
   .index a { grid-template-columns: 34px minmax(0, 1fr); gap: 4px 12px; }
   .index .title { font-size: 20px; letter-spacing: -0.02em; }
   .index .app, .index .date { grid-column: 2; text-align: left; font-size: 12px; }
-  .meeting-title { font-size: 28px; }
+  .meeting-title, input.rename { font-size: 28px; }
   .article { grid-template-columns: 1fr; }
   .handle { display: none; }
   .body { padding-right: 0; }
@@ -242,6 +247,14 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
 
 <div id="status" aria-live="polite"></div>
 <main id="view"></main>
+
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <form class="sheet" method="dialog" id="confirm-form">
+    <h2 class="t20" id="confirm-title">Delete this meeting?</h2>
+    <p class="muted" id="confirm-text"></p>
+    <div class="row"><button type="button" class="pill ghost" id="confirm-cancel" autofocus>Cancel</button><button class="pill rec">Delete meeting</button></div>
+  </form>
+</dialog>
 
 <dialog id="sheet" aria-labelledby="sheet-title">
   <form class="sheet" method="dialog" id="sheet-form">
@@ -404,7 +417,9 @@ function renderMeeting() {
   view.innerHTML = `
     <div class="article">
       <div class="body">
-        <a href="#/" class="lbl">← Index</a>
+        <div class="toolrow"><a href="#/" class="lbl">← Index</a>
+          <span class="tools"><button class="link" id="rename">Rename</button>
+            <button class="link danger" id="delete" ${processing ? "disabled" : ""}>Delete</button></span></div>
         <div class="lbl" style="margin-top:20px">(Meeting – ${numbers.get(m.id) || "–"})</div>
         <h1 class="meeting-title">${esc(titleOf(m))}</h1>
         <div class="meta">${meta.map(x => `<span>${x}</span>`).join("")}</div>
@@ -444,6 +459,11 @@ function renderMeeting() {
   $("#regen")?.addEventListener("click", () => docAction("summary", "Writing the summary…", "Summary generated."));
   $("#undo")?.addEventListener("click", () => docAction("undo", "", "Previous version restored."));
   $("#mail")?.addEventListener("click", () => docAction("email", "Sending…", "Sent to your email."));
+  $("#rename").addEventListener("click", startRename);
+  $("#delete").addEventListener("click", () => {
+    $("#confirm-text").textContent = `“${titleOf(openMeeting)}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.`;
+    confirmDialog.showModal();
+  });
   bindTranscript();
   bindChat();
   bindHandle();
@@ -511,6 +531,53 @@ async function send(text, typed) {
     $("#chat-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
   }
 }
+function startRename() {
+  const h1 = $(".meeting-title"), id = openId;
+  const input = document.createElement("input");
+  input.className = "rename";
+  input.maxLength = 200;
+  input.value = openMeeting.title;
+  input.setAttribute("aria-label", "Meeting title");
+  h1.replaceWith(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = async save => {
+    if (done) return;
+    done = true;
+    if (save && input.value.trim() !== openMeeting.title) {
+      try {
+        await flushNotes();
+        const m = await api(`/api/meetings/${id}/title`, { method: "PUT", body: JSON.stringify({ title: input.value }) });
+        if (openId === id) openMeeting = m;
+      } catch (err) { showError(err.message); }
+    }
+    if (openId === id) renderMeeting();
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
+const confirmDialog = $("#confirm");
+$("#confirm-cancel").addEventListener("click", () => confirmDialog.close());
+$("#confirm-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const id = openId;
+  try {
+    await api(`/api/meetings/${id}`, { method: "DELETE" });
+    confirmDialog.close();
+    dirty = null;
+    location.hash = "#/";
+    showInfo("Meeting deleted.");
+  } catch (err) {
+    confirmDialog.close();
+    showError(err.message);
+  }
+});
+
 async function docAction(action, label, done) {
   const id = openId;
   waiting = id;
