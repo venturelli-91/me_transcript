@@ -159,7 +159,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
   or there is no audio.
 
 ## Local fonts, browser detection and echo (DEV-0039 to DEV-0043)
-- Fonts: `GET /fonts/<name>.woff2` serves the two Hanken Grotesk subsets in `metranscript/web/fonts/` (with `OFL.txt`);
+- Fonts: `GET /fonts/<name>.woff2` serves the two Hanken Grotesk subsets and the JetBrains Mono subset (timecodes, numbers) in `metranscript/web/fonts/` (with `OFL-HankenGrotesk.txt` and `OFL-JetBrainsMono.txt`);
   only direct children of that folder with a `.woff2` suffix are served, the query string is ignored, and the page's
   CSP is `font-src 'self'`, so the page makes no request outside `127.0.0.1`.
 - Detection: for a browser executable, `detect.meeting_window(exe)` lists the visible top-level windows owned by that

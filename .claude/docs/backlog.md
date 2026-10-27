@@ -175,6 +175,11 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
 ## DEV-0044 / DEV-0045 — Review follow-ups · `dev-fullstack`
 - Font license (`OFL.txt`), query string ignored on font requests, unique Settings section numbers, trade-offs and docs refreshed.
 
+## DEV-0047 / DEV-0048 — Distinct look and EN / PT-BR switch · `dev-frontend`
+- Critique with Impeccable (specificity verdict, 28/40): sharper shapes, warm neutrals, JetBrains Mono for numbers and
+  time, big meeting numeral; a `PT` dictionary keyed by the English text with `t()`, a switch in the top bar and strip.
+- Next, one front at a time: the two voices (Me / Others) as visual tracks and the live recording strip.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

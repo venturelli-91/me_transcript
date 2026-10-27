@@ -118,6 +118,12 @@ direction "E · Index" chosen among five mockups. Full design:
       width remembered per browser; clickable `[hh:mm:ss]` timestamps scroll to the transcript line.
 - [ ] Works at 400 px (drawer stacks under the article), WCAG AA contrast, keyboard access.
 
+## F11b — Look and language (DEV-0047, DEV-0048)
+- [ ] Square-ish controls (4 px) and 6 px cards; only the Record button is round; filters are underlined tabs.
+- [ ] Timecodes, dates and meeting numbers use JetBrains Mono (served locally); the meeting page opens with its number as a large numeral.
+- [ ] An **EN | PT-BR** switch in the top bar and the recording strip changes every page text without a reload; the choice
+      is kept in the browser (first visit follows the browser language); dates follow the chosen language.
+
 ## F12 — Rename and delete a meeting
 From the ponytail audit (2026-10-26): the only way to remove a meeting was deleting its folder by hand.
 

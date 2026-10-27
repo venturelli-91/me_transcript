@@ -30,6 +30,8 @@ mid-meeting) and level meters. Take notes while the live transcript fills in.
 
 **Dark mode**: the **Dark** / **Light** button in the top bar switches the theme and remembers your choice in this browser. The recording strip stays dark in both and has the same button, so it is always within reach.
 
+**Language**: the **EN | PT-BR** switch in the top bar (also in the recording strip) changes the whole interface at once and remembers your choice in this browser. Server error messages stay in English, and the summary language is still chosen when you record.
+
 **Settings**: paste the keys once. They are saved to `.env` and never shown back.
 
 ![Settings: DeepSeek, Gmail and calendar keys](docs/screenshots/settings.png)
