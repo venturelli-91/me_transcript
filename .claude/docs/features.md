@@ -192,3 +192,8 @@ Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand
 - [ ] Logins are stored in `google-accounts.json`, encrypted with Windows DPAPI; the page and `/api/*` never receive a token or the client secret.
 - [ ] A refused or partial consent (not every permission ticked), a stale or replayed sign-in link and a login Google no longer accepts end in a short,
       clear message and save nothing (or mark the account "Sign in again").
+
+## F19 — About and privacy pages (DEV-0078 to DEV-0080)
+- [ ] **About** (top bar and footer, `#/about`) explains the app in plain words, with screenshots of fictional meetings in the page language, what leaves the computer, the consent reminder and a **Get started** button.
+- [ ] **Get started** opens Settings with a short notice when the DeepSeek key is not set; otherwise it opens the record sheet.
+- [ ] **Privacy** (footer, `#/privacy`) shows the full policy (`PRIVACY.md`, or `PRIVACY.pt.md` in Portuguese); the empty Index links to About.

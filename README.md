@@ -16,6 +16,8 @@ are recording.** Many places (Brazil's LGPD, the EU's GDPR, and several US state
 consent of the people in a conversation before you record it. Rules vary; check yours, and tell the
 participants. This is a tool, not legal advice, and you are responsible for how you use it.
 
+The app has an **About** page with the same summary and a **Privacy** page with the full policy ([PRIVACY.md](PRIVACY.md); [português](PRIVACY.pt.md)), both in the top bar and footer.
+
 What leaves your computer, and what does not:
 
 | Data | Where it goes |
