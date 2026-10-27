@@ -7,7 +7,7 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest import mock
 
-from metranscript import privacy, server, settings, store
+from metranscript import google, privacy, server, settings, store
 
 
 class ServerCase(unittest.TestCase):
@@ -21,6 +21,7 @@ class ServerCase(unittest.TestCase):
             mock.patch.object(store, "ROOT", root / "meetings"),
             mock.patch.object(settings, "ROOT", root),
             mock.patch.object(privacy, "ROOT", root),
+            mock.patch.object(google, "ROOT", root),
             mock.patch.object(server, "watcher", None),
         ]
         for p in cls.patches:

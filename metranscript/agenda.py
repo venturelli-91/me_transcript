@@ -3,15 +3,11 @@ import logging
 import re
 import threading
 import time
-import urllib.request
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import icalendar
-import recurring_ical_events
-
-from metranscript.settings import env
+from metranscript import google
 
 log = logging.getLogger("metranscript")
 LINK_RE = re.compile(r"https://(?:meet\.google\.com|[\w.-]*zoom\.us|teams\.microsoft\.com|teams\.live\.com)/[^\s\"'<>\\]+")
@@ -20,16 +16,16 @@ REMINDERS = (timedelta(minutes=30), timedelta(minutes=2))
 LAST_REMINDER = int(REMINDERS[-1].total_seconds() // 60)
 REFRESH = timedelta(minutes=5)
 HORIZON = timedelta(hours=24)
-MAX_ICS = 10_000_000
+EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+FIELDS = ("items(id,status,summary,start,location,description,hangoutLink,"
+          "conferenceData/entryPoints/uri,attendees(self,responseStatus))")
 
 
-def ics_urls() -> list[str]:
-    return [u.strip() for u in (env("GOOGLE_CALENDAR_ICS") or "").split(",") if u.strip().startswith("https://")]
-
-
-def meeting_link(event) -> str | None:
-    for field in ("X-GOOGLE-CONFERENCE", "LOCATION", "DESCRIPTION", "URL"):
-        match = LINK_RE.search(str(event.get(field, "")))
+def meeting_link(event: dict) -> str | None:
+    entry_points = (event.get("conferenceData") or {}).get("entryPoints") or []
+    for text in (event.get("hangoutLink"), *(p.get("uri") for p in entry_points if isinstance(p, dict)),
+                 event.get("location"), event.get("description")):
+        match = LINK_RE.search(str(text or ""))
         if match:
             return match.group(0)
     return None
@@ -39,37 +35,52 @@ def app_of(link: str) -> str:
     return next(name for host, name in APPS.items() if host in link)
 
 
-def declined(event, me: str | None) -> bool:
-    if not me:
-        return False
-    attendees = event.get("ATTENDEE", [])
-    for a in attendees if isinstance(attendees, list) else [attendees]:
-        if str(a).lower() == f"mailto:{me.lower()}" and a.params.get("PARTSTAT") == "DECLINED":
-            return True
-    return False
+def declined(event: dict) -> bool:
+    return any(a.get("self") and a.get("responseStatus") == "declined" for a in event.get("attendees") or [] if isinstance(a, dict))
 
 
-def upcoming(ics_texts: list[bytes], now: datetime, me: str | None = None) -> list[dict]:
-    """Timed events with a meeting link between now and now + HORIZON, soonest first. `now` is local aware."""
+def upcoming(items: list[dict], now: datetime, account: str = "") -> list[dict]:
+    """Timed, not cancelled, not declined events with a meeting link after `now`, soonest first. `now` is local aware."""
     out = []
-    for text in ics_texts:
-        for event in recurring_ical_events.of(icalendar.Calendar.from_ical(text)).between(now, now + HORIZON):
-            start = event.get("DTSTART").dt
-            link = meeting_link(event)
-            if (not isinstance(start, datetime) or not link or declined(event, me)
-                    or str(event.get("STATUS", "")).upper() == "CANCELLED"):
-                continue
-            start = start.astimezone(now.tzinfo) if start.tzinfo else start.replace(tzinfo=now.tzinfo)
-            if start <= now:
-                continue
-            out.append({
-                # UTC in the key so a DST change doesn't make the same occurrence look new.
-                "key": f"{event.get('UID')}@{start.astimezone(timezone.utc).isoformat()}",
-                "title": " ".join(str(event.get("SUMMARY", "Untitled meeting")).split()),
-                "start": start.isoformat(timespec="minutes"),
-                "app": app_of(link),
-            })
+    for event in items:
+        stamp = (event.get("start") or {}).get("dateTime")  # an all-day event only has "date"
+        link = meeting_link(event)
+        if not stamp or not link or event.get("status") == "cancelled" or declined(event):
+            continue
+        start = datetime.fromisoformat(stamp)
+        start = start.astimezone(now.tzinfo) if start.tzinfo else start.replace(tzinfo=now.tzinfo)
+        if start <= now:
+            continue
+        out.append({
+            # UTC in the key so a DST change doesn't make the same occurrence look new; the id is already one per occurrence.
+            "key": f"{account}:{event.get('id')}@{start.astimezone(timezone.utc).isoformat()}",
+            "title": " ".join(str(event.get("summary", "Untitled meeting")).split()),
+            "start": start.isoformat(timespec="minutes"),
+            "app": app_of(link),
+            "account": account,
+        })
     return sorted(out, key=lambda e: e["start"])
+
+
+def events_for(account: str, now: datetime) -> list[dict]:
+    reply = google.api(account, EVENTS_URL, params={
+        "timeMin": now.isoformat(timespec="seconds"), "timeMax": (now + HORIZON).isoformat(timespec="seconds"),
+        "singleEvents": "true", "orderBy": "startTime", "maxResults": 100, "fields": FIELDS})
+    return upcoming(reply.get("items") or [], now, account)
+
+
+def collect(now: datetime) -> tuple[list[dict], str | None]:
+    """The upcoming meetings of every connected Google account, merged, and a message if an account could not be read."""
+    events, problems = [], []
+    for account in google.emails():
+        try:
+            events += events_for(account, now)
+        except google.ReconnectNeeded as e:
+            problems.append(str(e))
+        except Exception as e:
+            log.warning("Could not read the calendar of a Google account: %s", type(e).__name__)
+            problems.append("Could not read a calendar. Check your connection and the Google accounts in Settings.")
+    return sorted(events, key=lambda e: e["start"]), " ".join(dict.fromkeys(problems)) or None
 
 
 def due(events: list[dict], now: datetime, sent: set[str]) -> list[tuple[dict, int, int]]:
@@ -88,14 +99,6 @@ def due(events: list[dict], now: datetime, sent: set[str]) -> list[tuple[dict, i
     return out
 
 
-def fetch(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=20) as res:
-        data = res.read(MAX_ICS + 1)
-    if len(data) > MAX_ICS:
-        raise ValueError("calendar feed larger than 10 MB")
-    return data
-
-
 class Watcher:
     def __init__(self, state: Path, notify: Callable[[dict, int, int], None]) -> None:
         self.state, self.notify = state, notify
@@ -109,23 +112,11 @@ class Watcher:
             self.sent = set()
         threading.Thread(target=self._loop, daemon=True).start()
 
-    def _refresh(self, now: datetime) -> None:
-        urls = ics_urls()
-        if not urls:
-            self.events, self.error = [], None
-            return
-        try:
-            self.events = upcoming([fetch(u) for u in urls], now, env("GMAIL_ADDRESS"))
-            self.error = None
-        except Exception as e:
-            log.warning("Could not read the calendar: %s", type(e).__name__)  # the message may contain the secret URL
-            self.error = "Could not read the calendar. Check the calendar address in Settings and your connection."
-
     def _tick(self) -> None:
         now = datetime.now().astimezone()
         if self.last_fetch is None or now - self.last_fetch >= REFRESH:
             self.last_fetch = now
-            self._refresh(now)
+            self.events, self.error = collect(now)
         fired = due(self.events, now, self.sent)
         for event, minutes, reminder in fired:
             self.notify(event, minutes, reminder)
