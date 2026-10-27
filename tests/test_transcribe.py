@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -16,6 +17,26 @@ class TranscribeTest(unittest.TestCase):
             {"t": 60.0, "who": "Me", "text": "Good morning, everyone."},
             {"t": 64.5, "who": "Me", "text": "Let's start."},
         ])
+
+    def test_collapses_decoding_loops_and_drops_replacement_characters(self):
+        self.assertEqual(transcribe.collapse_repeats("e aí e aí e aí e aí e aí"), "e aí")
+        self.assertEqual(transcribe.collapse_repeats("tô vendo, tô vendo, tô vendo, tô vendo,"), "tô vendo,")
+        self.assertEqual(transcribe.collapse_repeats("deixa eu pegar aqui, tô vendo, tô vendo, tô vendo, beleza"),
+                         "deixa eu pegar aqui, tô vendo, beleza")
+        self.assertEqual(transcribe.collapse_repeats("muito bom, muito bom"), "muito bom, muito bom")  # twice is speech
+        self.assertEqual(transcribe.collapse_repeats("The plan is ready."), "The plan is ready.")
+        data = {"transcription": [item(0, " aí aí aí aí aí aí"), item(1000, " Ok \ufffd\ufffd então")]}
+        self.assertEqual([s["text"] for s in transcribe.parse_whisper(data, 0, "Me")], ["aí", "Ok então"])
+
+    def test_a_clip_with_broken_utf8_or_json_is_read_leniently_or_skipped(self):
+        for raw, expected in ((b'{"transcription": [{"offsets": {"from": 0}, "text": " Ol\xed mundo"}]}', ["Ol\ufffd mundo".replace("\ufffd", "")]),
+                              (b"not json at all \xed", []), (b'{"transcription": [{"text": "no offsets"}]}', [])):
+            with self.subTest(raw=raw[:20]), tempfile.TemporaryDirectory() as tmp:
+                clip = Path(tmp) / "mic.wav"
+                (Path(tmp) / "mic-out.json").write_bytes(raw)
+                with mock.patch.object(transcribe, "_run", return_value=""):
+                    segs = transcribe.transcribe_clip(clip, [(0.0, 5.0)], 5.0, "pt", "Me", 0.0, "")
+                self.assertEqual([s["text"] for s in segs], [t for t in expected])
 
     def test_drops_hallucinations(self):
         data = {"transcription": [item(0, " Legendas pela comunidade Amara.org"), item(1000, " [Música]"),

@@ -29,6 +29,8 @@ VOCAB_MAX = 300
 INTRO = {"en": "This meeting mentions {}.", "pt": "Esta reunião menciona {}."}
 TAIL = 200
 SEGMENT_RE = re.compile(r"start = ([\d.]+), end = ([\d.]+)")
+# A word or short phrase repeated three or more times in a row is a Whisper decoding loop ("e aí e aí e aí"), not speech.
+REPEAT_RE = re.compile(r"(\b\w[\w']*(?:\s+\w[\w']*){0,3}?)(?:[\s,.;:!?…-]+\1\b){2,}", re.I)
 # The Vulkan build runs the model on the GPU; CPU threads only feed it, so few are enough.
 THREADS = os.environ.get("ATA_THREADS", "4")
 TRACKS = {"mic": "Me", "system": "Others"}
@@ -55,10 +57,14 @@ def is_hallucination(text: str) -> bool:
     return not t or t in HALLUCINATIONS or (t.startswith(("[", "(")) and t.endswith(("]", ")")))
 
 
+def collapse_repeats(text: str) -> str:
+    return REPEAT_RE.sub(r"\1", text)
+
+
 def parse_whisper(data: dict, offset: float, who: str) -> list[dict]:
     out = []
     for item in data.get("transcription", []):
-        text = " ".join(item["text"].split())
+        text = collapse_repeats(" ".join(item["text"].replace("\ufffd", "").split()))
         if not is_hallucination(text):
             out.append({"t": round(offset + item["offsets"]["from"] / 1000, 2), "who": who, "text": text})
     return out
@@ -184,7 +190,13 @@ def transcribe_clip(clip: Path, spans: list[tuple[float, float]], cut: float, la
     if prompt:
         args += ["--prompt", prompt]
     _run(args, timeout=300)
-    return parse_whisper(json.loads(base.with_suffix(".json").read_text(encoding="utf-8")), offset, who)
+    # whisper.cpp can cut a multibyte character in half inside a loop of garbage; decode leniently so one bad clip never stops the meeting.
+    raw = base.with_suffix(".json").read_bytes().decode("utf-8", errors="replace")
+    try:
+        return parse_whisper(json.loads(raw), offset, who)
+    except (json.JSONDecodeError, KeyError, TypeError):
+        log.warning("Whisper wrote output that could not be read; skipping %s at %.0f s", who, offset)
+        return []
 
 
 class Transcriber:
