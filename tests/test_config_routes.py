@@ -3,7 +3,7 @@ import os
 import unittest
 from unittest import mock
 
-from metranscript import mail, server, settings
+from metranscript import google, mail, server, settings
 from tests.http_case import ServerCase
 
 KEY = "sk-very-secret-key-9876"
@@ -92,7 +92,8 @@ class ConfigRoutesTest(ServerCase):
         status, body = self.call("POST", "/api/config/test-email", {})
         self.assertEqual(status, 409)
         self.assertIn("not configured", body["error"])
-        settings.write_env({"GMAIL_ADDRESS": "me@gmail.com", "GMAIL_APP_PASSWORD": PASSWORD})
+        google._save("me@gmail.com", "1//refresh")
+        self.addCleanup(lambda: google._file().unlink(missing_ok=True))
         with mock.patch.object(mail, "send") as send:
             self.assertEqual(self.call("POST", "/api/config/test-email", {}), (200, {}))
         sent = send.call_args.args[0]

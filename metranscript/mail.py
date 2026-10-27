@@ -1,15 +1,14 @@
-import smtplib
-import ssl
+import base64
 from datetime import datetime
 from email.message import EmailMessage
 
-from metranscript.settings import env
+from metranscript import google
 
-HOST, PORT = "smtp.gmail.com", 465
+SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
 
 
 def configured() -> bool:
-    return bool(env("GMAIL_ADDRESS") and env("GMAIL_APP_PASSWORD"))
+    return google.send_account() is not None
 
 
 def build(meeting: dict, address: str) -> EmailMessage:
@@ -19,21 +18,20 @@ def build(meeting: dict, address: str) -> EmailMessage:
     msg["Subject"] = f"MeTranscript: {title} ({when})"
     msg["From"] = msg["To"] = address
     msg.set_content(meeting["summary"])
-    msg.add_attachment(meeting["transcript"].encode("utf-8"), maintype="text", subtype="markdown",
-                       filename="transcript.md")
     return msg
 
 
 def send(meeting: dict) -> None:
-    address, password = env("GMAIL_ADDRESS"), env("GMAIL_APP_PASSWORD")
-    if not (address and password):
-        raise RuntimeError("Email not configured: add your Gmail address and app password in Settings.")
+    """Email the summary to the user's own address, from the Google account chosen in Settings."""
+    address = google.send_account()
+    if not address:
+        raise RuntimeError("Email not configured: sign in with Google in Settings.")
+    raw = base64.urlsafe_b64encode(build(meeting, address).as_bytes()).decode()
     try:
-        # smtplib's default context skips certificate checks; without this the app password could go to an impostor.
-        with smtplib.SMTP_SSL(HOST, PORT, timeout=30, context=ssl.create_default_context()) as smtp:
-            smtp.login(address, password)
-            smtp.send_message(build(meeting, address))
-    except smtplib.SMTPAuthenticationError:
-        raise RuntimeError("Gmail rejected the login: check GMAIL_ADDRESS and the app password.") from None
-    except (smtplib.SMTPException, OSError):
-        raise RuntimeError("Cannot reach Gmail. Check your connection and send again.") from None
+        google.api(address, SEND_URL, body={"raw": raw})
+    except google.ReconnectNeeded as e:
+        raise RuntimeError(str(e)) from None
+    except google.GoogleError as e:
+        if e.status in (401, 403):
+            raise RuntimeError(f"Gmail refused to send from {address}. Sign in again in Settings and allow sending email.") from None
+        raise RuntimeError(f"Gmail could not send the message ({e.status}). Try again.") from None
