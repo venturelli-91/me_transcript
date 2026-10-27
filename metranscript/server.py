@@ -17,6 +17,7 @@ from metranscript.transcribe import Transcriber, check_ready
 
 log = logging.getLogger("metranscript")
 INDEX = Path(__file__).parent / "web" / "index.html"
+FONTS = INDEX.parent / "fonts"
 LANGS = {"pt", "en"}
 MAX_BODY = 2_000_000
 PORT = int(os.environ.get("ATA_PORT", "8765"))
@@ -349,6 +350,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path.split("?", 1)[0] == "/":
             return self._send(200, INDEX.read_bytes(), "text/html")
+        font = FONTS / self.path.removeprefix("/fonts/") if self.path.startswith("/fonts/") else None
+        if font and font.parent == FONTS and font.suffix == ".woff2" and font.is_file():
+            return self._send(200, font.read_bytes(), "font/woff2")
         if self.path == "/api/agenda":
             return self._send(200, {"configured": bool(agenda.ics_urls()), "events": watcher.events if watcher else [],
                                     "error": watcher.error if watcher else None})

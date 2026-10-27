@@ -17,6 +17,25 @@ class RoutesTest(ServerCase):
         self.assertEqual((status, body["phase"]), (200, "idle"))
         self.assertEqual(self.call("GET", "/api/agenda")[1], {"configured": False, "events": [], "error": None})
 
+    def test_fonts_are_served_locally_and_confined(self):
+        import http.client
+
+        def fetch(path):
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+            conn.request("GET", path, headers={"Host": f"127.0.0.1:{self.port}"})
+            res = conn.getresponse()
+            body = res.read()
+            conn.close()
+            return res.status, res.getheader("Content-Type"), body
+
+        status, ctype, body = fetch("/fonts/hanken-grotesk-latin.woff2")
+        self.assertEqual((status, ctype.split(";")[0], body[:4]), (200, "font/woff2", b"wOF2"))
+        self.assertEqual(fetch("/fonts/../server.py")[0], 404)
+        self.assertEqual(fetch("/fonts/missing.woff2")[0], 404)
+        self.assertEqual(fetch("/fonts/hanken-grotesk-latin.woff2/x")[0], 404)
+        _, html = self.call("GET", "/")
+        self.assertNotIn("googleapis", html)
+
     def test_unknown_routes_and_meetings(self):
         self.assertEqual(self.call("GET", "/nope"), (404, {"error": "Not found."}))
         self.assertEqual(self.call("DELETE", "/api/meetings"), (404, {"error": "Not found."}))

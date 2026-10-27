@@ -8,7 +8,6 @@
 | Summary to Gmail via app password | Automatic, zero dependencies, on/off in `.env` | An app password grants broad account access; summary and transcript also live at Google | If Google blocks app passwords or minimal scope is wanted: Gmail API (OAuth) |
 | Calendar via secret iCal address | No OAuth, read-only, one line in `.env` | Changes show up within ~5 min; the address grants read access to the whole calendar | If instant updates matter: Google Calendar API (OAuth) |
 | Background mode without tray icon | No extra dependencies | Quitting is done from the page | If it gets in the way: `pystray` tray icon |
-| Google Fonts | Custom typography without font files in the repo | The page notifies Google (IP) when opened | If it bothers: serve the fonts locally |
 | Two tracks without echo cancellation | Simple; "Me vs. Others" is reliable with headphones | With speakers, other people's speech is duplicated in "Me" | If speakers start being used |
 | Detection via microphone usage | Few lines, no native code | A browser using the mic (e.g. a voice message on WhatsApp Web) also triggers the alert | If the false positive bothers: check the window title |
 | Alert only with the page open | No tray icon or auto-start | Forgetting to keep the page open = no alert | If it's forgotten often: shortcut in the Startup folder |
