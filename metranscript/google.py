@@ -7,6 +7,7 @@ import http.client
 import json
 import logging
 import os
+import re
 import secrets
 import threading
 import time
@@ -25,6 +26,8 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 SCOPES = "openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
 STATE_TTL = 600
+EMAIL_RE = re.compile(r"[^\s@<>/?#\\%&=+]+@[^\s@<>/?#\\%&=+]+")
+NEEDED_SCOPES = ("https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/calendar.readonly")
 MAX_REPLY = 5_000_000
 
 _LOCK = threading.Lock()
@@ -59,11 +62,13 @@ CRYPT32.CryptUnprotectData.argtypes = [ctypes.POINTER(_Blob), ctypes.c_void_p, c
 KERNEL32.LocalFree.argtypes = [ctypes.c_void_p]
 
 
-def _crypt(fn, data: bytes) -> bytes:
+CRYPTPROTECT_UI_FORBIDDEN = 0x1
+
+
+def _crypt(fn, data: bytes, description) -> bytes:
     buf = (ctypes.c_ubyte * len(data)).from_buffer_copy(data)
     out = _Blob()
-    if not fn(ctypes.byref(_Blob(len(data), buf)), None if fn is CRYPT32.CryptUnprotectData else "MeTranscript",
-              None, None, None, 0, ctypes.byref(out)):
+    if not fn(ctypes.byref(_Blob(len(data), buf)), description, None, None, None, CRYPTPROTECT_UI_FORBIDDEN, ctypes.byref(out)):
         raise OSError("Windows could not protect or read the stored login.")
     try:
         return ctypes.string_at(out.pbData, out.cbData)
@@ -72,11 +77,11 @@ def _crypt(fn, data: bytes) -> bytes:
 
 
 def protect(data: bytes) -> bytes:
-    return _crypt(CRYPT32.CryptProtectData, data)
+    return _crypt(CRYPT32.CryptProtectData, data, "MeTranscript")
 
 
 def unprotect(blob: bytes) -> bytes:
-    return _crypt(CRYPT32.CryptUnprotectData, blob)
+    return _crypt(CRYPT32.CryptUnprotectData, blob, None)
 
 
 # ---------- stored accounts ----------
@@ -84,12 +89,25 @@ def _file() -> Path:
     return ROOT / "google-accounts.json"
 
 
-def _load() -> dict:
+def _load(for_update: bool = False) -> dict:
+    """The stored accounts. Reading tolerates a damaged file; before changing it, a file that cannot be read is
+    kept aside (or the change is refused) so one write never wipes the other accounts."""
     try:
         data = json.loads(_file().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        if not isinstance(data, dict) or not isinstance(data.get("accounts", []), list):
+            raise ValueError("unexpected shape")
+    except FileNotFoundError:
         data = {}
-    if not isinstance(data, dict) or not isinstance(data.get("accounts", []), list):
+    except ValueError:
+        if for_update:
+            try:
+                os.replace(_file(), _file().with_name(_file().name + ".bad"))
+            except OSError:
+                raise RuntimeError("The stored Google logins are damaged and could not be set aside.") from None
+        data = {}
+    except OSError:
+        if for_update:
+            raise RuntimeError("The stored Google logins are in use by another program. Try again.") from None
         data = {}
     accounts = [a for a in data.get("accounts", []) if isinstance(a, dict)
                 and isinstance(a.get("email"), str) and isinstance(a.get("token"), str)]
@@ -123,7 +141,7 @@ def send_account() -> str | None:
 
 def set_sender(email: str) -> None:
     with _LOCK:
-        data = _load()
+        data = _load(for_update=True)
         if email not in [a["email"] for a in data["accounts"]]:
             raise ValueError("That Google account is not connected.")
         data["send_from"] = email
@@ -133,7 +151,7 @@ def set_sender(email: str) -> None:
 def _save(email: str, refresh_token: str) -> None:
     token = base64.b64encode(protect(refresh_token.encode())).decode()
     with _LOCK:
-        data = _load()
+        data = _load(for_update=True)
         data["accounts"] = [a for a in data["accounts"] if a["email"] != email] + [{"email": email, "token": token}]
         _dump(data)
         _reconnect.discard(email)
@@ -217,9 +235,16 @@ def _email_of(id_token: str) -> str:
         email = claims["email"]
     except (IndexError, ValueError, KeyError, TypeError, AttributeError):
         raise RuntimeError("Google did not say which account signed in. Try again.") from None
-    if not isinstance(email, str) or "@" not in email or claims.get("email_verified") is False:
+    if not isinstance(email, str) or not EMAIL_RE.fullmatch(email) or len(email) > 254 or claims.get("email_verified") is not True:
         raise RuntimeError("Google did not confirm that account's address. Try again.")
     return email.lower()
+
+
+def _seconds(reply: dict) -> float:
+    try:
+        return float(reply.get("expires_in", 3600))
+    except (TypeError, ValueError):
+        return 3600.0
 
 
 def finish_login(port: int, code: str, state: str) -> str:
@@ -234,9 +259,15 @@ def finish_login(port: int, code: str, state: str) -> str:
     refresh, access = reply.get("refresh_token"), reply.get("access_token")
     if not isinstance(refresh, str) or not isinstance(access, str):
         raise RuntimeError("Google did not give a lasting login. Remove the app's access in your Google Account and try again.")
+    if not all(scope in str(reply.get("scope", "")).split() for scope in NEEDED_SCOPES):
+        try:
+            _form(REVOKE_URL, {"token": refresh})
+        except RuntimeError:
+            log.warning("Could not revoke a Google login that lacked a permission")
+        raise RuntimeError("Google did not give every permission MeTranscript needs (send email and read calendar). Sign in again and tick all the boxes.")
     email = _email_of(str(reply.get("id_token", "")))
     _save(email, refresh)
-    _access[email] = (access, time.time() + float(reply.get("expires_in", 3600)))
+    _access[email] = (access, time.time() + _seconds(reply))
     return email
 
 
@@ -248,6 +279,10 @@ def access_token(email: str, force: bool = False) -> str:
     try:
         reply = _form(TOKEN_URL, {"client_id": client_id, "client_secret": secret, "grant_type": "refresh_token",
                                   "refresh_token": _refresh_token(email)})
+    except OSError:  # the stored login cannot be opened here (copied from another Windows user or machine)
+        _reconnect.add(email)
+        _access.pop(email, None)
+        raise ReconnectNeeded(f"The stored login for {email} cannot be read on this computer. Sign in again in Settings.") from None
     except GoogleError as e:
         if e.code == "invalid_grant":
             _reconnect.add(email)
@@ -258,21 +293,43 @@ def access_token(email: str, force: bool = False) -> str:
     if not isinstance(token, str):
         raise RuntimeError("Google replied in an unexpected format.")
     _reconnect.discard(email)
-    _access[email] = (token, time.time() + float(reply.get("expires_in", 3600)))
+    _access[email] = (token, time.time() + _seconds(reply))
     return token
 
 
-def disconnect(email: str) -> None:
-    """Forget the account here and tell Google to cancel the login (best effort: a network failure must not keep it connected)."""
+def api(email: str, url: str, *, params: dict | None = None, body: dict | None = None) -> dict:
+    """A Google API call as this account (GET, or POST with a JSON body). A rejected access token is refreshed once."""
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    for attempt in (0, 1):
+        headers = {"Authorization": f"Bearer {access_token(email, force=bool(attempt))}"}
+        if body is not None:
+            headers["Content-Type"] = "application/json"
+        req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), headers=headers,
+                                     method="GET" if body is None else "POST")
+        try:
+            return _call(req)
+        except GoogleError as e:
+            if e.status != 401 or attempt:
+                raise
+    raise AssertionError("unreachable")
+
+
+def disconnect(email: str) -> bool:
+    """Forget the account here and tell Google to cancel the login. A network failure must not keep it connected, so the
+    answer says whether Google confirmed (False: remove the app at myaccount.google.com/permissions)."""
+    revoked = True
     try:
         _form(REVOKE_URL, {"token": _refresh_token(email)})
     except (RuntimeError, KeyError, OSError):
+        revoked = False
         log.warning("Could not revoke the Google login for %s; it is removed here anyway", email)
     with _LOCK:
-        data = _load()
+        data = _load(for_update=True)
         data["accounts"] = [a for a in data["accounts"] if a["email"] != email]
         if data["send_from"] == email:
             data["send_from"] = None
         _dump(data)
     _access.pop(email, None)
     _reconnect.discard(email)
+    return revoked

@@ -42,8 +42,11 @@ def http_error(status: int, code: str) -> urllib.error.HTTPError:
     return urllib.error.HTTPError("https://x", status, "err", {}, io.BytesIO(json.dumps({"error": code}).encode()))
 
 
+SCOPE = "openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+
+
 def token_reply(email="me@gmail.com", **extra) -> dict:
-    return {"access_token": ACCESS, "refresh_token": REFRESH, "expires_in": 3600,
+    return {"access_token": ACCESS, "refresh_token": REFRESH, "expires_in": 3600, "scope": SCOPE,
             "id_token": jwt(email=email, email_verified=True), **extra}
 
 
@@ -139,13 +142,30 @@ class LoginTest(GoogleCase):
         bad = [{"access_token": ACCESS, "id_token": jwt(email="a@b.com")},  # no refresh token
                {**token_reply(), "id_token": "garbage"}, {**token_reply(), "id_token": jwt(nothing=1)},
                {**token_reply(), "id_token": jwt(email="no-at-sign")}, {**token_reply(), "id_token": jwt(email="a@b.com", email_verified=False)},
-               {"error": "x"}]
+               {"error": "x"}, {**token_reply(), "id_token": jwt(email="a@b.com")},  # email_verified missing
+               {**token_reply(), "id_token": jwt(email="a b@c.com", email_verified=True)}, {**token_reply(), "id_token": jwt(email="a/b@c.com", email_verified=True)},
+               {**token_reply(), "id_token": jwt(email="a@b.com\r\nBcc: x@y.com", email_verified=True)}]
         for reply in bad:
             state = urllib.parse.parse_qs(urllib.parse.urlsplit(google.start_login(8765)).query)["state"][0]
             with self.subTest(reply=list(reply)), self.answer(reply), self.assertRaises(RuntimeError) as ctx:
                 google.finish_login(8765, "c", state)
             self.assertNotIn(REFRESH, str(ctx.exception))
         self.assertEqual(google.accounts(), [])
+
+    def test_every_permission_must_be_granted_or_the_login_is_revoked_and_nothing_is_saved(self):
+        for scope in ("openid email https://www.googleapis.com/auth/calendar.readonly",
+                      "openid email https://www.googleapis.com/auth/gmail.send", ""):
+            state = urllib.parse.parse_qs(urllib.parse.urlsplit(google.start_login(8765)).query)["state"][0]
+            with self.subTest(scope=scope), self.answer(token_reply(scope=scope), {}), self.assertRaises(RuntimeError) as ctx:
+                google.finish_login(8765, "c", state)
+            self.assertIn("tick all the boxes", str(ctx.exception))
+            self.assertEqual(urllib.parse.parse_qs(self.requests[-1].data.decode()), {"token": [REFRESH]})  # revoked
+        self.assertEqual(google.accounts(), [])
+
+    def test_a_non_numeric_expiry_does_not_break_signing_in(self):
+        state = urllib.parse.parse_qs(urllib.parse.urlsplit(google.start_login(8765)).query)["state"][0]
+        with self.answer(token_reply(expires_in="soon")):
+            self.assertEqual(google.finish_login(8765, "c", state), "me@gmail.com")
 
     def test_a_google_error_hides_secrets_and_a_network_error_is_clear(self):
         state = urllib.parse.parse_qs(urllib.parse.urlsplit(google.start_login(8765)).query)["state"][0]
@@ -172,6 +192,16 @@ class TokensTest(GoogleCase):
         with self.answer({"access_token": "ya29.again", "expires_in": 3600}):
             google.access_token("me@gmail.com", force=True)
         self.assertEqual(google.accounts()[0]["needs_reconnect"], False)
+
+    def test_a_stored_login_that_windows_cannot_open_asks_to_sign_in_again(self):
+        self.sign_in()
+        google._access.clear()
+        data = google._load()
+        data["accounts"][0]["token"] = base64.b64encode(b"copied from another computer").decode()
+        google._dump(data)
+        with self.assertRaises(google.ReconnectNeeded):
+            google.access_token("me@gmail.com")
+        self.assertTrue(google.accounts()[0]["needs_reconnect"])
 
     def test_other_google_errors_do_not_mark_the_account(self):
         self.sign_in()
@@ -204,6 +234,27 @@ class AccountsTest(GoogleCase):
             google.disconnect("a@gmail.com")
         self.assertEqual((google.emails(), google.send_account()), ([], None))
         google.disconnect("nobody@gmail.com")  # unknown: nothing happens
+
+    def test_a_damaged_file_is_kept_aside_and_an_unreadable_one_blocks_the_change(self):
+        self.sign_in("a@gmail.com")
+        google._file().write_text("{broken", encoding="utf-8")
+        self.sign_in("b@gmail.com")
+        self.assertEqual(google.emails(), ["b@gmail.com"])
+        self.assertEqual(google._file().with_name("google-accounts.json.bad").read_text(encoding="utf-8"), "{broken")
+        before = google._file().read_text(encoding="utf-8")
+        with mock.patch.object(Path, "read_text", side_effect=PermissionError("locked")):
+            self.assertEqual(google.emails(), [])  # reading tolerates it...
+            with self.assertRaises(RuntimeError):
+                google.set_sender("b@gmail.com")  # ...changing does not, so the other accounts are never wiped
+        self.assertEqual(google._file().read_text(encoding="utf-8"), before)
+
+    def test_disconnect_says_whether_google_confirmed(self):
+        self.sign_in("a@gmail.com")
+        with self.answer({}):
+            self.assertTrue(google.disconnect("a@gmail.com"))
+        self.sign_in("a@gmail.com")
+        with self.answer(OSError("offline")):
+            self.assertFalse(google.disconnect("a@gmail.com"))
 
     def test_signing_in_again_replaces_the_account(self):
         self.sign_in("a@gmail.com")
@@ -265,6 +316,15 @@ class GoogleRoutesTest(ServerCase):
         finish.assert_not_called()
         self.assertEqual(self.callback("?code=abc&state=xyz", host="evil.com")[0], 403)
 
+    def test_a_forged_or_replayed_callback_and_a_failing_windows_encryption_end_in_the_error_redirect(self):
+        self.assertEqual(self.callback("?code=attacker&state=forged"), (302, "/?google=error#/settings"))
+        self.assertEqual(self.callback(""), (302, "/?google=error#/settings"))
+        with mock.patch.object(google, "finish_login", side_effect=OSError("Windows could not protect")):
+            self.assertEqual(self.callback("?code=a&state=b"), (302, "/?google=error#/settings"))
+        for headers in ({"Content-Type": "text/plain"}, {"Content-Type": "application/x-www-form-urlencoded"}):
+            self.assertEqual(self.call("POST", "/api/google/login", {}, headers=headers)[0], 415)
+        self.assertEqual(self.call("POST", "/api/google/login", {}, headers={"Host": "evil.com"})[0], 403)
+
     def test_sender_and_disconnect_validate_their_input(self):
         google._save("a@gmail.com", REFRESH)
         google._save("b@gmail.com", REFRESH)
@@ -274,7 +334,7 @@ class GoogleRoutesTest(ServerCase):
         self.assertEqual((status, [a["sender"] for a in body["accounts"]]), (200, [False, True]))
         with mock.patch.object(google, "_open", return_value=Reply({})):
             status, body = self.call("POST", "/api/google/disconnect", {"email": "b@gmail.com"})
-        self.assertEqual((status, [a["email"] for a in body["accounts"]]), (200, ["a@gmail.com"]))
+        self.assertEqual((status, [a["email"] for a in body["accounts"]], body["revoked"]), (200, ["a@gmail.com"], True))
         self.assertEqual(self.call("POST", "/api/google/disconnect", {"email": "a@gmail.com"}, headers={"Content-Type": "text/plain"})[0], 415)
 
 

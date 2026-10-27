@@ -365,7 +365,7 @@ class Handler(BaseHTTPRequestHandler):
         if font and font.parent == FONTS and font.suffix == ".woff2" and font.is_file():
             return self._send(200, font.read_bytes(), "font/woff2")
         if self.path == "/api/agenda":
-            return self._send(200, {"configured": bool(agenda.ics_urls()), "events": watcher.events if watcher else [],
+            return self._send(200, {"configured": bool(google.emails()), "events": watcher.events if watcher else [],
                                     "error": watcher.error if watcher else None})
         if self.path == "/api/settings":
             return self._send(200, {"autostart": desktop.autostart_enabled()})
@@ -431,11 +431,12 @@ class Handler(BaseHTTPRequestHandler):
                 email = self._body().get("email")
                 if not isinstance(email, str):
                     raise ValueError("email must be text.")
+                revoked = True
                 if self.path.endswith("sender"):
                     google.set_sender(email)
                 else:
-                    google.disconnect(email)
-                self._send(200, {"accounts": google.accounts()})
+                    revoked = google.disconnect(email)
+                self._send(200, {"accounts": google.accounts(), "revoked": revoked})
             return self._guard(run)
         if self.path == "/api/devices":
             def run():
@@ -535,8 +536,8 @@ def _google_outcome(query: dict) -> str:
         return "denied" if one("error") == "access_denied" else "error"
     try:
         google.finish_login(PORT, one("code"), one("state"))
-    except RuntimeError as e:
-        log.warning("Google sign-in failed: %s", e)
+    except (RuntimeError, OSError, ValueError) as e:
+        log.warning("Google sign-in failed: %s", type(e).__name__ if not isinstance(e, RuntimeError) else e)
         return "error"
     return "connected"
 
