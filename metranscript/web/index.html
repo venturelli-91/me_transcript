@@ -935,7 +935,7 @@ const SETTINGS = [
       help: "Google Calendar → Settings → your calendar → Integrate calendar. Treat this address like a password." }] },
   { num: "(04) Meeting alert", fields: [
     { name: "MEETING_KEYWORDS", label: "Browser window words", secret: false,
-      help: "A browser using the microphone only raises the alert when a window title has one of these comma-separated words. Default: Meet, Zoom, Teams." }] },
+      help: "A browser using the microphone only raises the alert when one of its window titles has one of these comma-separated words. Default: Meet, Zoom, Teams." }] },
 ];
 const stateText = f => f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set";
 
@@ -968,7 +968,7 @@ async function renderSettings() {
         <textarea id="terms" rows="8" spellcheck="false" placeholder="One per line, for example a client or project name">${esc(terms.join("\n"))}</textarea>
         <p class="muted help">Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.</p></div>
         <div class="actions"><button class="pill dark" id="terms-save">Save terms</button></div></form></div></section>
-    <section class="sec"><span class="lbl">(05) App</span><div class="settings">
+    <section class="sec"><span class="lbl">(06) App</span><div class="settings">
       <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
       <button class="link" id="quit">Quit MeTranscript</button></div></section>`;
   $("#cfg-form").addEventListener("submit", async e => {
