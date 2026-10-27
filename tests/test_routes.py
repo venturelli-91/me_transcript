@@ -1,3 +1,4 @@
+import http.client
 import unittest
 from unittest import mock
 
@@ -18,8 +19,6 @@ class RoutesTest(ServerCase):
         self.assertEqual(self.call("GET", "/api/agenda")[1], {"configured": False, "events": [], "error": None})
 
     def test_fonts_are_served_locally_and_confined(self):
-        import http.client
-
         def fetch(path):
             conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
             conn.request("GET", path, headers={"Host": f"127.0.0.1:{self.port}"})

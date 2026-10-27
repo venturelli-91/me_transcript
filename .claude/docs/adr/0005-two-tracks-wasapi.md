@@ -30,7 +30,7 @@ to ffmpeg at transcription time.
 ### Positive
 - Works the same for Meet, Zoom and Teams.
 ### Negative
-- Without headphones, other people's voices leak into "Me" (no echo cancellation).
+- Without headphones, other people's voices leak into "Me" (no echo cancellation). Partly superseded by DEV-0041: duplicated lines are dropped from "Me" by word overlap.
 ### Risks
 - Switching the output device mid-meeting interrupts the loopback. Accepted:
   restarting the recording fixes it.

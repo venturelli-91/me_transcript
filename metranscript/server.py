@@ -350,7 +350,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if self.path.split("?", 1)[0] == "/":
             return self._send(200, INDEX.read_bytes(), "text/html")
-        font = FONTS / self.path.removeprefix("/fonts/") if self.path.startswith("/fonts/") else None
+        path = self.path.split("?", 1)[0]
+        font = FONTS / path.removeprefix("/fonts/") if path.startswith("/fonts/") else None
         if font and font.parent == FONTS and font.suffix == ".woff2" and font.is_file():
             return self._send(200, font.read_bytes(), "font/woff2")
         if self.path == "/api/agenda":
