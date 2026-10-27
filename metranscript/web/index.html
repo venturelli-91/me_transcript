@@ -147,6 +147,40 @@ body.on-air #strip-label::before { content: ""; display: inline-block; width: 8p
 #strip .nav { display: flex; gap: 8px; }
 #strip .pill { background: transparent; color: #fff; border-color: rgba(255,255,255,.35); }
 
+/* about */
+.about { max-width: 1280px; margin: 0 auto; }
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(24px, 4vw, 72px); align-items: center; padding: 40px 0 88px; }
+.hero h1 { font-size: clamp(40px, 6vw, 80px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 400; margin: 0 0 22px; text-wrap: balance; }
+.lead { font-size: 18px; line-height: 1.55; max-width: 46ch; margin: 0; }
+.cta { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; margin-top: 30px; }
+.pill.big { padding: 13px 28px; font-size: 16px; }
+.frame { border: 1px solid var(--edge); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); box-shadow: 0 44px 80px -44px rgba(26, 22, 19, .45); }
+.frame img { display: block; width: 100%; height: auto; }
+.hero .frame { margin-right: calc(-1 * clamp(16px, 3vw, 56px)); animation: rise .8s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+.about-sec { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 40px 0; border-top: 1px solid var(--line); }
+.about-title { margin: 0 0 8px; font-weight: 400; font-size: 28px; letter-spacing: -0.03em; line-height: 1.12; }
+.step { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 48px 0; border-top: 1px solid var(--line); }
+.step .num { font: 300 72px/.85 var(--mono); letter-spacing: -0.04em; }
+.step h2 { margin: 0 0 10px; font-weight: 400; font-size: 28px; letter-spacing: -0.03em; line-height: 1.12; }
+.step p { margin: 0 0 22px; max-width: 62ch; font-size: 16px; line-height: 1.6; }
+.step .pair { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 36px; align-items: start; }
+.facts { display: grid; margin-top: 8px; border-top: 1px solid var(--ink); }
+.fact { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.fact b { font-weight: 500; }
+.fact span { max-width: 62ch; line-height: 1.55; }
+.about-note { max-width: 62ch; margin: 22px 0 14px; line-height: 1.6; }
+.about-note.first { margin-top: 0; }
+.about-how { display: block; margin-bottom: 6px; }
+.about-end { padding: 72px 0 24px; border-top: 1px solid var(--ink); }
+.about-end h2 { margin: 0 0 6px; font-weight: 400; font-size: clamp(32px, 4.5vw, 56px); letter-spacing: -0.035em; line-height: 1.05; }
+.policy { max-width: 80ch; }
+.reading.policy h2 { font-size: 40px; margin: 0 0 12px; }
+.reading code, .policy code { font: 400 .9em var(--mono); background: color-mix(in srgb, var(--ink) 7%, transparent); padding: 1px 5px; border-radius: 3px; }
+.reading table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+.reading th, .reading td { text-align: left; vertical-align: top; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); }
+.reading th { font-weight: 500; border-bottom-color: var(--ink); }
+
 /* footer */
 footer.site { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 20px clamp(16px, 3vw, 56px) 28px; border-top: 1px solid var(--line); color: var(--gray); font-size: 12px; }
 footer.site p { margin: 0; }
@@ -288,6 +322,16 @@ dialog::backdrop { background: var(--scrim); }
   #upcoming-panel li { grid-template-columns: 52px 1fr; }
   #upcoming-panel li .pill { grid-column: 2; justify-self: start; }
 }
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; padding: 16px 0 56px; }
+  .hero .frame { margin-right: 0; }
+  .about-sec, .step { grid-template-columns: 1fr; gap: 10px; }
+  .step .num { font-size: 48px; }
+  .step .pair { grid-template-columns: 1fr; }
+  .step .pair .frame { max-width: 320px; }
+  .fact { grid-template-columns: 1fr; gap: 4px; }
+  .reading table { display: block; overflow-x: auto; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -310,6 +354,7 @@ dialog::backdrop { background: var(--scrim); }
     <a href="#/" id="nav-index">Meetings</a>
     <button id="nav-upcoming" aria-expanded="false" aria-controls="upcoming-panel">Upcoming</button>
     <a href="#/settings" id="nav-settings">Settings</a>
+    <a href="#/about" id="nav-about">About</a>
   </nav>
   <a class="wordmark" href="#/">MeTranscript</a>
   <div class="right"><div class="langsw" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false">PT-BR</button></div><button class="pill ghost theme-btn">Dark</button><button class="pill rec" id="record-btn">● Record</button></div>
@@ -330,7 +375,7 @@ dialog::backdrop { background: var(--scrim); }
 <main id="view"></main>
 
 <footer class="site">
-  <p>MIT License · © 2026 Aurélio Venturelli · <a id="ft-license" href="https://github.com/venturelli-91/avtranscript/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">View license</a></p>
+  <p>MIT License · © 2026 Aurélio Venturelli · <a id="ft-license" href="https://github.com/venturelli-91/avtranscript/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">View license</a> · <a id="ft-about" href="#/about">About</a> · <a id="ft-privacy" href="#/privacy">Privacy</a></p>
   <nav id="ft-nav" aria-label="Contact">
     <!-- logos from Simple Icons (CC0); they are trademarks of their owners -->
     <a id="ft-linkedin" href="https://www.linkedin.com/in/aurelioventurelli/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
@@ -542,6 +587,41 @@ const PT = {
   "Save terms": "Salvar termos",
   "(06) App": "(06) App",
   "(02) Google accounts": "(02) Contas Google",
+  "About": "Sobre",
+  "Privacy": "Privacidade",
+  "(Privacy)": "(Privacidade)",
+  "New here? See how it works.": "Novo por aqui? Veja como funciona.",
+  "Add your DeepSeek key, then press Record.": "Adicione a chave do DeepSeek e depois clique em Gravar.",
+  "Meeting notes without a bot.": "Notas de reunião sem bot.",
+  "MeTranscript records your Meet, Zoom and Teams calls on your own computer, writes the minutes, and lets you question them.": "O MeTranscript grava as suas chamadas de Meet, Zoom e Teams no seu próprio computador, escreve a ata e deixa você tirar dúvidas sobre ela.",
+  "Get started": "Começar",
+  "See how it works": "Ver como funciona",
+  "(How it works)": "(Como funciona)",
+  "A meeting with its summary and the chat beside it": "Uma reunião com o resumo e o chat ao lado",
+  "Record, with nothing in the call": "Grave, sem nada dentro da chamada",
+  "Press Record, or accept the alert when a call starts. The app captures your microphone and the call's audio as two separate tracks, so it knows who said what. Nobody joins the meeting.": "Clique em Gravar, ou aceite o alerta quando uma chamada começar. O app captura o seu microfone e o áudio da chamada em duas trilhas separadas, então sabe quem disse o quê. Ninguém entra na reunião.",
+  "The recording bar with the clock and level meters": "A barra de gravação com o relógio e os medidores de nível",
+  "Get the minutes": "Receba a ata",
+  "When you stop, the audio is transcribed on your computer and the AI writes the minutes: an overview, a section per topic, decisions, open questions and next steps, in the language of the meeting. Each meeting is a numbered entry in your list.": "Quando você para, o áudio é transcrito no seu computador e a IA escreve a ata: uma visão geral, uma seção por assunto, decisões, perguntas em aberto e próximos passos, no idioma da reunião. Cada reunião vira um item numerado na sua lista.",
+  "The list of meetings, numbered": "A lista de reuniões, numerada",
+  "Ask it, and ask what it thinks": "Pergunte, e pergunte o que ela acha",
+  "Question the meeting, change the summary with a sentence, or press Explain, Risks, Suggestions or Your opinion. The AI keeps what was said apart from its own opinion, so you always know which is which.": "Pergunte sobre a reunião, mude o resumo com uma frase, ou use Explicar, Riscos, Sugestões e Sua opinião. A IA separa o que foi dito da opinião dela, então você sempre sabe qual é qual.",
+  "A chat answer that separates what was said from the AI's opinion": "Uma resposta do chat que separa o que foi dito da opinião da IA",
+  "What leaves your computer": "O que sai do seu computador",
+  "Audio": "Áudio",
+  "Never. It is transcribed on your computer and kept as a small file you can delete.": "Nunca. Ele é transcrito no seu computador e fica num arquivo pequeno que você pode apagar.",
+  "Text of the meeting": "Texto da reunião",
+  "Sent to DeepSeek only when a summary or a chat answer is made, after names, contacts, amounts and IDs are swapped for codes.": "Enviado ao DeepSeek só quando um resumo ou uma resposta do chat é feita, depois que nomes, contatos, valores e documentos são trocados por códigos.",
+  "Google accounts": "Contas Google",
+  "Optional. The summary is emailed to you, and only your next 24 hours of events are read.": "Opcional. O resumo é enviado por e-mail para você, e só os eventos das próximas 24 horas são lidos.",
+  "Tell the participants first.": "Avise os participantes antes.",
+  "MeTranscript does not tell the other people that you are recording. The app asks you to confirm that you told them before every recording, and gives you a notice to paste in the call chat.": "O MeTranscript não avisa as outras pessoas de que você está gravando. O app pede que você confirme que avisou antes de toda gravação, e dá um aviso para colar no chat da chamada.",
+  "Read the full privacy policy": "Ler a política de privacidade completa",
+  "(Made by)": "(Feito por)",
+  "Made by Aurélio Venturelli. Free software under the MIT license.": "Feito por Aurélio Venturelli. Software livre sob a licença MIT.",
+  "Source code on GitHub": "Código-fonte no GitHub",
+  "Ready when you are.": "Pronto quando você estiver.",
+  "Open Settings": "Abrir Configurações",
   "Google client ID": "ID do cliente Google",
   "Google client secret": "Chave secreta do cliente Google",
   "Create it once in Google Cloud (a Desktop app). The README has the steps. The accounts you connect are stored encrypted on this computer.": "Crie uma vez no Google Cloud (app para computador). O README tem o passo a passo. As contas conectadas ficam criptografadas neste computador.",
@@ -583,7 +663,7 @@ const STATIC = [
   ["#strip", "aria-label", "Recording"], ["#stop", "aria-label", "Stop recording"],
   ["label[for=strip-mic]", null, "Microphone"], ["label[for=strip-system]", null, "Speakers or headphones"],
   ["#strip-index", null, "Index"], ["#strip-back", null, "Back to recording"],
-  [".top nav", "aria-label", "Main"], ["#nav-index", null, "Meetings"], ["#nav-settings", null, "Settings"],
+  [".top nav", "aria-label", "Main"], ["#nav-index", null, "Meetings"], ["#nav-settings", null, "Settings"], ["#nav-about", null, "About"], ["#ft-about", null, "About"], ["#ft-privacy", null, "Privacy"],
   ["#record-btn", null, "● Record"], [".langsw", "aria-label", "Language"],
   ["#up-title", null, "(Upcoming – next 24 h)"],
   ["#detected-rec", null, "Record this meeting"], ["#detected-dismiss", null, "Not now"],
@@ -620,17 +700,28 @@ const api = async (path, opts = {}) => {
 };
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
-function markdown(md) {
-  let html = "", list = false;
+const inline = s => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+function markdown(md, join = false) {
+  let html = "", list = false, table = 0, buf = "", tag = "";  // table: 0 none, 1 header row seen, 2 inside the body
+  const flush = () => { if (buf) html += `<${tag}>${inline(buf)}</${tag}>`; buf = ""; };
   for (const line of md.split(/\r?\n/)) {
-    const h = line.match(/^(#{1,3})\s+(.*)/), li = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/);
-    if (!li && list) { html += "</ul>"; list = false; }
-    if (h) html += `<h${h[1].length + 1}>${inline(h[2])}</h${h[1].length + 1}>`;
-    else if (li) { if (!list) { html += "<ul>"; list = true; } html += `<li>${inline(li[1].replace(/^\[[ x]\]\s*/, ""))}</li>`; }
-    else if (line.trim()) html += `<p>${inline(line)}</p>`;
+    const h = line.match(/^(#{1,3})\s+(.*)/), li = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)/), row = line.match(/^\s*\|(.*)\|\s*$/);
+    if (buf && (!join || h || li || row || !line.trim())) flush();
+    if (!li && list && !(join && buf && line.trim() && !h && !row)) { html += "</ul>"; list = false; }
+    if (!row && table) { html += "</tbody></table>"; table = 0; }
+    if (row) {
+      const cells = row[1].split("|").map(c => c.trim());
+      if (cells.every(c => /^:?-+:?$/.test(c))) { html += "</thead><tbody>"; table = 2; continue; }
+      if (!table) { html += "<table><thead>"; table = 1; }
+      const cell = table === 1 ? "th" : "td";
+      html += `<tr>${cells.map(c => `<${cell}>${inline(c)}</${cell}>`).join("")}</tr>`;
+    }
+    else if (h) html += `<h${h[1].length + 1}>${inline(h[2])}</h${h[1].length + 1}>`;
+    else if (li) { if (!list) { html += "<ul>"; list = true; } buf = li[1].replace(/^\[[ x]\]\s*/, ""); tag = "li"; }
+    else if (line.trim()) { if (join && buf) buf += " " + line.trim(); else { flush(); buf = line.trim(); tag = "p"; } }
   }
-  return html + (list ? "</ul>" : "");
+  flush();
+  return html + (list ? "</ul>" : "") + (table ? "</tbody></table>" : "");
 }
 
 const clock = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
@@ -648,17 +739,21 @@ function showInfo(msg) { notice = esc(msg); statusEl.innerHTML = notice; }
 /* ---------- routing ---------- */
 function currentRoute() {
   if (location.hash === "#/settings") return { name: "settings" };
+  if (location.hash === "#/about") return { name: "about" };
+  if (location.hash === "#/privacy") return { name: "privacy" };
   const m = location.hash.match(/^#\/m\/([\w-]+)$/);
   return m ? { name: "meeting", id: m[1] } : { name: "index" };
 }
 async function route() {
   await flushNotes();
   const r = currentRoute();
-  for (const [nav, name] of [["#nav-index", "index"], ["#nav-settings", "settings"]]) {
+  for (const [nav, name] of [["#nav-index", "index"], ["#nav-settings", "settings"], ["#nav-about", "about"]]) {
     if (r.name === name) $(nav).setAttribute("aria-current", "page"); else $(nav).removeAttribute("aria-current");
   }
   if (r.name === "index") { openId = openMeeting = null; return renderIndex(); }
   if (r.name === "settings") { openId = openMeeting = null; return renderSettings(); }
+  if (r.name === "about") { openId = openMeeting = null; renderAbout(); return window.scrollTo(0, 0); }
+  if (r.name === "privacy") { openId = openMeeting = null; await renderPrivacy(); return window.scrollTo(0, 0); }
   try {
     openMeeting = await api(`/api/meetings/${r.id}`);
   } catch {
@@ -690,7 +785,7 @@ async function renderIndex() {
   view.innerHTML = `
     <div class="head"><span class="lbl">${meetings.length === 1 ? t("(Index – 1 meeting)") : t("(Index – {n} meetings)", { n: meetings.length })}</span></div>
     <div class="filters" role="group" aria-label="${t("Filter meetings")}">${pill("all", t("All"))}${pill("week", t("This week"))}${pill("next", t("With next steps"))}</div>
-    ${!meetings.length ? `<div class="empty-state"><p class="t20">${t("No meetings yet.")}</p><p class="muted">${t("Press Record to start your first one.")}</p></div>`
+    ${!meetings.length ? `<div class="empty-state"><p class="t20">${t("No meetings yet.")}</p><p class="muted">${t("Press Record to start your first one.")}</p><p><a href="#/about">${t("New here? See how it works.")}</a></p></div>`
       : !shown.length ? `<div class="empty-state"><p class="muted">${t("No meetings match this filter.")}</p></div>`
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
           <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}</span>
@@ -1290,6 +1385,58 @@ async function renderSettings() {
     e.target.disabled = false;
   });
   bindSettings();
+}
+
+async function getStarted() {
+  let cfg;
+  try { cfg = await api("/api/config"); } catch (err) { return showError(err.message); }
+  if (!cfg.DEEPSEEK_API_KEY?.set) { location.hash = "#/settings"; return showInfo(t("Add your DeepSeek key, then press Record.")); }
+  openRecordSheet();
+}
+
+function renderAbout() {
+  const img = (name, w, h, alt) => `<div class="frame"><img src="/about/${name}-${uiLang}.png" width="${w}" height="${h}" alt="${esc(alt)}" loading="lazy"></div>`;
+  const start = `<button class="pill rec big" data-start>${t("Get started")}</button>`;
+  view.innerHTML = `<div class="about">
+    <section class="hero">
+      <div><h1>${t("Meeting notes without a bot.")}</h1>
+        <p class="lead">${t("MeTranscript records your Meet, Zoom and Teams calls on your own computer, writes the minutes, and lets you question them.")}</p>
+        <div class="cta">${start}<button class="link" data-scroll="about-how">${t("See how it works")}</button></div></div>
+      <div class="frame"><img src="/about/meeting-${uiLang}.png" width="1400" height="804" alt="${esc(t("A meeting with its summary and the chat beside it"))}"></div>
+    </section>
+    <span id="about-how" class="lbl about-how">${t("(How it works)")}</span>
+    <section class="step"><span class="num">01</span><div><h2>${t("Record, with nothing in the call")}</h2>
+      <p>${t("Press Record, or accept the alert when a call starts. The app captures your microphone and the call's audio as two separate tracks, so it knows who said what. Nobody joins the meeting.")}</p>
+      ${img("recording", 1400, 268, t("The recording bar with the clock and level meters"))}</div></section>
+    <section class="step"><span class="num">02</span><div><h2>${t("Get the minutes")}</h2>
+      <p>${t("When you stop, the audio is transcribed on your computer and the AI writes the minutes: an overview, a section per topic, decisions, open questions and next steps, in the language of the meeting. Each meeting is a numbered entry in your list.")}</p>
+      ${img("index", 1400, 500, t("The list of meetings, numbered"))}</div></section>
+    <section class="step"><span class="num">03</span><div><h2>${t("Ask it, and ask what it thinks")}</h2>
+      <div class="pair"><p>${t("Question the meeting, change the summary with a sentence, or press Explain, Risks, Suggestions or Your opinion. The AI keeps what was said apart from its own opinion, so you always know which is which.")}</p>
+      ${img("chat", 420, 790, t("A chat answer that separates what was said from the AI's opinion"))}</div></div></section>
+    <section class="about-sec"><span class="lbl">${t("(Privacy)")}</span><div><h2 class="about-title">${t("What leaves your computer")}</h2>
+      <div class="facts">
+        <div class="fact"><b>${t("Audio")}</b><span>${t("Never. It is transcribed on your computer and kept as a small file you can delete.")}</span></div>
+        <div class="fact"><b>${t("Text of the meeting")}</b><span>${t("Sent to DeepSeek only when a summary or a chat answer is made, after names, contacts, amounts and IDs are swapped for codes.")}</span></div>
+        <div class="fact"><b>${t("Google accounts")}</b><span>${t("Optional. The summary is emailed to you, and only your next 24 hours of events are read.")}</span></div></div>
+      <p class="about-note"><b>${t("Tell the participants first.")}</b> ${t("MeTranscript does not tell the other people that you are recording. The app asks you to confirm that you told them before every recording, and gives you a notice to paste in the call chat.")}</p>
+      <a href="#/privacy">${t("Read the full privacy policy")}</a></div></section>
+    <section class="about-sec"><span class="lbl">${t("(Made by)")}</span><div>
+      <p class="about-note first">${t("Made by Aurélio Venturelli. Free software under the MIT license.")}</p>
+      <a href="https://github.com/venturelli-91/avtranscript" target="_blank" rel="noopener noreferrer">${t("Source code on GitHub")}</a></div></section>
+    <section class="about-end"><h2>${t("Ready when you are.")}</h2>
+      <div class="cta">${start}<a class="link" href="#/settings">${t("Open Settings")}</a></div></section></div>`;
+  view.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", getStarted));
+  view.querySelector("[data-scroll]").addEventListener("click", e => {
+    $("#" + e.currentTarget.dataset.scroll).scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  });
+}
+
+async function renderPrivacy() {
+  let md;
+  try { ({ markdown: md } = await api("/api/policy?lang=" + uiLang)); }
+  catch (err) { view.innerHTML = `<p class="error">${esc(err.message)}</p>`; return showError(err.message); }
+  view.innerHTML = `<div class="head"><span class="lbl">${t("(Privacy)")}</span></div><article class="policy reading">${markdown(md, true)}</article>`;
 }
 
 document.querySelectorAll(".langsw button").forEach(b => b.addEventListener("click", async () => {
