@@ -121,6 +121,11 @@ direction "E · Index" chosen among five mockups. Full design:
 ## F11b — Look and language (DEV-0047, DEV-0048)
 - [ ] Square-ish controls (4 px) and 6 px cards; only the Record button is round; filters are underlined tabs.
 - [ ] Timecodes, dates and meeting numbers use JetBrains Mono (served locally); the meeting page opens with its number as a large numeral.
+- [ ] (DEV-0050) "Me" and "Others" have a fixed look (a square marker, mono label; Others lines are indented) in the transcript
+      and the live feed; above the transcript a two-lane bar shows who spoke when with the "Me X% · Others Y%" split, and a click
+      jumps to that line (keyboard users use the timestamps in the lines).
+- [ ] (DEV-0050) While recording: red top edge, a pulsing dot (still under reduced motion), a 40 px clock, tick-style level meters
+      per track and the tab title `● mm:ss MeTranscript`.
 - [ ] An **EN | PT-BR** switch in the top bar and the recording strip changes every page text without a reload; the choice
       is kept in the browser (first visit follows the browser language); dates follow the chosen language.
 

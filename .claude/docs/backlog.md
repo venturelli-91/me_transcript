@@ -178,7 +178,11 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
 ## DEV-0047 / DEV-0048 — Distinct look and EN / PT-BR switch · `dev-frontend`
 - Critique with Impeccable (specificity verdict, 28/40): sharper shapes, warm neutrals, JetBrains Mono for numbers and
   time, big meeting numeral; a `PT` dictionary keyed by the English text with `t()`, a switch in the top bar and strip.
-- Next, one front at a time: the two voices (Me / Others) as visual tracks and the live recording strip.
+
+## DEV-0050 — Two voices and the live recording strip · `dev-frontend`
+- `Me` / `Others` identity in the transcript and live feed, a talk-time bar (`timeline()`), tick level meters, a pulsing on-air dot,
+  a 40 px mono clock and the `● mm:ss` tab title. Review found and fixed: a `body.live` class collision with the existing `.live`
+  grid, and out-of-order timestamps in the timeline math.
 
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
