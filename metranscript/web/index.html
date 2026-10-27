@@ -65,7 +65,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font); min-height: 100vh; }
+body { background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font); min-height: 100vh; display: flex; flex-direction: column; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
@@ -151,8 +151,15 @@ body.on-air #strip-label::before { content: ""; display: inline-block; width: 8p
 #strip .nav { display: flex; gap: 8px; }
 #strip .pill { background: transparent; color: #fff; border-color: rgba(255,255,255,.35); }
 
+/* footer */
+footer.site { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 20px clamp(16px, 3vw, 56px) 28px; border-top: 1px solid var(--line); color: var(--gray); font-size: 12px; }
+footer.site p { margin: 0; }
+footer.site nav { display: flex; gap: 6px; }
+footer.site nav a { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r); color: var(--gray); }
+footer.site nav a:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
 /* page */
-main { padding: 32px clamp(16px, 3vw, 56px) 64px; max-width: 1680px; margin: 0 auto; }
+main { padding: 32px clamp(16px, 3vw, 56px) 64px; max-width: 1680px; width: 100%; margin: 0 auto; flex: 1 0 auto; }
 .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 .filters { display: flex; gap: 22px; flex-wrap: wrap; margin: 0 0 20px; }
 .filters .pill { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 4px 0; filter: none; color: var(--gray); }
@@ -330,6 +337,17 @@ dialog::backdrop { background: var(--scrim); }
 <div id="status" aria-live="polite"></div>
 <main id="view"></main>
 
+<footer class="site">
+  <p>MIT License · © 2026 Aurélio Venturelli · <a id="ft-license" href="https://github.com/venturelli-91/avtranscript/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">View license</a></p>
+  <nav id="ft-nav" aria-label="Contact">
+    <!-- icons drawn in the Lucide style (ISC license) -->
+      <a id="ft-linkedin" href="https://www.linkedin.com/in/aurelioventurelli/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg></a>
+      <a id="ft-whatsapp" href="https://wa.me/5561993608080" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></a>
+      <a id="ft-email" href="mailto:venturelli.dev@gmail.com" target="_blank" rel="noopener noreferrer" aria-label="Email" title="Email"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></a>
+      <a id="ft-portfolio" href="https://aurelioventurelli.vercel.app/pt" target="_blank" rel="noopener noreferrer" aria-label="Portfolio" title="Portfolio"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></a>
+  </nav>
+</footer>
+
 <dialog id="confirm" aria-labelledby="confirm-title">
   <form class="sheet" method="dialog" id="confirm-form">
     <h2 class="t20" id="confirm-title">Delete this meeting?</h2>
@@ -411,6 +429,10 @@ const PT = {
   "I told the participants that this meeting is being recorded": "Avisei os participantes de que esta reunião está sendo gravada",
   "Copy a recording notice": "Copiar um aviso de gravação",
   "Copy notice": "Copiar aviso",
+  "View license": "Ver licença",
+  "Contact": "Contato",
+  "Email": "E-mail",
+  "Portfolio": "Portfólio",
   "Notice copied. Paste it in the meeting chat.": "Aviso copiado. Cole no chat da reunião.",
   "Could not copy the notice.": "Não foi possível copiar o aviso.",
   "(05) Retention": "(05) Retenção",
@@ -563,7 +585,8 @@ const STATIC = [
   ["label[for=dev-mic]", null, "Microphone"], ["label[for=dev-system]", null, "Speakers / headphones"],
   ["#dev-refresh", null, "Refresh devices"], ["#sheet-start", null, "Start recording"],
   ["#consent-text", null, "I told the participants that this meeting is being recorded"], ["#copy-notice", null, "Copy a recording notice"],
-  ["#strip-notice", null, "Copy notice"],
+  ["#strip-notice", null, "Copy notice"], ["#ft-license", null, "View license"], ["#ft-nav", "aria-label", "Contact"],
+  ["#ft-email", "aria-label", "Email"], ["#ft-email", "title", "Email"], ["#ft-portfolio", "aria-label", "Portfolio"], ["#ft-portfolio", "title", "Portfolio"],
 ];
 function applyLang(save = true) {
   document.documentElement.lang = uiLang === "pt" ? "pt-BR" : "en";

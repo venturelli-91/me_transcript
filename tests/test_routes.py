@@ -12,6 +12,7 @@ class RoutesTest(ServerCase):
         status, html = self.call("GET", "/")
         self.assertEqual(status, 200)
         self.assertIn("<title>MeTranscript</title>", html)
+        self.assertIn("MIT License", html)
         self.assertEqual(self.call("GET", "/?record=abc")[0], 200)
         status, listed = self.call("GET", "/api/meetings")
         self.assertEqual((status, type(listed)), (200, list))
