@@ -546,6 +546,7 @@ const PT = {
   "Google client secret": "Chave secreta do cliente Google",
   "Create it once in Google Cloud (a Desktop app). The README has the steps. The accounts you connect are stored encrypted on this computer.": "Crie uma vez no Google Cloud (app para computador). O README tem o passo a passo. As contas conectadas ficam criptografadas neste computador.",
   "Connected accounts": "Contas conectadas",
+  "Could not load the Google accounts. Quit and start MeTranscript again to get the newest version.": "Não foi possível carregar as contas Google. Feche e abra o MeTranscript de novo para usar a versão mais nova.",
   "The account marked is the one that emails you the summaries.": "A conta marcada é a que envia os resumos para você por e-mail.",
   "No account connected yet.": "Nenhuma conta conectada ainda.",
   "Sign in with Google": "Entrar com Google",
@@ -1203,8 +1204,11 @@ const stateText = f => t(f.locked ? "Set by a Windows environment variable" : f.
 
 async function renderSettings() {
   let cfg, terms, google;
-  try { [cfg, { terms }, google] = await Promise.all([api("/api/config"), api("/api/privacy"), api("/api/google")]); } catch (err) { return showError(err.message); }
-  const googleBlock = g => `<div class="gacc"><span class="lbl">${t("Connected accounts")}</span>
+  // The Google part is optional here: an older server that does not know it must not blank the whole page.
+  const noGoogle = () => ({ configured: false, accounts: [], unavailable: true });
+  try { [cfg, { terms }, google] = await Promise.all([api("/api/config"), api("/api/privacy"), api("/api/google").catch(noGoogle)]); }
+  catch (err) { view.innerHTML = `<p class="error">${esc(err.message)}</p>`; return showError(err.message); }
+  const googleBlock = g => g.unavailable ? `<p class="error">${t("Could not load the Google accounts. Quit and start MeTranscript again to get the newest version.")}</p>` : `<div class="gacc"><span class="lbl">${t("Connected accounts")}</span>
     ${g.accounts.length ? `<ul class="glist">${g.accounts.map(a => `<li>
         <label><input type="radio" name="sender" value="${esc(a.email)}" ${a.sender ? "checked" : ""}> <span>${esc(a.email)}</span></label>
         ${a.needs_reconnect ? `<span class="error">${t("Sign in again")}</span>` : ""}
@@ -1214,7 +1218,7 @@ async function renderSettings() {
       <button type="button" class="pill ghost" id="test-email" ${g.accounts.length ? "" : "disabled"}>${t("Send a test email")}</button>
       ${g.configured ? "" : `<span class="muted">${t("Save the client ID and secret first.")}</span>`}</div></div>`;
   const field = d => {
-    const f = cfg[d.name];
+    const f = cfg[d.name] || { set: false, locked: false, value: null };  // an older server does not know every key
     return `<div class="field">
       <label class="lbl" for="cfg-${d.name}">${t(d.label)}</label>
       <input id="cfg-${d.name}" data-name="${d.name}" type="${d.secret ? "password" : "text"}" autocomplete="${d.secret ? "new-password" : "off"}"
@@ -1296,6 +1300,8 @@ document.querySelectorAll(".langsw button").forEach(b => b.addEventListener("cli
   loadAgenda();
   poll();
 }));
+
+window.addEventListener("unhandledrejection", e => showError(e.reason?.message || String(e.reason)));
 
 /* ---------- start ---------- */
 (async function boot() {
