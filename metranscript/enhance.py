@@ -1,5 +1,6 @@
 import http.client
 import json
+import logging
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 from metranscript.privacy import Mask
 from metranscript.settings import env
 
+log = logging.getLogger("metranscript")
 SUMMARY_PROMPT = Path(__file__).parent / "prompt.md"
 CHAT_PROMPT = Path(__file__).parent / "chat.md"
 API = "https://api.deepseek.com/chat/completions"
@@ -95,12 +97,21 @@ def summarize(meeting: dict, mask: Mask) -> str:
 
 def chat(meeting: dict, message: str, mask: Mask) -> dict:
     raw = _complete(chat_messages(meeting, message, mask), json_mode=True)
+    data = None
     try:
         data = json.loads(raw)
+    except json.JSONDecodeError:
+        # The model sometimes answers in plain text despite JSON mode; it is still a usable answer, and it changes no summary.
+        log.warning("DeepSeek answered the chat in plain text (%d chars)", len(raw))
+        return {"reply": mask.restore(raw), "summary": None}
+    try:
         reply, summary = data["reply"], data.get("summary")
-    except (json.JSONDecodeError, KeyError, TypeError):
+        if not isinstance(reply, str) or not (summary is None or isinstance(summary, str)):
+            raise TypeError
+    except (KeyError, TypeError, AttributeError):
+        # Structure only: the reply text can hold meeting content, so it never goes to the log.
+        shape = {k: type(v).__name__ for k, v in data.items()} if isinstance(data, dict) else type(data).__name__
+        log.warning("Unexpected chat reply from DeepSeek (%d chars): %s", len(raw), shape)
         raise RuntimeError("DeepSeek replied in an unexpected format.") from None
-    if not isinstance(reply, str) or not (summary is None or isinstance(summary, str)):
-        raise RuntimeError("DeepSeek replied in an unexpected format.")
     return {"reply": mask.restore(reply.strip()),
             "summary": mask.restore(summary.strip()) if summary and summary.strip() else None}

@@ -75,10 +75,14 @@ class EnhanceTest(unittest.TestCase):
             self.assertEqual(enhance.chat(MEETING, "deadline?", Mask()), {"reply": "Friday [00:00:01]", "summary": None})
         with mock.patch("urllib.request.urlopen", return_value=response('{"reply": "Shortened.", "summary": "## Deadline"}')):
             self.assertEqual(enhance.chat(MEETING, "shorter", Mask())["summary"], "## Deadline")
-        for bad in ["not json", '{"summary": "x"}', '{"reply": 3, "summary": null}']:
+        for bad in ['{"summary": "x"}', '{"reply": 3, "summary": null}', '["a"]']:
             with mock.patch("urllib.request.urlopen", return_value=response(bad)):
                 with self.assertRaises(RuntimeError):
                     enhance.chat(MEETING, "x", Mask())
+
+    def test_chat_plain_text_answer_is_kept_and_leaves_the_summary_alone(self):
+        with mock.patch("urllib.request.urlopen", return_value=response("Friday, said at [00:00:01].")):
+            self.assertEqual(enhance.chat(MEETING, "deadline?", Mask()), {"reply": "Friday, said at [00:00:01].", "summary": None})
 
     def test_api_key_from_dotenv(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {}, clear=True), \
