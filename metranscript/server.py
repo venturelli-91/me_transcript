@@ -12,7 +12,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metranscript import agenda, desktop, detect, enhance, google, mail, privacy, settings, store, transcribe
+from metranscript import agenda, desktop, detect, enhance, google, mail, privacy, report, settings, store, transcribe
 from metranscript.capture import Recorder, list_devices
 from metranscript.transcribe import Transcriber, check_ready
 
@@ -256,6 +256,15 @@ def load(meeting_id: str) -> dict:
     return {**store.load(meeting_id), "email_configured": mail.configured()}
 
 
+def download_report(meeting_id: str, kind: str) -> tuple[bytes, str, str]:
+    meeting = store.load(meeting_id)
+    if not meeting["summary"].strip():
+        raise ValueError("There is no summary to download yet.")
+    if kind == "md":
+        return report.markdown(meeting).encode(), "text/markdown", report.filename(meeting, "md")
+    return report.pdf(meeting), "application/pdf", report.filename(meeting, "pdf")
+
+
 def chat(meeting_id: str, message: str) -> dict:
     mask = privacy.Mask()
     result = enhance.chat(_sendable(meeting_id), message, mask)
@@ -310,7 +319,7 @@ def undo(meeting_id: str) -> dict:
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/undo|/email|/retranscribe)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/undo|/email|/retranscribe|/report\.md|/report\.pdf)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -332,14 +341,16 @@ class Handler(BaseHTTPRequestHandler):
         if 0 < length <= MAX_BODY:
             self.rfile.read(length)
 
-    def _send(self, status: int, body: object = None, content_type: str = "application/json") -> None:
+    def _send(self, status: int, body: object = None, content_type: str = "application/json", filename: str | None = None) -> None:
         if self.command in ("POST", "PUT", "PATCH", "DELETE") and not self._consumed:
             self._drain()
         data = body if isinstance(body, bytes) else json.dumps(body if body is not None else {}, ensure_ascii=False).encode()
         self.send_response(status)
-        self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+        self.send_header("Content-Type", content_type if content_type == "application/pdf" else f"{content_type}; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        if filename:
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
         self.end_headers()
         self.wfile.write(data)
 
@@ -412,6 +423,11 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/meetings":
             return self._send(200, store.list_meetings())
         m = MEETING_RE.fullmatch(self.path)
+        if m and m.group(2) in ("/report.md", "/report.pdf"):
+            def run():
+                data, ctype, name = download_report(m.group(1), "pdf" if m.group(2).endswith("pdf") else "md")
+                self._send(200, data, ctype, name)
+            return self._guard(run)
         if m and not m.group(2):
             return self._guard(lambda: self._send(200, load(m.group(1))))
         self._send(404, {"error": "Not found."})

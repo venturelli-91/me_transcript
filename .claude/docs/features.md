@@ -201,3 +201,7 @@ Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand
 ## F20 — Pin a meeting and clear its chat (DEV-0083)
 - [ ] **Pin to top** (meeting page) keeps a meeting first in the Index with a "Pinned" mark; **Unpin** restores date order. Meeting numbers do not change.
 - [ ] **Clear chat** (chat drawer, two clicks to confirm) deletes only the conversation with the AI; notes, summary and transcript stay.
+
+## F21 — Download the report (DEV-0084)
+- [ ] **Download** (meeting page, next to the summary actions) offers **PDF** or **Markdown (.md)**: title, date, duration, app and the summary (with its next steps). The transcript and the chat are not included.
+- [ ] The PDF is printed by the Microsoft Edge or Google Chrome already on Windows (`GET /api/meetings/<id>/report.pdf`); without one, the page says to download the Markdown (`report.md`) instead. A meeting without a summary has the button disabled.
