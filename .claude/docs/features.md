@@ -208,3 +208,7 @@ Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand
 
 ## F22 — Archive and reopen meetings (DEV-0085)
 - [ ] **Archive** (meeting page) takes a meeting out of All, This week and With next steps and counts it out of the Index total; the **Archived** filter lists archived meetings and **Unarchive** brings one back. Nothing is deleted and the numbers do not change.
+
+## F23 — Shorter chat answers and a times switch (DEV-0087)
+- [ ] The chat answers briefly, in plain paragraphs without section headings or bullet lists, and goes deeper only when asked; **My opinion** stays a separate paragraph.
+- [ ] **Hide times** / **Show times** (chat header) removes the `[hh:mm:ss]` citations from the answers on screen; the stored chat keeps them and the choice is remembered in the browser.

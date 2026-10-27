@@ -519,6 +519,8 @@ const PT = {
   "Unpin": "Desafixar",
   "Pinned": "Fixada",
   "Clear chat": "Limpar chat",
+  "Hide times": "Ocultar horários",
+  "Show times": "Mostrar horários",
   "Click again to clear": "Clique de novo para limpar",
   "Delete": "Excluir",
   "Meeting ": "Reunião ",
@@ -865,7 +867,8 @@ function renderMeeting() {
       <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="${t("Resize chat")}" tabindex="0"></div>
       <section class="drawer" aria-labelledby="chat-title">
         <header><span class="lbl" id="chat-title">${t("(Ask this meeting)")}</span>
-          ${m.chat.length ? `<button class="link t12" id="chat-clear" ${off}>${t("Clear chat")}</button>` : ""}</header>
+          ${m.chat.length ? `<span class="tools"><button class="link t12" id="chat-times" aria-pressed="${showTimes}">${showTimes ? t("Hide times") : t("Show times")}</button>
+            <button class="link t12" id="chat-clear" ${off}>${t("Clear chat")}</button></span>` : ""}</header>
         <p class="privacy">${m.private ? t("Private meeting: chat is off and nothing is sent to the AI or by email.")
           : `${t("Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.")}${m.protected ? t(" Hidden so far: {n}.", { n: m.protected }) : ""}`}</p>
         <div class="chat-log" id="chat-log">${chatLog()}</div>
@@ -899,6 +902,11 @@ function renderMeeting() {
     } catch (err) { showError(err.message); }
   });
   $("#chat-clear")?.addEventListener("click", clearChat);
+  $("#chat-times")?.addEventListener("click", () => {
+    showTimes = !showTimes;
+    try { localStorage.setItem("metranscript.times", showTimes ? "on" : "off"); } catch {}
+    renderMeeting();
+  });
   $("#delete").addEventListener("click", () => {
     $("#confirm-text").textContent = t("“{t}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.", { t: titleOf(openMeeting) });
     confirmDialog.showModal();
@@ -913,6 +921,8 @@ const advice = () => [
   [t("Suggestions"), t("What would you suggest I do, or do differently?")],
   [t("Your opinion"), t("What is your opinion on these processes?")],
 ];
+let showTimes = (() => { try { return localStorage.getItem("metranscript.times") !== "off"; } catch { return true; } })();
+const TIME_CITE = /[ \t]*\[\d{1,2}:\d{2}:\d{2}\](?:,?[ \t]*\[\d{1,2}:\d{2}:\d{2}\])*/g;
 function chatLog() {
   const m = openMeeting;
   if (!m.chat.length && waiting !== m.id) {
@@ -920,7 +930,7 @@ function chatLog() {
   }
   return m.chat.map((c, i) => c.role === "user"
     ? `<div class="msg me"><p>${esc(c.content)}</p></div>`
-    : `<div class="msg bot">${markdown(c.content)}${c.changed_summary
+    : `<div class="msg bot">${markdown(showTimes ? c.content : c.content.replace(TIME_CITE, ""))}${c.changed_summary
         ? `<small>${t("Summary updated")}</small>` : `<button class="link t12" data-include="${i}">${t("Add to summary")}</button>`}</div>`
   ).join("") + (waiting === m.id ? `<div class="msg bot"><p class="muted">${t("Thinking…")}</p></div>` : "");
 }
