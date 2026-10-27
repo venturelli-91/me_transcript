@@ -69,23 +69,28 @@ def speech_spans(vad_output: str) -> list[tuple[float, float]]:
 
 
 ECHO_GAP = 5.0
-ECHO_RATIO = 0.7
+ECHO_SHARE = 0.7
 ECHO_MIN_WORDS = 4
 
 
+def _words(text: str) -> list[str]:
+    return re.findall(r"\w+", text.lower())
+
+
 def is_echo(seg: dict, others: list[dict]) -> bool:
-    """Speakers playing the call get picked up by the mic, so the same sentence lands in "Me" a moment later."""
-    if len(seg["text"].split()) < ECHO_MIN_WORDS:
+    """Speakers playing the call get picked up by the mic, so the same words land in "Me" a moment later."""
+    words = _words(seg["text"])
+    if len(words) < ECHO_MIN_WORDS:
         return False
-    text = seg["text"].lower()
-    return any(abs(seg["t"] - o["t"]) <= ECHO_GAP and SequenceMatcher(None, text, o["text"].lower()).ratio() >= ECHO_RATIO
-               for o in others)
+    heard = [w for o in others if abs(seg["t"] - o["t"]) <= ECHO_GAP for w in _words(o["text"])]
+    matched = sum(b.size for b in SequenceMatcher(None, words, heard, autojunk=False).get_matching_blocks())
+    return matched / len(words) >= ECHO_SHARE
 
 
 def merge(*tracks: list[dict]) -> list[dict]:
     segments = [s for t in tracks for s in t]
     others = [s for s in segments if s["who"] == "Others"]
-    # ponytail: text similarity, no real echo cancellation; a real "Me" line that repeats Others almost verbatim is lost
+    # ponytail: word overlap, no real echo cancellation; a real "Me" line that repeats Others almost verbatim is lost
     return sorted((s for s in segments if s["who"] != "Me" or not is_echo(s, others)), key=lambda s: s["t"])
 
 

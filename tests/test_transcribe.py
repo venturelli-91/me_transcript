@@ -48,6 +48,12 @@ class TranscribeTest(unittest.TestCase):
         merged = transcribe.merge([echo, late, short, reply], others)
         self.assertEqual([s["t"] for s in merged], [10.0, 10.5, 12.0, 40.0])
 
+    def test_merge_drops_echo_split_into_fragments(self):
+        others = [{"t": 10.0, "who": "Others", "text": "We should ship the new billing flow on Monday morning"}]
+        parts = [{"t": 10.8, "who": "Me", "text": "we should ship the new billing"},
+                 {"t": 13.5, "who": "Me", "text": "flow on monday morning"}]
+        self.assertEqual([s["who"] for s in transcribe.merge(parts, others)], ["Others"])
+
     def test_union_merges_overlapping_speech_of_both_tracks(self):
         self.assertEqual(transcribe.union([(0, 5), (12, 14)], [(4, 8), (10, 12)]), [(0, 8), (10, 14)])
         self.assertEqual(transcribe.union([], []), [])
