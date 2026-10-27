@@ -11,7 +11,7 @@ SUMMARY_PROMPT = Path(__file__).parent / "prompt.md"
 CHAT_PROMPT = Path(__file__).parent / "chat.md"
 API = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
-LANG_NAMES = {"pt": "Brazilian Portuguese", "en": "English"}
+LANG_NAMES = {"pt": "Brazilian Portuguese", "en": "English", "auto": "not set (detect it from the transcript)"}
 HISTORY = 20
 # deepseek-chat has a 128k-token context; ~350k characters of transcript leaves room for prompt and reply.
 MAX_TRANSCRIPT = 350_000

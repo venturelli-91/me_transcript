@@ -21,7 +21,7 @@ INDEX = Path(__file__).parent / "web" / "index.html"
 FONTS = INDEX.parent / "fonts"
 ABOUT = INDEX.parent / "about"
 POLICIES = {"en": "PRIVACY.md", "pt": "PRIVACY.pt.md"}
-LANGS = {"pt", "en"}
+LANGS = {"pt", "en", "auto"}
 MAX_BODY = 2_000_000
 PORT = int(os.environ.get("ATA_PORT", "8765"))
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
@@ -451,7 +451,7 @@ class Handler(BaseHTTPRequestHandler):
                     if not (isinstance(title, str) and title.strip()):
                         title = token_title
                 if lang not in LANGS:
-                    raise ValueError("Language must be pt or en.")
+                    raise ValueError("Language must be pt, en or auto.")
                 if not isinstance(title, str):
                     raise ValueError("Title must be text.")
                 if not isinstance(private, bool):

@@ -415,6 +415,7 @@ dialog::backdrop { background: var(--scrim); }
       <div class="seg" role="radiogroup" aria-labelledby="lang-label">
         <label><input type="radio" name="lang" value="pt" checked><span>Portuguese</span></label>
         <label><input type="radio" name="lang" value="en"><span>English</span></label>
+        <label><input type="radio" name="lang" value="auto"><span>Auto-detect</span></label>
       </div>
     </div>
     <div class="field">
@@ -439,7 +440,7 @@ dialog::backdrop { background: var(--scrim); }
 const $ = (s, el = document) => el.querySelector(s);
 const view = $("#view"), statusEl = $("#status");
 const BUSY = ["recording", "transcribing", "enhancing"];
-const LANG = { pt: "Portuguese", en: "English" };
+const LANG = { pt: "Portuguese", en: "English", auto: "Auto-detect" };
 
 /* ---------- interface language ---------- */
 const LANG_KEY = "metranscript.lang";
@@ -468,6 +469,7 @@ const PT = {
   "Title (optional)": "Título (opcional)",
   "What is this meeting about?": "Sobre o que é esta reunião?",
   "Portuguese": "Português",
+  "Auto-detect": "Detectar automaticamente",
   "English": "Inglês",
   "Speakers / headphones": "Alto-falantes / fones",
   "Refresh devices": "Atualizar dispositivos",
@@ -694,7 +696,7 @@ const STATIC = [
   ["#confirm-title", null, "Delete this meeting?"], ["#confirm-cancel", null, "Cancel"], ["#confirm-form .pill.rec", null, "Delete meeting"],
   ["#sheet .row .lbl", null, "(New recording)"], ["#sheet-cancel", null, "Cancel"], ["#sheet-title", null, "Record a meeting"],
   ["label[for=title]", null, "Title (optional)"], ["#title", "placeholder", "What is this meeting about?"],
-  ["#lang-label", null, "Language"], [".seg label:nth-child(1) span", null, "Portuguese"], [".seg label:nth-child(2) span", null, "English"],
+  ["#lang-label", null, "Language"], [".seg label:nth-child(1) span", null, "Portuguese"], [".seg label:nth-child(2) span", null, "English"], [".seg label:nth-child(3) span", null, "Auto-detect"],
   ["label[for=dev-mic]", null, "Microphone"], ["label[for=dev-system]", null, "Speakers / headphones"],
   ["#dev-refresh", null, "Refresh devices"], ["#sheet-start", null, "Start recording"],
   ["#consent-text", null, "I told the participants that this meeting is being recorded"], ["#copy-notice", null, "Copy a recording notice"],

@@ -25,7 +25,7 @@ MIN_GAP = 0.5
 MIN_WINDOW = 12.0
 VOCAB_MAX = 300
 # A plain sentence works better than a bare list: a list makes Whisper drop punctuation and capitals.
-INTRO = {"en": "This meeting mentions {}.", "pt": "Esta reunião menciona {}."}
+INTRO = {"en": "This meeting mentions {}.", "pt": "Esta reunião menciona {}.", "auto": "This meeting mentions {}."}
 TAIL = 200
 SEGMENT_RE = re.compile(r"start = ([\d.]+), end = ([\d.]+)")
 # Shown in the transcript where a window could not be transcribed, so the summary and the chat know the text is incomplete.

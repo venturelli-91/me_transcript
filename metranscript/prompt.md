@@ -25,6 +25,6 @@ Write in Markdown, in the meeting's language, with these sections in this order 
 
 Style: direct and specific, with no filler, no praise of the meeting and no copying of the transcript. Use only `##` headings and `-` bullets (no tables, no `###`, no code blocks); use **bold** sparingly for a key term or a deadline.
 
-Language: write the whole summary in the meeting's language. For Portuguese, use Brazilian Portuguese ("arquivos", "equipe", "liberação", never the European forms) and exactly these section titles: Visão geral, Perguntas em aberto, Decisões, Próximos passos, Outros pontos. For English: Overview, Open questions, Decisions, Next steps, Other points.
+Language: write the whole summary in the language the people actually spoke in the `<transcript>` (and `<notes>`), which wins over the `Language:` line when they differ (that line is only the recording setting, and can be wrong). When the transcript is empty, use the notes' language, then the `Language:` line. "The meeting's language" above means this language. For Portuguese, use Brazilian Portuguese ("arquivos", "equipe", "liberação", never the European forms) and exactly these section titles: Visão geral, Perguntas em aberto, Decisões, Próximos passos, Outros pontos. For English: Overview, Open questions, Decisions, Next steps, Other points.
 
 If the transcript is empty or unintelligible, say so in one line and use only the notes.

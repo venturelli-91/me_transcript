@@ -125,7 +125,7 @@ class RoutesTest(ServerCase):
             self.assertEqual(start.call_args.args[:1], ("My title",))
 
     def test_validation_errors(self):
-        self.assertEqual(self.call("POST", "/api/start", {"lang": "fr"})[1]["error"], "Language must be pt or en.")
+        self.assertEqual(self.call("POST", "/api/start", {"lang": "fr"})[1]["error"], "Language must be pt, en or auto.")
         self.assertEqual(self.call("POST", "/api/start", {"title": 3})[1]["error"], "Title must be text.")
         self.assertEqual(self.call("POST", "/api/start", {"private": "yes"})[1]["error"], "private must be true or false.")
         self.assertEqual(self.call("POST", "/api/start", {"app": "Slack"})[1]["error"], "Unknown meeting app.")
