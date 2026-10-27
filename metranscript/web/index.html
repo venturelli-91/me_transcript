@@ -18,21 +18,30 @@
   src: url(/fonts/hanken-grotesk-latin.woff2) format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+@font-face {
+  font-family: "JetBrains Mono"; font-weight: 300 500; font-display: swap;
+  src: url(/fonts/jetbrains-mono-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 :root {
   --bg: #FBF8F3;
-  --surface: #FFFFFF;
-  --ink: #181818;
-  --gray: #6B6B6B;
+  --surface: #FFFDF9;
+  --ink: #1A1613;
+  --gray: #6B635A;
   --line: #E7E2DA;
-  --pill: #E5E5E5;
-  --dark: #2B2B2B;
-  --btn: #2B2B2B;
-  --on-btn: #FFFFFF;
+  --edge: #8C8378;
+  --pill: #EDE6DA;
+  --dark: #1F1A16;
+  --btn: #1F1A16;
+  --on-btn: #FBF8F3;
   --rec: #C8412F;
   --rec-bg: #C8412F;
   --hit: #F3E7D6;
   --scrim: rgba(24, 24, 24, .35);
   --font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --r: 4px;
+  --r-lg: 6px;
   --drawer: clamp(380px, 26vw, 520px);
 }
 /* --dark stays a dark surface (record strip, detected banner); --btn is what buttons and the user bubble use, so it inverts. */
@@ -43,10 +52,11 @@
   --ink: #EFEBE4;
   --gray: #A39E95;
   --line: #34312C;
+  --edge: #6F685F;
   --pill: #2A2723;
   --dark: #26231F;
   --btn: #EFEBE4;
-  --on-btn: #181818;
+  --on-btn: #1A1613;
   --rec: #EC6B55;
   --hit: #3A3226;
   --scrim: rgba(0, 0, 0, .6);
@@ -57,6 +67,9 @@ body { background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font);
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+::selection { background: var(--ink); color: var(--bg); }
+input, textarea { caret-color: var(--rec); }
+* { scrollbar-color: var(--edge) transparent; }
 [hidden] { display: none !important; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -68,22 +81,30 @@ a { color: inherit; }
 .error { color: var(--rec); }
 
 /* pills */
-.pill { border: 1px solid transparent; border-radius: 999px; padding: 7px 16px; background: var(--pill); font-weight: 500; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.pill { border: 1px solid transparent; border-radius: var(--r); padding: 7px 16px; background: var(--pill); font-weight: 500; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .pill:hover { filter: brightness(.96); }
 .pill.dark { background: var(--btn); color: var(--on-btn); }
-.pill.rec { background: var(--rec-bg); color: #fff; }
-.pill.ghost { background: transparent; border-color: var(--line); }
+.pill.rec { background: var(--rec-bg); color: #fff; border-radius: 999px; }
+.pill.ghost { background: transparent; border-color: var(--edge); }
 .pill[aria-pressed="true"] { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
 .pill:disabled { opacity: .45; cursor: default; filter: none; }
 .link { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
 
 /* top bar */
-.top { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 14px 32px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top { position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 14px 32px; background: var(--bg); border-bottom: 1px solid var(--ink); }
 .top nav { display: flex; gap: 20px; }
 .top nav a, .top nav button { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; font-size: 14px; }
 .top nav [aria-current="page"], .top nav [aria-expanded="true"] { text-decoration: underline; text-underline-offset: 5px; }
 .wordmark { font-weight: 500; font-size: 20px; letter-spacing: -0.02em; text-decoration: none; }
 .top .right { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+.langsw { display: inline-flex; border: 1px solid var(--edge); border-radius: var(--r); overflow: hidden; }
+.langsw button { background: none; border: 0; padding: 6px 10px; cursor: pointer; font: 400 12px/1.5 var(--mono); color: var(--gray); }
+.langsw button + button { border-left: 1px solid var(--edge); }
+.langsw button[aria-pressed="true"] { background: var(--btn); color: var(--on-btn); }
+#strip .langsw { border-color: rgba(255,255,255,.35); }
+#strip .langsw button { color: #C9C9C9; }
+#strip .langsw button + button { border-left-color: rgba(255,255,255,.35); }
+#strip .langsw button[aria-pressed="true"] { background: #fff; color: #1A1613; }
 body.recording .top { display: none; }
 
 /* status line */
@@ -102,7 +123,7 @@ body.recording .top { display: none; }
 #upcoming-panel.open { display: block; }
 #upcoming-panel ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 0; max-width: 760px; }
 #upcoming-panel li { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
-#upcoming-panel .time { font-variant-numeric: tabular-nums; }
+#upcoming-panel .time { font: 400 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
 
 /* recording strip */
 #strip { display: none; position: sticky; top: 0; z-index: 6; background: var(--dark); color: #fff; border-bottom: 1px solid rgba(255,255,255,.1); padding: 14px 32px; gap: 20px; align-items: center; flex-wrap: wrap; }
@@ -113,10 +134,10 @@ body.recording #strip { display: flex; }
 #stop:disabled { opacity: .4; cursor: default; }
 #strip .now { min-width: 0; flex: 1 1 220px; }
 #strip .now .lbl { display: block; overflow-wrap: anywhere; }
-#strip-clock { font-size: 28px; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+#strip-clock { font: 400 28px/1.1 var(--mono); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 #strip .devs { display: grid; gap: 6px; font-size: 12px; min-width: 0; flex: 0 1 360px; }
 #strip .dev { display: grid; grid-template-columns: 50px minmax(0, 1fr) 60px; gap: 8px; align-items: center; }
-#strip select { min-width: 0; width: 100%; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: 3px 8px; font-size: 12px; }
+#strip select { min-width: 0; width: 100%; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: var(--r); padding: 3px 8px; font-size: 12px; }
 #strip select option { color: var(--ink); background: var(--surface); }
 #strip i { height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); overflow: hidden; display: block; }
 #strip i b { display: block; height: 100%; width: 0; background: #fff; transition: width .12s linear; }
@@ -126,15 +147,20 @@ body.recording #strip { display: flex; }
 /* page */
 main { padding: 32px clamp(16px, 3vw, 56px) 64px; max-width: 1680px; margin: 0 auto; }
 .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
-.filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 20px; }
+.filters { display: flex; gap: 22px; flex-wrap: wrap; margin: 0 0 20px; }
+.filters .pill { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 4px 0; filter: none; color: var(--gray); }
+.filters .pill:hover { color: var(--ink); }
+.filters .pill[aria-pressed="true"] { background: none; color: var(--ink); border-bottom-color: var(--ink); }
 
 /* index list */
 .index { list-style: none; margin: 0; padding: 0; border-bottom: 1px solid var(--line); }
-.index a { display: grid; grid-template-columns: 48px minmax(0, 1fr) 90px 120px; gap: 20px; align-items: baseline; padding: 18px 0; border-top: 1px solid var(--line); text-decoration: none; }
+.index a { display: grid; grid-template-columns: 56px minmax(0, 1fr) 90px 120px; gap: 20px; align-items: baseline; padding: 18px 12px; margin: 0 -12px; border-top: 1px solid var(--line); text-decoration: none; }
 .index .title { font-size: 28px; letter-spacing: -0.03em; line-height: 1.12; overflow-wrap: anywhere; }
 .index a:hover .title, .index a:focus-visible .title { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
 .index .no-summary .title { color: var(--gray); }
-.index .num, .index .app, .index .date { color: var(--gray); font-size: 14px; font-variant-numeric: tabular-nums; }
+.index a:hover, .index a:focus-visible { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.index .num, .index .app, .index .date { color: var(--gray); font: 400 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+.index .num { font-size: 20px; color: var(--ink); }
 .index .date { text-align: right; }
 .empty-state { padding: 48px 0; max-width: 48ch; }
 
@@ -149,9 +175,12 @@ main { padding: 32px clamp(16px, 3vw, 56px) 64px; max-width: 1680px; margin: 0 a
 .tools { display: flex; gap: 18px; }
 .link.danger { color: var(--rec); }
 .link:disabled { color: var(--gray); cursor: default; text-decoration: none; }
-input.rename { display: block; width: 100%; margin: 6px 0 12px; font: inherit; font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; border: 1px solid var(--line); border-radius: 21px; padding: 4px 18px; background: var(--surface); }
-.meeting-title { font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; font-weight: 400; margin: 6px 0 12px; overflow-wrap: anywhere; }
-.meta { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--gray); margin-bottom: 28px; }
+input.rename { display: block; width: 100%; margin: 6px 0 12px; font: inherit; font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; border: 1px solid var(--edge); border-radius: var(--r-lg); padding: 4px 18px; background: var(--surface); }
+.masthead { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; align-items: end; margin: 24px 0 12px; }
+.masthead .big-num { font: 300 72px/.85 var(--mono); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.meeting-title { font-size: 40px; letter-spacing: -0.03em; line-height: 1.05; font-weight: 400; margin: 0; overflow-wrap: anywhere; }
+.head + .meeting-title { margin: 6px 0 12px; }
+.meta { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--gray); margin: 0 0 28px 164px; }
 .sec { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 24px 0; border-top: 1px solid var(--line); }
 .sec > .lbl { padding-top: 4px; }
 .reading { font-size: 16px; line-height: 1.6; max-width: 80ch; }
@@ -162,10 +191,10 @@ input.rename { display: block; width: 100%; margin: 6px 0 12px; font: inherit; f
 .reading p { margin: 8px 0; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 20px; }
 .actions .msg { color: var(--gray); }
-textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); border-radius: 21px; padding: 16px 18px; background: var(--surface); font-size: 16px; line-height: 1.6; resize: vertical; }
+textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); border-radius: var(--r-lg); padding: 16px 18px; background: var(--surface); font-size: 16px; line-height: 1.6; resize: vertical; }
 .saved { color: var(--gray); font-size: 12px; }
 .transcript p { margin: 0 0 8px; }
-.transcript time { color: var(--gray); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.transcript time { color: var(--gray); font: 400 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; margin-right: 8px; }
 .transcript .who { font-weight: 500; margin-right: 6px; }
 .transcript p.hit { background: var(--hit); border-radius: 6px; box-shadow: 0 0 0 6px var(--hit); }
 
@@ -173,31 +202,31 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); 
 .handle { align-self: stretch; cursor: col-resize; display: grid; place-items: center; touch-action: none; }
 .handle::after { content: ""; width: 2px; height: 48px; border-radius: 2px; background: var(--line); }
 .handle:hover::after, .handle:focus-visible::after { background: var(--gray); }
-.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: 21px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
+.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
 .drawer header { padding: 18px 20px 4px; }
 .drawer .privacy { padding: 0 20px 10px; font-size: 12px; color: var(--gray); }
 .chat-log { overflow-y: auto; padding: 4px 20px 16px; display: grid; align-content: start; gap: 10px; }
-.msg { border-radius: 16px; padding: 10px 14px; max-width: 92%; overflow-wrap: anywhere; font-size: 14px; }
+.msg { border-radius: var(--r-lg); padding: 10px 14px; max-width: 92%; overflow-wrap: anywhere; font-size: 14px; }
 .msg p { margin: 0 0 6px; } .msg p:last-child { margin: 0; }
 .msg ul { margin: 4px 0; padding-left: 1.1em; }
 .msg.me { justify-self: end; background: var(--btn); color: var(--on-btn); }
 .msg.bot { justify-self: start; background: var(--bg); }
 .msg small { display: block; margin-top: 6px; color: var(--gray); font-size: 12px; }
-.msg a[data-t] { font-variant-numeric: tabular-nums; }
+.msg a[data-t] { font: 400 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
 .chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
-.chat-form textarea { border: 1px solid var(--line); border-radius: 18px; padding: 9px 14px; background: var(--surface); resize: none; max-height: 160px; }
+.chat-form textarea { border: 1px solid var(--edge); border-radius: var(--r); padding: 9px 14px; background: var(--surface); resize: none; max-height: 160px; }
 #chat-msg { grid-column: 1 / -1; font-size: 12px; }
 #chat-msg:empty { display: none; }
 
 /* live view */
 .live { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.feed { background: var(--surface); border: 1px solid var(--line); border-radius: 21px; padding: 16px 18px; min-height: 240px; max-height: 60vh; overflow-y: auto; font-size: 14px; }
+.feed { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; min-height: 240px; max-height: 60vh; overflow-y: auto; font-size: 14px; }
 .feed p { margin: 0 0 8px; }
-.feed time { color: var(--gray); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.feed time { color: var(--gray); font: 400 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; margin-right: 8px; }
 .feed .who { font-weight: 500; margin-right: 6px; }
 
 /* record sheet */
-dialog { border: 0; border-radius: 21px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
+dialog { border: 0; border-radius: var(--r-lg); padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
 dialog::backdrop { background: var(--scrim); }
 .sheet { padding: 28px 28px 24px; display: grid; gap: 18px; }
 .sheet h2 { margin: 0; font-weight: 400; }
@@ -206,11 +235,11 @@ dialog::backdrop { background: var(--scrim); }
 .cfg-row { display: flex; gap: 16px; align-items: baseline; font-size: 14px; }
 .help { margin: 0; font-size: 12px; }
 .field input:disabled { background: var(--bg); color: var(--gray); }
-.field textarea { border: 1px solid var(--line); border-radius: 21px; padding: 12px 14px; background: var(--surface); width: 100%; font: inherit; resize: vertical; }
-.field input[type="text"], .field input[type="password"], .field select { border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; background: var(--surface); min-width: 0; width: 100%; }
+.field textarea { border: 1px solid var(--edge); border-radius: var(--r-lg); padding: 12px 14px; background: var(--surface); width: 100%; font: inherit; resize: vertical; }
+.field input[type="text"], .field input[type="password"], .field select { border: 1px solid var(--edge); border-radius: var(--r); padding: 9px 14px; background: var(--surface); min-width: 0; width: 100%; }
 .seg { display: inline-flex; gap: 6px; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg label { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+.seg label { border: 1px solid var(--edge); border-radius: var(--r); padding: 7px 16px; cursor: pointer; }
 .seg input:checked + span { font-weight: 500; }
 .seg label:has(input:checked) { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
@@ -233,6 +262,9 @@ dialog::backdrop { background: var(--scrim); }
   .index .title { font-size: 20px; letter-spacing: -0.02em; }
   .index .app, .index .date { grid-column: 2; text-align: left; font-size: 12px; }
   .meeting-title, input.rename { font-size: 28px; }
+  .masthead { grid-template-columns: 1fr; gap: 8px; }
+  .masthead .big-num { font-size: 44px; }
+  .meta { margin-left: 0; }
   .article { grid-template-columns: 1fr; }
   .handle { display: none; }
   .body { padding-right: 0; }
@@ -256,7 +288,7 @@ dialog::backdrop { background: var(--scrim); }
     <div class="dev"><span class="lbl">Me</span><label class="sr" for="strip-mic">Microphone</label><select id="strip-mic"></select><i><b id="lv-mic"></b></i></div>
     <div class="dev"><span class="lbl">Others</span><label class="sr" for="strip-system">Speakers or headphones</label><select id="strip-system"></select><i><b id="lv-system"></b></i></div>
   </div>
-  <div class="nav"><button class="pill theme-btn">Dark</button><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
+  <div class="nav"><div class="langsw" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false">PT-BR</button></div><button class="pill theme-btn">Dark</button><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
 </div>
 
 <header class="top">
@@ -266,7 +298,7 @@ dialog::backdrop { background: var(--scrim); }
     <a href="#/settings" id="nav-settings">Settings</a>
   </nav>
   <a class="wordmark" href="#/">MeTranscript</a>
-  <div class="right"><button class="pill ghost theme-btn">Dark</button><button class="pill rec" id="record-btn">● Record</button></div>
+  <div class="right"><div class="langsw" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false">PT-BR</button></div><button class="pill ghost theme-btn">Dark</button><button class="pill rec" id="record-btn">● Record</button></div>
 </header>
 
 <section id="upcoming-panel" aria-labelledby="up-title">
@@ -325,6 +357,191 @@ const view = $("#view"), statusEl = $("#status");
 const BUSY = ["recording", "transcribing", "enhancing"];
 const LANG = { pt: "Portuguese", en: "English" };
 
+/* ---------- interface language ---------- */
+const LANG_KEY = "metranscript.lang";
+const PT = {
+  "Recording": "Gravação",
+  "Stop recording": "Parar gravação",
+  "Microphone": "Microfone",
+  "Speakers or headphones": "Alto-falantes ou fones",
+  "Index": "Índice",
+  "Back to recording": "Voltar à gravação",
+  "Main": "Principal",
+  "Meetings": "Reuniões",
+  "Upcoming": "Próximas",
+  "Upcoming ({n})": "Próximas ({n})",
+  "Settings": "Configurações",
+  "● Record": "● Gravar",
+  "Language": "Idioma",
+  "(Upcoming – next 24 h)": "(Próximas – 24 h)",
+  "Record this meeting": "Gravar esta reunião",
+  "Not now": "Agora não",
+  "Delete this meeting?": "Excluir esta reunião?",
+  "Cancel": "Cancelar",
+  "Delete meeting": "Excluir reunião",
+  "(New recording)": "(Nova gravação)",
+  "Record a meeting": "Gravar uma reunião",
+  "Title (optional)": "Título (opcional)",
+  "What is this meeting about?": "Sobre o que é esta reunião?",
+  "Portuguese": "Português",
+  "English": "Inglês",
+  "Speakers / headphones": "Alto-falantes / fones",
+  "Refresh devices": "Atualizar dispositivos",
+  "Start recording": "Iniciar gravação",
+  "Dark": "Escuro",
+  "Light": "Claro",
+  "Switch to the light theme": "Mudar para o tema claro",
+  "Switch to the dark theme": "Mudar para o tema escuro",
+  "Error {n}": "Erro {n}",
+  "Untitled meeting": "Reunião sem título",
+  "That meeting no longer exists.": "Essa reunião não existe mais.",
+  "(Index – 1 meeting)": "(Índice – 1 reunião)",
+  "(Index – {n} meetings)": "(Índice – {n} reuniões)",
+  "Filter meetings": "Filtrar reuniões",
+  "All": "Todas",
+  "This week": "Esta semana",
+  "With next steps": "Com próximos passos",
+  "No meetings yet.": "Nenhuma reunião ainda.",
+  "Press Record to start your first one.": "Clique em Gravar para começar a primeira.",
+  "No meetings match this filter.": "Nenhuma reunião corresponde a este filtro.",
+  "Private": "Privada",
+  "Email not sent: {e}": "E-mail não enviado: {e}",
+  "Sent to Gmail {d}": "Enviado ao Gmail em {d}",
+  "No transcript.": "Sem transcrição.",
+  "Show all {n} lines": "Mostrar as {n} linhas",
+  "← Index": "← Índice",
+  "Rename": "Renomear",
+  "Delete": "Excluir",
+  "Meeting ": "Reunião ",
+  "Finishing the transcript…": "Finalizando a transcrição…",
+  "Writing the summary…": "Escrevendo o resumo…",
+  "Private meeting: no summary is generated.": "Reunião privada: nenhum resumo é gerado.",
+  "No summary yet.": "Ainda sem resumo.",
+  "Regenerate": "Gerar de novo",
+  "Generate summary": "Gerar resumo",
+  "Undo": "Desfazer",
+  "Re-transcribe": "Transcrever de novo",
+  "Transcribe the saved audio again, then rewrite the summary": "Transcreve o áudio salvo de novo e reescreve o resumo",
+  "Email it to me": "Enviar por e-mail",
+  "(01) Summary": "(01) Resumo",
+  "(02) Next steps": "(02) Próximos passos",
+  "(03) Notes": "(03) Notas",
+  "(04) Transcript": "(04) Transcrição",
+  "Your notes for this meeting": "Suas notas desta reunião",
+  "Resize chat": "Redimensionar o chat",
+  "(Ask this meeting)": "(Pergunte à reunião)",
+  "Private meeting: chat is off and nothing is sent to the AI or by email.": "Reunião privada: o chat está desligado e nada é enviado à IA nem por e-mail.",
+  "Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.": "Antes de qualquer coisa ir ao DeepSeek, nomes, contatos e valores são trocados por códigos e devolvidos na resposta.",
+  " Hidden so far: {n}.": " Ocultados até agora: {n}.",
+  "Message": "Mensagem",
+  "Ask or request a change…": "Pergunte ou peça uma mudança…",
+  "Send": "Enviar",
+  "Summary generated.": "Resumo gerado.",
+  "Previous version restored.": "Versão anterior restaurada.",
+  "Sending…": "Enviando…",
+  "Sent to your email.": "Enviado ao seu e-mail.",
+  "“{t}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.": "“{t}”, com suas notas, transcrição, resumo e chat, será removida deste computador. Isso não pode ser desfeito.",
+  "Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter”.": "Faça uma pergunta específica, como “Que prazo o João deu?”, ou peça uma mudança, como “Deixe mais curto”.",
+  "Summary updated": "Resumo atualizado",
+  "Add to summary": "Adicionar ao resumo",
+  "Thinking…": "Pensando…",
+  "Meeting title": "Título da reunião",
+  "Meeting deleted.": "Reunião excluída.",
+  "Not saved. Retrying…": "Não salvo. Tentando de novo…",
+  "Saving…": "Salvando…",
+  "Saved": "Salvo",
+  "Not saved ({e}). Retrying…": "Não salvo ({e}). Tentando de novo…",
+  "(Your notes)": "(Suas notas)",
+  "Jot down what matters to you. The summary gives these points more weight.": "Anote o que importa para você. O resumo dá mais peso a esses pontos.",
+  "(Live transcript – updates every ~30 s)": "(Transcrição ao vivo – atualiza a cada ~30 s)",
+  "The first part shows up in about 30 seconds.": "A primeira parte aparece em cerca de 30 segundos.",
+  "{d} (default)": "{d} (padrão)",
+  "Could not list audio devices: {e}": "Não foi possível listar os dispositivos de áudio: {e}",
+  "Now recording your voice from {d}.": "Agora gravando sua voz de {d}.",
+  "Now recording the call from {d}.": "Agora gravando a chamada de {d}.",
+  "A recording is already in progress.": "Já há uma gravação em andamento.",
+  "Cannot reach MeTranscript. Is the program running?": "Não foi possível falar com o MeTranscript. O programa está rodando?",
+  "(Recording – {t})": "(Gravando – {t})",
+  "meeting": "reunião",
+  "(Finishing the transcript…)": "(Finalizando a transcrição…)",
+  "(Writing the summary…)": "(Escrevendo o resumo…)",
+  "{app} is using the microphone. Did a meeting start?": "{app} está usando o microfone. Uma reunião começou?",
+  "{app} is using the microphone. Record this meeting?": "{app} está usando o microfone. Gravar esta reunião?",
+  "Add your calendar address in {link} to get reminders 30 and 2 minutes before meetings.": "Adicione o endereço do seu calendário em {link} para receber lembretes 30 e 2 minutos antes das reuniões.",
+  "No meetings with a video link in the next 24 hours.": "Nenhuma reunião com link de vídeo nas próximas 24 horas.",
+  "Record": "Gravar",
+  "(01) AI summaries": "(01) Resumos com IA",
+  "DeepSeek API key": "Chave da API do DeepSeek",
+  "Used for summaries and chat. Create a key at platform.deepseek.com.": "Usada nos resumos e no chat. Crie uma chave em platform.deepseek.com.",
+  "(02) Gmail": "(02) Gmail",
+  "Gmail address": "Endereço do Gmail",
+  "App password": "Senha de app",
+  "Turn on 2-Step Verification in your Google Account, then create an app password at myaccount.google.com/apppasswords.": "Ative a verificação em duas etapas na sua conta Google e crie uma senha de app em myaccount.google.com/apppasswords.",
+  "(03) Calendar": "(03) Calendário",
+  "Secret address in iCal format": "Endereço secreto no formato iCal",
+  "Google Calendar → Settings → your calendar → Integrate calendar. Treat this address like a password.": "Google Agenda → Configurações → seu calendário → Integrar agenda. Trate este endereço como uma senha.",
+  "(04) Meeting alert": "(04) Alerta de reunião",
+  "Browser window words": "Palavras na janela do navegador",
+  "A browser using the microphone only raises the alert when one of its window titles has one of these comma-separated words. Default: Meet, Zoom, Teams.": "Um navegador usando o microfone só dispara o alerta quando um título de janela dele tem uma destas palavras, separadas por vírgula. Padrão: Meet, Zoom, Teams.",
+  "Set by a Windows environment variable": "Definida por uma variável de ambiente do Windows",
+  "Set": "Definida",
+  "Not set": "Não definida",
+  "Saved. Type a new value to replace it": "Salva. Digite um novo valor para substituir",
+  "Remove": "Remover",
+  "(Settings)": "(Configurações)",
+  "Keys are stored only in the .env file on this computer. This page never shows them back.": "As chaves ficam apenas no arquivo .env deste computador. Esta página nunca as mostra de volta.",
+  "Send a test email": "Enviar um e-mail de teste",
+  "Save settings": "Salvar configurações",
+  "(05) Protected terms": "(05) Termos protegidos",
+  "Names, clients and projects to hide": "Nomes, clientes e projetos a ocultar",
+  "One per line, for example a client or project name": "Um por linha, por exemplo o nome de um cliente ou projeto",
+  "Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.": "Cada um é trocado por um código antes de qualquer coisa ir ao DeepSeek e devolvido na resposta. E-mails, links, telefones, documentos, valores e chaves são sempre ocultados, sem precisar listá-los. Uma palavra que o Whisper escreve errado também é pega. A lista fica em sensitive-terms.txt neste computador.",
+  "Save terms": "Salvar termos",
+  "(06) App": "(06) App",
+  "Run in background and start with Windows": "Rodar em segundo plano e iniciar com o Windows",
+  "Quit MeTranscript": "Fechar o MeTranscript",
+  "MeTranscript is closed": "O MeTranscript foi fechado",
+  "Start it again at the next Windows sign-in (if enabled) or with": "Ele inicia de novo no próximo login do Windows (se estiver ativado) ou com",
+  "Nothing to save.": "Nada para salvar.",
+  "Settings saved.": "Configurações salvas.",
+  "Terms saved.": "Termos salvos.",
+  "Removed.": "Removido.",
+  "Sending the test email…": "Enviando o e-mail de teste…",
+  "Test email sent. Check your inbox.": "E-mail de teste enviado. Confira sua caixa de entrada.",
+};
+let uiLang = "en";
+try { uiLang = localStorage.getItem(LANG_KEY) || ((navigator.language || "").toLowerCase().startsWith("pt") ? "pt" : "en"); } catch { /* storage may be blocked */ }
+if (uiLang !== "pt") uiLang = "en";
+const t = (key, vars) => {
+  const text = (uiLang === "pt" && PT[key]) || key;
+  return vars ? text.replace(/\{(\w+)\}/g, (_, k) => vars[k]) : text;
+};
+const locale = () => (uiLang === "pt" ? "pt-BR" : "en-US");
+const STATIC = [
+  ["#strip", "aria-label", "Recording"], ["#stop", "aria-label", "Stop recording"],
+  ["label[for=strip-mic]", null, "Microphone"], ["label[for=strip-system]", null, "Speakers or headphones"],
+  ["#strip-index", null, "Index"], ["#strip-back", null, "Back to recording"],
+  [".top nav", "aria-label", "Main"], ["#nav-index", null, "Meetings"], ["#nav-settings", null, "Settings"],
+  ["#record-btn", null, "● Record"], [".langsw", "aria-label", "Language"],
+  ["#up-title", null, "(Upcoming – next 24 h)"],
+  ["#detected-rec", null, "Record this meeting"], ["#detected-dismiss", null, "Not now"],
+  ["#confirm-title", null, "Delete this meeting?"], ["#confirm-cancel", null, "Cancel"], ["#confirm-form .pill.rec", null, "Delete meeting"],
+  ["#sheet .row .lbl", null, "(New recording)"], ["#sheet-cancel", null, "Cancel"], ["#sheet-title", null, "Record a meeting"],
+  ["label[for=title]", null, "Title (optional)"], ["#title", "placeholder", "What is this meeting about?"],
+  ["#lang-label", null, "Language"], [".seg label:nth-child(1) span", null, "Portuguese"], [".seg label:nth-child(2) span", null, "English"],
+  ["label[for=dev-mic]", null, "Microphone"], ["label[for=dev-system]", null, "Speakers / headphones"],
+  ["#dev-refresh", null, "Refresh devices"], ["#sheet-start", null, "Start recording"],
+];
+function applyLang(save = true) {
+  document.documentElement.lang = uiLang === "pt" ? "pt-BR" : "en";
+  for (const [sel, attr, key] of STATIC) {
+    for (const el of document.querySelectorAll(sel)) { if (attr) el.setAttribute(attr, t(key)); else el.textContent = t(key); }
+  }
+  for (const b of document.querySelectorAll(".langsw button")) b.setAttribute("aria-pressed", b.dataset.lang === uiLang);
+  applyTheme(document.documentElement.dataset.theme === "dark", false);
+  if (save) { try { localStorage.setItem(LANG_KEY, uiLang); } catch { /* storage may be blocked */ } }
+}
+
 let status = { phase: "idle", levels: { mic: 0, system: 0 } };
 let meetings = [], numbers = new Map(), filter = "all";
 let openId = null, openMeeting = null, showAllTranscript = false;
@@ -333,7 +550,7 @@ let waiting = null, draft = "", notice = null, closed = false, prevPhase = "idle
 const api = async (path, opts = {}) => {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  if (!res.ok) throw new Error(data.error || t("Error {n}", { n: res.status }));
   return data;
 };
 
@@ -354,11 +571,11 @@ const withTimeLinks = html => html.replace(/\[(\d{2}):(\d{2}):(\d{2})\]/g, (_, h
 
 const clock = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
   return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(x).padStart(2, "0"); };
-const when = iso => new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
-const dateOnly = iso => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-const timeOf = iso => new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+const when = iso => new Date(iso).toLocaleString(locale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+const dateOnly = iso => new Date(iso).toLocaleDateString(locale(), { month: "short", day: "numeric" });
+const timeOf = iso => new Date(iso).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", hour12: false });
 const duration = m => m.ended_at ? `${Math.max(1, Math.round((new Date(m.ended_at) - new Date(m.started_at)) / 60000))} min` : "";
-const titleOf = m => m.title || "Untitled meeting";
+const titleOf = m => m.title || t("Untitled meeting");
 
 // The 1 s poll never wipes a message: it stays until the user acts or the phase changes.
 function showError(msg) { notice = `<span class="error">${esc(msg)}</span>`; statusEl.innerHTML = notice; }
@@ -382,7 +599,7 @@ async function route() {
     openMeeting = await api(`/api/meetings/${r.id}`);
   } catch {
     location.hash = "#/";
-    return showError("That meeting no longer exists.");
+    return showError(t("That meeting no longer exists."));
   }
   if (openId !== r.id) { showAllTranscript = false; draft = ""; }
   openId = r.id;
@@ -407,10 +624,10 @@ async function renderIndex() {
   const shown = meetings.filter(FILTERS[filter]);
   const pill = (key, label) => `<button class="pill ghost" data-filter="${key}" aria-pressed="${filter === key}">${label}</button>`;
   view.innerHTML = `
-    <div class="head"><span class="lbl">(Index – ${meetings.length} meeting${meetings.length === 1 ? "" : "s"})</span></div>
-    <div class="filters" role="group" aria-label="Filter meetings">${pill("all", "All")}${pill("week", "This week")}${pill("next", "With next steps")}</div>
-    ${!meetings.length ? `<div class="empty-state"><p class="t20">No meetings yet.</p><p class="muted">Press Record to start your first one.</p></div>`
-      : !shown.length ? `<div class="empty-state"><p class="muted">No meetings match this filter.</p></div>`
+    <div class="head"><span class="lbl">${meetings.length === 1 ? t("(Index – 1 meeting)") : t("(Index – {n} meetings)", { n: meetings.length })}</span></div>
+    <div class="filters" role="group" aria-label="${t("Filter meetings")}">${pill("all", t("All"))}${pill("week", t("This week"))}${pill("next", t("With next steps"))}</div>
+    ${!meetings.length ? `<div class="empty-state"><p class="t20">${t("No meetings yet.")}</p><p class="muted">${t("Press Record to start your first one.")}</p></div>`
+      : !shown.length ? `<div class="empty-state"><p class="muted">${t("No meetings match this filter.")}</p></div>`
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
           <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}</span>
           <span class="app">${esc(m.app || "")}</span><span class="date">${dateOnly(m.started_at)}</span></a></li>`).join("")}</ol>`}
@@ -420,10 +637,10 @@ async function renderIndex() {
 
 /* ---------- meeting article ---------- */
 function mailStatus(m) {
-  if (m.private) return "Private";
+  if (m.private) return t("Private");
   if (!m.email_configured) return "";
-  if (m.email_error) return `<span class="error">Email not sent: ${esc(m.email_error)}</span>`;
-  if (m.emailed_at) return `Sent to Gmail ${esc(when(m.emailed_at))}`;
+  if (m.email_error) return `<span class="error">${esc(t("Email not sent: {e}", { e: m.email_error }))}</span>`;
+  if (m.emailed_at) return esc(t("Sent to Gmail {d}", { d: when(m.emailed_at) }));
   return "";
 }
 function transcriptLines(text) {
@@ -434,10 +651,10 @@ function transcriptLines(text) {
 }
 function renderTranscript() {
   const lines = transcriptLines(openMeeting.transcript);
-  if (!lines.length) return `<p class="muted">No transcript.</p>`;
+  if (!lines.length) return `<p class="muted">${t("No transcript.")}</p>`;
   const visible = showAllTranscript ? lines : lines.slice(0, 20);
   return `<div class="transcript t14">${visible.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>
-    ${lines.length > 20 && !showAllTranscript ? `<button class="link" id="show-all">Show all ${lines.length} lines</button>` : ""}`;
+    ${lines.length > 20 && !showAllTranscript ? `<button class="link" id="show-all">${t("Show all {n} lines", { n: lines.length })}</button>` : ""}`;
 }
 
 function renderMeeting() {
@@ -446,43 +663,43 @@ function renderMeeting() {
   if (status.phase === "recording" && status.meeting_id === m.id) return renderLive();
   const summary = m.summary_body, nextSteps = m.next_steps;
   const off = processing || waiting === m.id || m.private ? "disabled" : "";
-  const meta = [when(m.started_at), duration(m), m.app, LANG[m.lang], mailStatus(m)].filter(Boolean);
+  const meta = [when(m.started_at), duration(m), m.app, t(LANG[m.lang] || ""), mailStatus(m)].filter(Boolean);
   view.innerHTML = `
     <div class="article">
       <div class="body">
-        <div class="toolrow"><a href="#/" class="lbl">← Index</a>
-          <span class="tools"><button class="link" id="rename">Rename</button>
-            <button class="link danger" id="delete" ${processing ? "disabled" : ""}>Delete</button></span></div>
-        <div class="lbl" style="margin-top:20px">(Meeting – ${numbers.get(m.id) || "–"})</div>
-        <h1 class="meeting-title">${esc(titleOf(m))}</h1>
+        <div class="toolrow"><a href="#/" class="lbl">${t("← Index")}</a>
+          <span class="tools"><button class="link" id="rename">${t("Rename")}</button>
+            <button class="link danger" id="delete" ${processing ? "disabled" : ""}>${t("Delete")}</button></span></div>
+        <div class="masthead"><span class="big-num"><span class="sr">${t("Meeting ")}</span>${numbers.get(m.id) || "–"}</span>
+          <h1 class="meeting-title">${esc(titleOf(m))}</h1></div>
         <div class="meta">${meta.map(x => `<span>${x}</span>`).join("")}</div>
-        <section class="sec" aria-labelledby="s1"><span class="lbl" id="s1">(01) Summary</span><div>
+        <section class="sec" aria-labelledby="s1"><span class="lbl" id="s1">${t("(01) Summary")}</span><div>
           <div class="reading">${summary ? markdown(summary)
-            : `<p class="muted">${processing ? (status.phase === "transcribing" ? "Finishing the transcript…" : "Writing the summary…")
-              : m.private ? "Private meeting: no summary is generated." : "No summary yet."}</p>`}</div>
+            : `<p class="muted">${processing ? (status.phase === "transcribing" ? t("Finishing the transcript…") : t("Writing the summary…"))
+              : m.private ? t("Private meeting: no summary is generated.") : t("No summary yet.")}</p>`}</div>
           ${m.private ? "" : `<div class="actions">
-            <button class="pill dark" id="regen" ${off}>${m.summary ? "Regenerate" : "Generate summary"}</button>
-            ${m.can_undo ? `<button class="pill ghost" id="undo" ${off}>Undo</button>` : ""}
-            ${m.has_audio ? `<button class="pill ghost" id="retranscribe" ${off} title="Transcribe the saved audio again, then rewrite the summary">Re-transcribe</button>` : ""}
-            ${m.email_configured ? `<button class="pill ghost" id="mail" ${off || !m.summary ? "disabled" : ""}>Email it to me</button>` : ""}
+            <button class="pill dark" id="regen" ${off}>${m.summary ? t("Regenerate") : t("Generate summary")}</button>
+            ${m.can_undo ? `<button class="pill ghost" id="undo" ${off}>${t("Undo")}</button>` : ""}
+            ${m.has_audio ? `<button class="pill ghost" id="retranscribe" ${off} title="${t("Transcribe the saved audio again, then rewrite the summary")}">${t("Re-transcribe")}</button>` : ""}
+            ${m.email_configured ? `<button class="pill ghost" id="mail" ${off || !m.summary ? "disabled" : ""}>${t("Email it to me")}</button>` : ""}
             <span class="msg" id="doc-msg" aria-live="polite"></span></div>`}
         </div></section>
-        ${nextSteps ? `<section class="sec" aria-labelledby="s2"><span class="lbl" id="s2">(02) Next steps</span><div class="reading">${markdown(nextSteps)}</div></section>` : ""}
-        <section class="sec" aria-labelledby="s3"><span class="lbl" id="s3"><label for="notes">(03) Notes</label></span><div>
-          <textarea class="notes" id="notes" placeholder="Your notes for this meeting"></textarea><span class="saved" aria-live="polite"></span>
+        ${nextSteps ? `<section class="sec" aria-labelledby="s2"><span class="lbl" id="s2">${t("(02) Next steps")}</span><div class="reading">${markdown(nextSteps)}</div></section>` : ""}
+        <section class="sec" aria-labelledby="s3"><span class="lbl" id="s3"><label for="notes">${t("(03) Notes")}</label></span><div>
+          <textarea class="notes" id="notes" placeholder="${t("Your notes for this meeting")}"></textarea><span class="saved" aria-live="polite"></span>
         </div></section>
-        <section class="sec" aria-labelledby="s4"><span class="lbl" id="s4">(04) Transcript</span><div id="transcript">${renderTranscript()}</div></section>
+        <section class="sec" aria-labelledby="s4"><span class="lbl" id="s4">${t("(04) Transcript")}</span><div id="transcript">${renderTranscript()}</div></section>
       </div>
-      <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="Resize chat" tabindex="0"></div>
+      <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="${t("Resize chat")}" tabindex="0"></div>
       <section class="drawer" aria-labelledby="chat-title">
-        <header><span class="lbl" id="chat-title">(Ask this meeting)</span></header>
-        <p class="privacy">${m.private ? "Private meeting: chat is off and nothing is sent to the AI or by email."
-          : `Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.${m.protected ? ` Hidden so far: ${m.protected}.` : ""}`}</p>
+        <header><span class="lbl" id="chat-title">${t("(Ask this meeting)")}</span></header>
+        <p class="privacy">${m.private ? t("Private meeting: chat is off and nothing is sent to the AI or by email.")
+          : `${t("Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.")}${m.protected ? t(" Hidden so far: {n}.", { n: m.protected }) : ""}`}</p>
         <div class="chat-log" id="chat-log">${chatLog()}</div>
         <form class="chat-form" id="chat-form">
-          <label class="sr" for="chat-input">Message</label>
-          <textarea id="chat-input" rows="2" placeholder="Ask or request a change…" ${off}></textarea>
-          <button class="pill dark" ${off}>Send</button>
+          <label class="sr" for="chat-input">${t("Message")}</label>
+          <textarea id="chat-input" rows="2" placeholder="${t("Ask or request a change…")}" ${off}></textarea>
+          <button class="pill dark" ${off}>${t("Send")}</button>
           <span id="chat-msg" aria-live="polite"></span>
         </form>
       </section>
@@ -490,17 +707,17 @@ function renderMeeting() {
   const notes = $("#notes");
   notes.value = m.notes;
   bindNotes(notes, m.id);
-  $("#regen")?.addEventListener("click", () => docAction("summary", "Writing the summary…", "Summary generated."));
-  $("#undo")?.addEventListener("click", () => docAction("undo", "", "Previous version restored."));
+  $("#regen")?.addEventListener("click", () => docAction("summary", t("Writing the summary…"), t("Summary generated.")));
+  $("#undo")?.addEventListener("click", () => docAction("undo", "", t("Previous version restored.")));
   $("#retranscribe")?.addEventListener("click", async e => {
     e.target.disabled = true;
     try { await api(`/api/meetings/${openId}/retranscribe`, { method: "POST" }); await poll(); }
     catch (err) { e.target.disabled = false; $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`; }
   });
-  $("#mail")?.addEventListener("click", () => docAction("email", "Sending…", "Sent to your email."));
+  $("#mail")?.addEventListener("click", () => docAction("email", t("Sending…"), t("Sent to your email.")));
   $("#rename").addEventListener("click", startRename);
   $("#delete").addEventListener("click", () => {
-    $("#confirm-text").textContent = `“${titleOf(openMeeting)}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.`;
+    $("#confirm-text").textContent = t("“{t}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.", { t: titleOf(openMeeting) });
     confirmDialog.showModal();
   });
   bindTranscript();
@@ -524,13 +741,13 @@ function jumpTo(t) {
 function chatLog() {
   const m = openMeeting;
   if (!m.chat.length && waiting !== m.id) {
-    return m.private ? "" : `<p class="muted t14">Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter”.</p>`;
+    return m.private ? "" : `<p class="muted t14">${t("Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter”.")}</p>`;
   }
   return m.chat.map((c, i) => c.role === "user"
     ? `<div class="msg me"><p>${esc(c.content)}</p></div>`
     : `<div class="msg bot">${withTimeLinks(markdown(c.content))}${c.changed_summary
-        ? `<small>Summary updated</small>` : `<button class="link t12" data-include="${i}">Add to summary</button>`}</div>`
-  ).join("") + (waiting === m.id ? `<div class="msg bot"><p class="muted">Thinking…</p></div>` : "");
+        ? `<small>${t("Summary updated")}</small>` : `<button class="link t12" data-include="${i}">${t("Add to summary")}</button>`}</div>`
+  ).join("") + (waiting === m.id ? `<div class="msg bot"><p class="muted">${t("Thinking…")}</p></div>` : "");
 }
 function bindChat() {
   const input = $("#chat-input"), log = $("#chat-log");
@@ -576,7 +793,7 @@ function startRename() {
   input.className = "rename";
   input.maxLength = 200;
   input.value = openMeeting.title;
-  input.setAttribute("aria-label", "Meeting title");
+  input.setAttribute("aria-label", t("Meeting title"));
   h1.replaceWith(input);
   input.focus();
   input.select();
@@ -610,7 +827,7 @@ $("#confirm-form").addEventListener("submit", async e => {
     confirmDialog.close();
     dirty = null;
     location.hash = "#/";
-    showInfo("Meeting deleted.");
+    showInfo(t("Meeting deleted."));
   } catch (err) {
     confirmDialog.close();
     showError(err.message);
@@ -640,12 +857,11 @@ async function docAction(action, label, done) {
 function applyTheme(dark, save = true) {
   document.documentElement.dataset.theme = dark ? "dark" : "light";
   for (const b of document.querySelectorAll(".theme-btn")) {
-    b.textContent = dark ? "Light" : "Dark";
-    b.setAttribute("aria-label", dark ? "Switch to the light theme" : "Switch to the dark theme");
+    b.textContent = dark ? t("Light") : t("Dark");
+    b.setAttribute("aria-label", dark ? t("Switch to the light theme") : t("Switch to the dark theme"));
   }
   if (save) { try { localStorage.setItem("metranscript.theme", dark ? "dark" : "light"); } catch { /* storage may be blocked */ } }
 }
-applyTheme(document.documentElement.dataset.theme === "dark", false);
 document.querySelectorAll(".theme-btn").forEach(b => b.addEventListener("click", () => applyTheme(document.documentElement.dataset.theme !== "dark")));
 
 /* ---------- resizable drawer ---------- */
@@ -681,11 +897,11 @@ try { const saved = parseInt(localStorage.getItem(DRAWER_KEY)); if (saved) setDr
 let dirty = null, saveTimer = null, saveFailed = false;
 const savedLabel = text => { const el = $(".saved"); if (el) el.textContent = text; };
 function bindNotes(textarea, id) {
-  if (saveFailed) savedLabel("Not saved. Retrying…");
+  if (saveFailed) savedLabel(t("Not saved. Retrying…"));
   textarea.addEventListener("input", () => {
     dirty = { id, notes: textarea.value };
     if (openMeeting?.id === id) openMeeting.notes = textarea.value;
-    savedLabel("Saving…");
+    savedLabel(t("Saving…"));
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flushNotes, 700);
   });
@@ -698,11 +914,11 @@ async function flushNotes(keepalive = false) {
   try {
     await api(`/api/meetings/${d.id}/notes`, { method: "PUT", keepalive, body: JSON.stringify({ notes: d.notes }) });
     saveFailed = false;
-    if (!dirty) savedLabel("Saved");
+    if (!dirty) savedLabel(t("Saved"));
   } catch (err) {
     dirty ??= d;
     saveFailed = true;
-    savedLabel(`Not saved (${err.message}). Retrying…`);
+    savedLabel(t("Not saved ({e}). Retrying…", { e: err.message }));
     saveTimer = setTimeout(flushNotes, 3000);
   }
 }
@@ -717,8 +933,8 @@ window.addEventListener("beforeunload", e => {
 function renderLive() {
   view.innerHTML = `
     <div class="live">
-      <section><label class="lbl" for="notes">(Your notes)</label><textarea class="notes" id="notes" style="margin-top:8px; min-height:320px" placeholder="Jot down what matters to you. The summary gives these points more weight."></textarea><span class="saved" aria-live="polite"></span></section>
-      <section><span class="lbl">(Live transcript – updates every ~30 s)</span><div class="feed" id="feed" style="margin-top:8px"><p class="muted">The first part shows up in about 30 seconds.</p></div></section>
+      <section><label class="lbl" for="notes">${t("(Your notes)")}</label><textarea class="notes" id="notes" style="margin-top:8px; min-height:320px" placeholder="${t("Jot down what matters to you. The summary gives these points more weight.")}"></textarea><span class="saved" aria-live="polite"></span></section>
+      <section><span class="lbl">${t("(Live transcript – updates every ~30 s)")}</span><div class="feed" id="feed" style="margin-top:8px"><p class="muted">${t("The first part shows up in about 30 seconds.")}</p></div></section>
     </div>`;
   const ta = $("#notes");
   ta.value = openMeeting.notes;
@@ -740,14 +956,14 @@ function fillDevices(select, list, keepChoice, current) {
   select.replaceChildren(...list.map(d => {
     const o = document.createElement("option");
     o.value = d.name;
-    o.textContent = d.default ? `${d.name} (default)` : d.name;
+    o.textContent = d.default ? t("{d} (default)", { d: d.name }) : d.name;
     o.selected = keep ? d.name === keep : d.default;
     return o;
   }));
 }
 // Every recording starts from the Windows defaults; only "Refresh devices" keeps the current pick.
 async function loadDevices(keepChoice = false) {
-  try { deviceList = await api("/api/devices"); } catch (err) { return showError(`Could not list audio devices: ${err.message}`); }
+  try { deviceList = await api("/api/devices"); } catch (err) { return showError(t("Could not list audio devices: {e}", { e: err.message })); }
   fillDevices($("#dev-mic"), deviceList.mics, keepChoice);
   fillDevices($("#dev-system"), deviceList.speakers, keepChoice);
 }
@@ -757,7 +973,7 @@ for (const track of ["mic", "system"]) {
     if (status.phase !== "recording") return;
     try {
       await api("/api/devices", { method: "POST", body: JSON.stringify({ track, name: e.target.value }) });
-      showInfo(`Now recording ${track === "mic" ? "your voice" : "the call"} from ${e.target.value}.`);
+      showInfo(t(track === "mic" ? "Now recording your voice from {d}." : "Now recording the call from {d}.", { d: e.target.value }));
     } catch (err) {
       showError(err.message);
       e.target.value = status.devices?.[track] ?? e.target.value;
@@ -769,7 +985,7 @@ for (const track of ["mic", "system"]) {
 const sheet = $("#sheet");
 let sheetPrefill = {};
 async function openRecordSheet(prefill = {}) {
-  if (BUSY.includes(status.phase)) return showError("A recording is already in progress.");
+  if (BUSY.includes(status.phase)) return showError(t("A recording is already in progress."));
   sheetPrefill = prefill;
   $("#title").value = prefill.title || "";
   $("#sheet-msg").textContent = "";
@@ -810,14 +1026,14 @@ $("#stop").addEventListener("click", async () => {
 let polling = null;
 const poll = () => polling ??= refresh().finally(() => { polling = null; });
 async function refresh() {
-  try { status = await api("/api/status"); } catch { statusEl.textContent = "Cannot reach MeTranscript. Is the program running?"; return; }
+  try { status = await api("/api/status"); } catch { statusEl.textContent = t("Cannot reach MeTranscript. Is the program running?"); return; }
   const p = status.phase, rec = p === "recording", busy = BUSY.includes(p);
   document.body.classList.toggle("recording", busy);
   if (busy) {
     recordingId = status.meeting_id;
     const m = meetings.find(x => x.id === status.meeting_id) || (openMeeting?.id === status.meeting_id ? openMeeting : null);
-    $("#strip-label").textContent = rec ? `(Recording – ${m ? titleOf(m) : "meeting"})`
-      : p === "transcribing" ? "(Finishing the transcript…)" : "(Writing the summary…)";
+    $("#strip-label").textContent = rec ? t("(Recording – {t})", { t: m ? titleOf(m) : t("meeting") })
+      : p === "transcribing" ? t("(Finishing the transcript…)") : t("(Writing the summary…)");
     $("#strip-clock").textContent = clock(status.elapsed || 0);
     $("#stop").disabled = !rec;
     $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
@@ -871,9 +1087,9 @@ function showDetected() {
   $("#detected").classList.toggle("show", show);
   if (!show || shownKey === d.key) return;
   shownKey = d.key;
-  $("#detected-text").textContent = `${d.app} is using the microphone. Did a meeting start?`;
+  $("#detected-text").textContent = t("{app} is using the microphone. Did a meeting start?", { app: d.app });
   if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
-    const n = new Notification("MeTranscript", { body: `${d.app} is using the microphone. Record this meeting?` });
+    const n = new Notification("MeTranscript", { body: t("{app} is using the microphone. Record this meeting?", { app: d.app }) });
     n.onclick = () => { window.focus(); n.close(); };
   }
 }
@@ -883,12 +1099,12 @@ let agenda = { configured: false, events: [], error: null };
 async function loadAgenda() {
   if (closed) return;
   try { agenda = await api("/api/agenda"); } catch { return; }
-  $("#nav-upcoming").textContent = agenda.events.length ? `Upcoming (${agenda.events.length})` : "Upcoming";
+  $("#nav-upcoming").textContent = agenda.events.length ? t("Upcoming ({n})", { n: agenda.events.length }) : t("Upcoming");
   $("#upcoming").innerHTML = !agenda.configured
-    ? `<li><span></span><span class="muted">Add your calendar address in <a href="#/settings">Settings</a> to get reminders 30 and 2 minutes before meetings.</span></li>`
+    ? `<li><span></span><span class="muted">${t("Add your calendar address in {link} to get reminders 30 and 2 minutes before meetings.", { link: `<a href="#/settings">${t("Settings")}</a>` })}</span></li>`
     : agenda.error ? `<li><span></span><span class="error">${esc(agenda.error)}</span></li>`
-    : agenda.events.length ? agenda.events.map((e, i) => `<li><span class="time">${timeOf(e.start)}</span><span>${esc(e.title)} <span class="muted">${esc(e.app)}</span></span><button class="pill ghost" data-event="${i}">Record</button></li>`).join("")
-    : `<li><span></span><span class="muted">No meetings with a video link in the next 24 hours.</span></li>`;
+    : agenda.events.length ? agenda.events.map((e, i) => `<li><span class="time">${timeOf(e.start)}</span><span>${esc(e.title)} <span class="muted">${esc(e.app)}</span></span><button class="pill ghost" data-event="${i}">${t("Record")}</button></li>`).join("")
+    : `<li><span></span><span class="muted">${t("No meetings with a video link in the next 24 hours.")}</span></li>`;
 }
 $("#nav-upcoming").addEventListener("click", e => {
   const open = $("#upcoming-panel").classList.toggle("open");
@@ -916,7 +1132,7 @@ function bindSettings() {
       await flushNotes();
       await api("/api/quit", { method: "POST" });
       closed = true;
-      document.body.innerHTML = `<div class="closed"><p class="t28">MeTranscript is closed</p><p class="muted">Start it again at the next Windows sign-in (if enabled) or with <code style="white-space:nowrap">python -m metranscript.server</code>.</p></div>`;
+      document.body.innerHTML = `<div class="closed"><p class="t28">${t("MeTranscript is closed")}</p><p class="muted">${t("Start it again at the next Windows sign-in (if enabled) or with")} <code style="white-space:nowrap">python -m metranscript.server</code>.</p></div>`;
     } catch (err) { showError(err.message); }
   });
 }
@@ -937,7 +1153,7 @@ const SETTINGS = [
     { name: "MEETING_KEYWORDS", label: "Browser window words", secret: false,
       help: "A browser using the microphone only raises the alert when one of its window titles has one of these comma-separated words. Default: Meet, Zoom, Teams." }] },
 ];
-const stateText = f => f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set";
+const stateText = f => t(f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set");
 
 async function renderSettings() {
   let cfg, terms;
@@ -945,32 +1161,32 @@ async function renderSettings() {
   const field = d => {
     const f = cfg[d.name];
     return `<div class="field">
-      <label class="lbl" for="cfg-${d.name}">${d.label}</label>
+      <label class="lbl" for="cfg-${d.name}">${t(d.label)}</label>
       <input id="cfg-${d.name}" data-name="${d.name}" type="${d.secret ? "password" : "text"}" autocomplete="${d.secret ? "new-password" : "off"}"
-        spellcheck="false" placeholder="${f.set ? (d.secret ? "Saved. Type a new value to replace it" : "") : "Not set"}"
+        spellcheck="false" placeholder="${f.set ? (d.secret ? t("Saved. Type a new value to replace it") : "") : t("Not set")}"
         value="${d.secret ? "" : esc(f.value || "")}" ${f.locked ? "disabled" : ""}>
       <div class="cfg-row"><span class="${f.set ? "" : "muted"}">${stateText(f)}</span>
-        ${f.set && !f.locked ? `<button type="button" class="link danger" data-remove="${d.name}">Remove</button>` : ""}</div>
-      ${d.help ? `<p class="muted help">${d.help}</p>` : ""}</div>`;
+        ${f.set && !f.locked ? `<button type="button" class="link danger" data-remove="${d.name}">${t("Remove")}</button>` : ""}</div>
+      ${d.help ? `<p class="muted help">${t(d.help)}</p>` : ""}</div>`;
   };
   view.innerHTML = `
-    <div class="head"><span class="lbl">(Settings)</span></div>
-    <h1 class="meeting-title">Settings</h1>
-    <p class="muted" style="max-width:60ch">Keys are stored only in the .env file on this computer. This page never shows them back.</p>
+    <div class="head"><span class="lbl">${t("(Settings)")}</span></div>
+    <h1 class="meeting-title">${t("Settings")}</h1>
+    <p class="muted" style="max-width:60ch">${t("Keys are stored only in the .env file on this computer. This page never shows them back.")}</p>
     <form id="cfg-form" autocomplete="off">
-      ${SETTINGS.map(s => `<section class="sec"><span class="lbl">${s.num}</span><div class="cfg-fields">${s.fields.map(field).join("")}
-        ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>Send a test email</button></div>` : ""}</div></section>`).join("")}
-      <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">Save settings</button></div>
+      ${SETTINGS.map(s => `<section class="sec"><span class="lbl">${t(s.num)}</span><div class="cfg-fields">${s.fields.map(field).join("")}
+        ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>${t("Send a test email")}</button></div>` : ""}</div></section>`).join("")}
+      <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">${t("Save settings")}</button></div>
     </form>
-    <section class="sec"><span class="lbl">(05) Protected terms</span><div class="cfg-fields">
+    <section class="sec"><span class="lbl">${t("(05) Protected terms")}</span><div class="cfg-fields">
       <form id="terms-form"><div class="field">
-        <label class="lbl" for="terms">Names, clients and projects to hide</label>
-        <textarea id="terms" rows="8" spellcheck="false" placeholder="One per line, for example a client or project name">${esc(terms.join("\n"))}</textarea>
-        <p class="muted help">Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.</p></div>
-        <div class="actions"><button class="pill dark" id="terms-save">Save terms</button></div></form></div></section>
-    <section class="sec"><span class="lbl">(06) App</span><div class="settings">
-      <label><input type="checkbox" id="autostart"> Run in background and start with Windows</label>
-      <button class="link" id="quit">Quit MeTranscript</button></div></section>`;
+        <label class="lbl" for="terms">${t("Names, clients and projects to hide")}</label>
+        <textarea id="terms" rows="8" spellcheck="false" placeholder="${t("One per line, for example a client or project name")}">${esc(terms.join("\n"))}</textarea>
+        <p class="muted help">${t("Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.")}</p></div>
+        <div class="actions"><button class="pill dark" id="terms-save">${t("Save terms")}</button></div></form></div></section>
+    <section class="sec"><span class="lbl">${t("(06) App")}</span><div class="settings">
+      <label><input type="checkbox" id="autostart"> ${t("Run in background and start with Windows")}</label>
+      <button class="link" id="quit">${t("Quit MeTranscript")}</button></div></section>`;
   $("#cfg-form").addEventListener("submit", async e => {
     e.preventDefault();
     const updates = {};
@@ -978,31 +1194,41 @@ async function renderSettings() {
       const v = input.value.trim(), f = cfg[input.dataset.name];
       if (!input.disabled && v && v !== (f.value || "")) updates[input.dataset.name] = v;
     }
-    if (!Object.keys(updates).length) return showInfo("Nothing to save.");
-    try { await api("/api/config", { method: "PUT", body: JSON.stringify(updates) }); await renderSettings(); showInfo("Settings saved."); }
+    if (!Object.keys(updates).length) return showInfo(t("Nothing to save."));
+    try { await api("/api/config", { method: "PUT", body: JSON.stringify(updates) }); await renderSettings(); showInfo(t("Settings saved.")); }
     catch (err) { showError(err.message); }
   });
   $("#terms-form").addEventListener("submit", async e => {
     e.preventDefault();
-    try { await api("/api/privacy", { method: "PUT", body: JSON.stringify({ terms: $("#terms").value }) }); await renderSettings(); showInfo("Terms saved."); }
+    try { await api("/api/privacy", { method: "PUT", body: JSON.stringify({ terms: $("#terms").value }) }); await renderSettings(); showInfo(t("Terms saved.")); }
     catch (err) { showError(err.message); }
   });
   view.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
-    try { await api("/api/config", { method: "PUT", body: JSON.stringify({ [b.dataset.remove]: null }) }); await renderSettings(); showInfo("Removed."); }
+    try { await api("/api/config", { method: "PUT", body: JSON.stringify({ [b.dataset.remove]: null }) }); await renderSettings(); showInfo(t("Removed.")); }
     catch (err) { showError(err.message); }
   }));
   $("#test-email")?.addEventListener("click", async e => {
     e.target.disabled = true;
-    showInfo("Sending the test email…");
-    try { await api("/api/config/test-email", { method: "POST" }); showInfo("Test email sent. Check your inbox."); }
+    showInfo(t("Sending the test email…"));
+    try { await api("/api/config/test-email", { method: "POST" }); showInfo(t("Test email sent. Check your inbox.")); }
     catch (err) { showError(err.message); }
     e.target.disabled = false;
   });
   bindSettings();
 }
 
+document.querySelectorAll(".langsw button").forEach(b => b.addEventListener("click", async () => {
+  if (b.dataset.lang === uiLang) return;
+  uiLang = b.dataset.lang;
+  applyLang();
+  await route();
+  loadAgenda();
+  poll();
+}));
+
 /* ---------- start ---------- */
 (async function boot() {
+  applyLang(false);
   await loadMeetings().catch(() => {});
   await route();
   loadAgenda();
