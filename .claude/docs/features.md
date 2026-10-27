@@ -28,7 +28,8 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
 - [ ] (DEV-0059) Nothing is transcribed while recording. On stop, each track is transcribed once by whisper.cpp in the chosen
       language, with a progress percentage in the strip and on the meeting page, before the summary.
 - [ ] Segments labeled **Me** / **Others**, interleaved by time, are saved to `transcript.md` as each window finishes.
-- [ ] (DEV-0058) A window whisper cannot do (a crash, unreadable output) is skipped and logged; the others still finish.
+- [ ] (DEV-0058) A window whisper cannot do (a crash, unreadable output) is skipped, logged and marked in the transcript with
+      `[this part could not be transcribed]`, so the summary says that part is missing; the others still finish.
       Decoding loops ("e aí e aí e aí") are collapsed to one occurrence.
 - [ ] Silent stretches don't produce made-up text ("Subtitles by the community…").
 - [ ] (DEV-0031) A window ends in the latest pause of both speakers (at least 0.5 s, after 12 s) instead
@@ -123,7 +124,7 @@ direction "E · Index" chosen among five mockups. Full design:
 - [ ] Square-ish controls (4 px) and 6 px cards; only the Record button is round; filters are underlined tabs.
 - [ ] Timecodes, dates and meeting numbers use JetBrains Mono (served locally); the meeting page opens with its number as a large numeral.
 - [ ] (DEV-0050) "Me" and "Others" have a fixed look (a square marker, mono label; Others lines are indented) in the transcript
-      and the live feed; above the transcript a two-lane bar shows who spoke when with the "Me X% · Others Y%" split, and a click
+      and the transcript; above the transcript a two-lane bar shows who spoke when with the "Me X% · Others Y%" split, and a click
       jumps to that line (keyboard users use the timestamps in the lines).
 - [ ] (DEV-0050) While recording: red top edge, a pulsing dot (still under reduced motion), a 40 px clock, tick-style level meters
       per track and the tab title `● mm:ss MeTranscript`.

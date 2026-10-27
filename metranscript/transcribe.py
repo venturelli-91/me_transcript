@@ -28,7 +28,10 @@ VOCAB_MAX = 300
 INTRO = {"en": "This meeting mentions {}.", "pt": "Esta reunião menciona {}."}
 TAIL = 200
 SEGMENT_RE = re.compile(r"start = ([\d.]+), end = ([\d.]+)")
+# Shown in the transcript where a window could not be transcribed, so the summary and the chat know the text is incomplete.
+MISSING = "[this part could not be transcribed]"
 # A word or short phrase repeated three or more times in a row is a Whisper decoding loop ("e aí e aí e aí"), not speech.
+# ponytail: it also collapses a real triple repeat ("no, no, no"); raise the count if that ever matters.
 REPEAT_RE = re.compile(r"(\b\w[\w']*(?:\s+\w[\w']*){0,3}?)(?:[\s,.;:!?…-]+\1\b){2,}", re.I)
 # The Vulkan build runs the model on the GPU; CPU threads only feed it, so few are enough.
 THREADS = os.environ.get("ATA_THREADS", "4")
@@ -194,8 +197,7 @@ def transcribe_clip(clip: Path, spans: list[tuple[float, float]], cut: float, la
     try:
         return parse_whisper(json.loads(raw), offset, who)
     except (json.JSONDecodeError, KeyError, TypeError):
-        log.warning("Whisper wrote output that could not be read; skipping %s at %.0f s", who, offset)
-        return []
+        raise RuntimeError("whisper-cli wrote output that could not be read") from None
 
 
 class Transcriber:
@@ -222,10 +224,11 @@ class Transcriber:
                 try:
                     tracks.append(transcribe_clip(clip, spans, cut, self.lang, who, self.done, prompt))
                 except RuntimeError as e:
-                    # One window whisper cannot do must not lose the rest of the meeting.
+                    # One window whisper cannot do must not lose the rest of the meeting; mark the hole instead of hiding it.
+                    # (An ffmpeg or VAD failure in `analyze` is not caught on purpose: it means a broken WAV, so the batch stops.)
                     log.warning("Skipping %s at %.0f s: %s", who, self.done, e)
                     self.skipped += 1
-                    tracks.append([])
+                    tracks.append([{"t": round(self.done, 2), "who": who, "text": MISSING}])
         for segs in tracks:
             if segs:
                 self.tail[segs[-1]["who"]] = " ".join(s["text"] for s in segs)[-TAIL:].strip()

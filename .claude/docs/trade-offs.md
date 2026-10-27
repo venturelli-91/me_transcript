@@ -2,6 +2,7 @@
 
 | Choice | Gain | Cost | When to revisit |
 |---|---|---|---|
+| A lost window is marked, not retried | The rest of the meeting is kept and the summary says the part is missing | That stretch has no text until you press Re-transcribe | If it happens often: retry the window once before giving up |
 | Local Whisper once, after the call | Free, private, offline; nothing heavy runs during the call; the GPU is free for the batch | Wait after you stop (a progress bar shows it); no text during the meeting | If the delay gets in the way: smaller chunks (more CPU/GPU) |
 | whisper.cpp Vulkan on AMD (local build) | ~4× faster than CPU, video call stays smooth | Local build with cmake + Vulkan SDK + Build Tools; updating requires a rebuild | If the driver/GPU fails: official CPU binary via `ATA_WHISPER` |
 | DeepSeek for summary and chat | Cheap, good in pt/en | Title, notes, transcript and chat leave the machine | Sensitive meeting: check "Private meeting" before recording and don't use summary/chat |

@@ -133,6 +133,8 @@ class StoreTest(unittest.TestCase):
         self.assertEqual(store.split_summary("## A\n- x\n## Next steps"), ("## A\n- x", None))
         self.assertEqual(store.split_summary("## Next steps\n- a\n## B\n## Next steps\n- c")[1], "- c")
         self.assertEqual(store.split_summary(""), ("", None))
+        self.assertEqual(store.split_summary("## A\n- x\n\n## Next steps\n- Me: y\n\n## Other points\n- z"),
+                         ("## A\n- x\n\n## Other points\n- z", "- Me: y"))
 
     def test_load_returns_the_split_summary(self):
         mid = store.create("", "pt")

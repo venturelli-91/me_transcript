@@ -27,11 +27,12 @@ def api_key() -> str:
 def meeting_context(meeting: dict, mask: Mask) -> str:
     if len(meeting["transcript"]) > MAX_TRANSCRIPT:
         raise RuntimeError("The transcript is too long for DeepSeek (more than ~5 h of meeting).")
+    terms = "\n".join(glossary())
     return mask.apply(
         f"Title: {meeting['title'] or 'untitled'}\n"
         f"Date: {meeting['started_at']}\n"
         f"Language: {LANG_NAMES[meeting['lang']]}\n\n"
-        f"<glossary>\n{chr(10).join(glossary()) or '(none)'}\n</glossary>\n\n"
+        f"<glossary>\n{terms or '(none)'}\n</glossary>\n\n"
         f"<notes>\n{meeting['notes'].strip() or '(none)'}\n</notes>\n\n"
         f"<transcript>\n{meeting['transcript'].strip() or '(empty)'}\n</transcript>"
     )

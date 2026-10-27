@@ -11,6 +11,12 @@ def item(start_ms: int, text: str) -> dict:
 
 
 class TranscribeTest(unittest.TestCase):
+    def setUp(self):
+        # vocabulary() reads the real glossary.txt otherwise
+        patcher = mock.patch.object(transcribe.privacy, "glossary", return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def test_parse_offsets_and_cleans_text(self):
         data = {"transcription": [item(0, " Good morning,\n everyone. "), item(4500, " Let's start.")]}
         self.assertEqual(transcribe.parse_whisper(data, 60.0, "Me"), [
@@ -30,13 +36,17 @@ class TranscribeTest(unittest.TestCase):
 
     def test_a_clip_with_broken_utf8_or_json_is_read_leniently_or_skipped(self):
         for raw, expected in ((b'{"transcription": [{"offsets": {"from": 0}, "text": " Ol\xed mundo"}]}', ["Ol mundo"]),
-                              (b"not json at all \xed", []), (b'{"transcription": [{"text": "no offsets"}]}', [])):
+                              (b"not json at all \xed", None), (b'{"transcription": [{"text": "no offsets"}]}', None)):
             with self.subTest(raw=raw[:20]), tempfile.TemporaryDirectory() as tmp:
                 clip = Path(tmp) / "mic.wav"
                 (Path(tmp) / "mic-out.json").write_bytes(raw)
                 with mock.patch.object(transcribe, "_run", return_value=""):
+                    if expected is None:
+                        with self.assertRaises(RuntimeError):
+                            transcribe.transcribe_clip(clip, [(0.0, 5.0)], 5.0, "pt", "Me", 0.0, "")
+                        continue
                     segs = transcribe.transcribe_clip(clip, [(0.0, 5.0)], 5.0, "pt", "Me", 0.0, "")
-                self.assertEqual([s["text"] for s in segs], [t for t in expected])
+                self.assertEqual([s["text"] for s in segs], expected)
 
     def test_drops_hallucinations(self):
         data = {"transcription": [item(0, " Legendas pela comunidade Amara.org"), item(1000, " [Música]"),
@@ -130,7 +140,8 @@ class TranscribeTest(unittest.TestCase):
             t = transcribe.Transcriber(Path("x"), "pt", on_segments=got.extend, on_progress=progress.append)
             t.finish(70.0)
         self.assertEqual(t.skipped, 1)
-        self.assertEqual([s["t"] for s in got if s["who"] == "Me"], [31.0, 61.0])
+        self.assertEqual([(s["t"], s["text"]) for s in got if s["who"] == "Me"],
+                         [(0.0, transcribe.MISSING), (31.0, "x"), (61.0, "x")])
         self.assertEqual([s["t"] for s in got if s["who"] == "Others"], [1.0, 31.0, 61.0])
         self.assertEqual(progress, [30 / 70, 60 / 70, 1.0])
 

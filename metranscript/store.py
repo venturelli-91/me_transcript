@@ -72,7 +72,10 @@ def split_summary(md: str) -> tuple[str, str | None]:
         pass
     if last is None:
         return md, None
-    return md[:last.start()].strip(), md[last.end():].strip() or None
+    after = md[last.end():]
+    nxt = re.search(r"^##[ \t]", after, re.M)  # a section the model wrote after Next steps is not a next step
+    steps, tail = (after[:nxt.start()], after[nxt.start():]) if nxt else (after, "")
+    return (md[:last.start()].strip() + "\n\n" + tail.strip()).strip(), steps.strip() or None
 
 
 def list_meetings() -> list[dict]:

@@ -47,7 +47,7 @@ whisper.cpp (`whisper-cli`) called as a subprocess, Vulkan backend on the AMD GP
 ### Positive
 - Free, private, offline.
 ### Negative
-- Transcription with a ~30 s delay, not word by word.
+- Transcription with a ~30 s delay, not word by word. (Superseded by DEV-0059: the audio is now transcribed once, after the call, in the same windows.)
 ### Risks
 - There is no official Vulkan binary for Windows: the build is local (`bin/whisper-src`, gitignored), and the README
   documents how to redo it. Plan B: the official CPU+BLAS binary (`ATA_WHISPER=bin/Release/whisper-cli.exe`).
