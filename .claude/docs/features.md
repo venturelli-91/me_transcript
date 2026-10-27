@@ -148,6 +148,13 @@ direction "E · Index" chosen among five mockups. Full design:
 - [ ] The glossary goes first in Whisper's `--prompt` and, unmasked, in a `<glossary>` block of every summary and chat request.
       A term that is also a protected term is still masked.
 
+## F17 — A fuller, more accurate summary (DEV-0061)
+- [ ] The summary has an Overview, one section per topic (3-8 full-sentence bullets with context, positions, numbers and outcome), Open questions,
+      Decisions and, always last, Next steps (the page splits on that heading).
+- [ ] Names and acronyms are spelled as in the glossary or notes; nothing is expanded or guessed unless the speakers said it; a doubtful word is
+      kept and marked "(?)"; repeated or garbled fragments are ignored.
+- [ ] The summary request uses temperature 0.2 and up to 8000 output tokens; the chat prompt has the same accuracy rules.
+
 ## F12 — Rename and delete a meeting
 From the ponytail audit (2026-10-26): the only way to remove a meeting was deleting its folder by hand.
 

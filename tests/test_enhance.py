@@ -8,7 +8,7 @@ import urllib.error
 from pathlib import Path
 from unittest import mock
 
-from metranscript import enhance, privacy, settings
+from metranscript import enhance, privacy, settings, store
 from metranscript.privacy import Mask
 
 MEETING = {"title": "Kickoff", "started_at": "2026-10-26T14:30:00", "lang": "en", "notes": "- deadline",
@@ -35,6 +35,7 @@ class EnhanceTest(unittest.TestCase):
         system, user = enhance.summary_messages(MEETING, Mask())
         self.assertEqual(system["content"], enhance.SUMMARY_PROMPT.read_text(encoding="utf-8"))
         self.assertIn("Language: English", user["content"])
+        self.assertIn("Language: Brazilian Portuguese", enhance.summary_messages({**MEETING, "lang": "pt"}, Mask())[1]["content"])
         self.assertIn("<notes>\n- deadline\n</notes>", user["content"])
         self.assertIn("Deadline is Friday.", user["content"])
 
@@ -42,6 +43,18 @@ class EnhanceTest(unittest.TestCase):
         with mock.patch.object(enhance, "glossary", return_value=["GCP", "Control-M", "Acme"]),                 mock.patch.object(privacy, "terms", return_value=["Acme"]):
             sent = enhance.summary_messages(MEETING, Mask())[1]["content"]
         self.assertIn("<glossary>\nGCP\nControl-M\n[TERM_1]\n</glossary>", sent)
+
+    def test_the_summary_prompt_asks_for_accuracy_and_keeps_next_steps_last(self):
+        system = enhance.summary_messages(MEETING, Mask())[0]["content"]
+        for rule in ("Never invent", "<glossary>", "Do not expand an acronym", '"(?)"', "always the very last section"):
+            self.assertIn(rule, system)
+        summary = "## Overview\n- x\n\n## Open questions\n- y\n\n## Decisions\n- z\n\n## Próximos passos\n- Eu: enviar (sexta)"
+        self.assertEqual(store.split_summary(summary)[1], "- Eu: enviar (sexta)")
+
+    def test_the_summary_request_is_precise_and_roomy(self):
+        with mock.patch.object(enhance, "_complete", return_value="## A") as complete:
+            enhance.summarize(MEETING, Mask())
+        self.assertEqual((complete.call_args.kwargs["temperature"], complete.call_args.kwargs["max_tokens"]), (0.2, 8000))
 
     def test_empty_parts_are_explicit(self):
         _, user = enhance.summary_messages({**MEETING, "title": "", "notes": " ", "transcript": ""}, Mask())

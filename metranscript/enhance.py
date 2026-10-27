@@ -11,7 +11,7 @@ SUMMARY_PROMPT = Path(__file__).parent / "prompt.md"
 CHAT_PROMPT = Path(__file__).parent / "chat.md"
 API = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
-LANG_NAMES = {"pt": "Portuguese", "en": "English"}
+LANG_NAMES = {"pt": "Brazilian Portuguese", "en": "English"}
 HISTORY = 20
 # deepseek-chat has a 128k-token context; ~350k characters of transcript leaves room for prompt and reply.
 MAX_TRANSCRIPT = 350_000
@@ -63,8 +63,10 @@ def chat_messages(meeting: dict, message: str, mask: Mask) -> list[dict]:
     ]
 
 
-def _complete(messages: list[dict], json_mode: bool = False) -> str:
-    payload = {"model": MODEL, "messages": messages, "temperature": 0.3}
+def _complete(messages: list[dict], json_mode: bool = False, temperature: float = 0.3, max_tokens: int | None = None) -> str:
+    payload = {"model": MODEL, "messages": messages, "temperature": temperature}
+    if max_tokens:
+        payload["max_tokens"] = max_tokens
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
     req = urllib.request.Request(API, data=json.dumps(payload).encode(), method="POST", headers={
@@ -88,7 +90,8 @@ def _complete(messages: list[dict], json_mode: bool = False) -> str:
 
 
 def summarize(meeting: dict, mask: Mask) -> str:
-    return mask.restore(_complete(summary_messages(meeting, mask)))
+    # A low temperature keeps names and acronyms as written; 8000 tokens leave room for a complete summary of a long meeting.
+    return mask.restore(_complete(summary_messages(meeting, mask), temperature=0.2, max_tokens=8000))
 
 
 def chat(meeting: dict, message: str, mask: Mask) -> dict:

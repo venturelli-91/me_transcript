@@ -192,7 +192,7 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
 ## DEV-0058 to DEV-0061 — Whisper crash, batch transcription, glossary and a fuller summary · `dev-backend` + `engenheiro-prompt`
 - DEV-0058: whisper output decoded leniently, decoding loops collapsed, a window that fails is skipped (the 22-min "a real meeting" meeting died on a
   `0xed` byte and lost 7 min). DEV-0059: no live transcription; transcribe once after the stop with progress; transcript behind a button.
-  DEV-0060: glossary (`glossary.txt`). DEV-0061: new summary prompt (see below once done).
+  DEV-0060: glossary (`glossary.txt`). DEV-0061: new summary prompt (Overview, topics, Open questions, Decisions, Next steps last), low temperature, 8000 tokens.
 
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
