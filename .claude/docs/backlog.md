@@ -206,6 +206,15 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   did not say was attributed to them, ambiguous terms (X1, DO) were flagged instead of expanded, the summary never changed, and a factual
   question was still answered only from the transcript.
 
+## DEV-0068 to DEV-0073 — Google sign-in · `dev-integracoes` + `seguranca`
+- `google.py` (OAuth + PKCE, DPAPI-protected logins, `api()`), reminders from the Calendar API for every account (`agenda.collect`), the summary through
+  the Gmail API (`mail.send`, no attachment), the Settings section (02) Google accounts, ADR-0009. The old `GMAIL_*` / `GOOGLE_CALENDAR_ICS` settings and the
+  `icalendar` + `recurring-ical-events` dependencies are gone. The security review (state, PKCE, token handling, DPAPI, consent scopes, damaged files) found
+  no blocker; its should-fix items were done in DEV-0069.
+- DEV-0072 also fixed a real bug behind the old flaky `test_test_email_route`: a refused POST (403/404/415) with a body made the server close with unread data,
+  and Windows reset the connection (8 of 300 requests in a stress test, 0 after the fix).
+- **Pending:** a real end-to-end test with the user's Google Cloud client (two accounts, merged Upcoming, reminder, test email, Disconnect).
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

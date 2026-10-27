@@ -1,7 +1,7 @@
 # ADR-0007: Summary by email via Gmail SMTP with an app password
 
 **Date**: 2026-10-26
-**Status**: accepted
+**Status**: superseded by [ADR-0009](0009-google-sign-in.md)
 **Deciders**: CEO, Claude
 
 ## Context

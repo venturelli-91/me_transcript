@@ -12,7 +12,8 @@
       ├── transcribe.py after the stop: 30 s windows → ffmpeg → whisper-cli → segments
       ├── enhance.py    urllib → DeepSeek → summary (summary.md) and chat (chat.json)
       ├── detect.py     winreg ConsentStore → meeting app using the mic?
-      └── mail.py       smtplib (Gmail, app password) → summary to your own email
+      └── mail.py       Gmail API (as a connected Google account) → summary to your own email
+      ├── google.py     Google sign-in (OAuth + PKCE), DPAPI-protected logins, access tokens, `api()` calls
 ```
 
 One Python process, no framework. `server.py` is the only module that knows all the
@@ -94,14 +95,14 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 | `ATA_MODEL` | `models/ggml-large-v3-turbo-q5_0.bin` |
 | `ATA_VAD` | `models/ggml-silero-v5.1.2.bin` |
 | `ATA_PORT` | `8765` |
-| `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` | — (optional; enable sending the summary by email) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | — (your Google Cloud client; enables the Google sign-in) |
 | `MEETING_KEYWORDS` | `Meet,Zoom,Teams` (words a browser window title needs for its mic use to raise the alert) |
 
 `metranscript/settings.py` (`env()`) reads variables from the environment and, if missing, from `.env`.
 
 ## Calendar reminders and background mode (DEV-0013)
-- `agenda.py`: fetches the secret iCal address(es) every 5 min, expands recurrences
-  (`recurring-ical-events`), keeps linked/timed/accepted future events (`upcoming()`), and decides
+- `agenda.py`: every 5 min asks the Calendar API (`events.list`, primary calendar, `singleEvents=true`, next 24 h) for each connected Google account
+  (`collect()`, merged by time, an account that fails is reported without hiding the others), keeps linked/timed/accepted future events (`upcoming()`), and decides
   which reminders are due (`due()`: 30 min, then 2 min; one per occurrence, persisted in
   `meetings/reminders-sent.json`). Runs in a `Watcher` thread started by `server.main()`.
 - `desktop.py`: Windows notifications (constant PowerShell script + XML in an env var; event text is
@@ -113,14 +114,10 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 
 | Method and route | Body | Response |
 |---|---|---|
-| `GET /api/agenda` | — | `{configured, events: [{key, title, start, app, link}], error}` |
+| `GET /api/agenda` | — | `{configured, events: [{key, title, start, app, account}], error}` |
 | `GET /api/settings` | — | `{autostart}` |
 | `POST /api/settings` | `{autostart: bool}` | `{autostart}` |
 | `POST /api/quit` | — | `{}` · `409` while recording or processing |
-
-| Variable | Default |
-|---|---|
-| `GOOGLE_CALENDAR_ICS` | — (secret iCal address; comma-separated for several calendars) |
 
 ## Audio device selection (DEV-0014)
 - `capture.list_devices()` lists WASAPI microphones and output devices (via their `[Loopback]` twins).
@@ -169,6 +166,20 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
   "Others" segments within 5 s (`ECHO_SHARE`, `ECHO_GAP`, `ECHO_MIN_WORDS`). It sees one window at a time, so an echo
   whose original is in the previous window is not caught.
 
+## Google accounts (DEV-0068 to DEV-0073, ADR-0009)
+- `google.py`: `start_login(port)` builds the Google address (code flow, PKCE S256, random `state` kept 10 min in memory, `prompt=select_account consent`,
+  scopes `openid email gmail.send calendar.readonly`); Google redirects to `http://127.0.0.1:<port>/oauth/google`, handled by `server._google_outcome`,
+  which calls `finish_login` (state checked once, code traded at `oauth2.googleapis.com/token`, every permission required or the login is revoked,
+  the address read from the `id_token` of that TLS reply) and answers with a 302 to `/?google=connected|denied|error#/settings` (no detail in the URL).
+- Storage: `google-accounts.json` `{accounts: [{email, token}], send_from}`; each refresh token is protected with DPAPI (`CryptProtectData`, current
+  user, UI forbidden) and base64'd; a damaged file is set aside as `.bad` before any change, an unreadable one blocks the change. Access tokens live only in
+  memory (`access_token()`, refreshed 60 s before they expire). `invalid_grant` or an undecryptable login marks the account `needs_reconnect`.
+- `api(email, url, params=, body=)` is the one way to call Google (Bearer token, one retry after a 401); `agenda.collect` and `mail.send` use it.
+- Routes: `GET /api/google` `{configured, accounts: [{email, sender, needs_reconnect}]}`, `POST /api/google/login` `{url}`, `POST /api/google/sender` and
+  `/api/google/disconnect` `{email}` -> `{accounts, revoked}`, `GET /oauth/google`.
+- A refused request with a body (403/404/415) now drains that body first (`Handler._drain`): closing with unread data made Windows reset the connection
+  and clients (and a flaky test) saw an error instead of the status.
+
 ## Consent and retention (DEV-0055 to DEV-0058)
 - `POST /api/start` requires `consent: true` (`400` otherwise, checked after the other validations); `start(..., consented=True)` stamps
   `consent_at` in `meta.json`. A calendar reminder link no longer starts a recording by itself: it opens the record sheet with the
@@ -193,15 +204,15 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - The email to the user's own Gmail is not masked on purpose.
 
 ## Settings page (DEV-0026)
-- `settings.py`: `FIELDS` (the seven editable keys and whether each is secret), `validate()` (single line,
-  no spaces in the DeepSeek key, a full email address, `https://` calendar addresses; error messages never
-  contain the value), `status()` (`set` / `locked` / `value` only for the non-secret Gmail address) and
+- `settings.py`: `FIELDS` (the six editable keys and whether each is secret), `validate()` (single line,
+  no spaces in the secrets, a client ID ending in `.apps.googleusercontent.com`, day counts in range; error messages never
+  contain the value), `status()` (`set` / `locked` / `value` only for the non-secret fields) and
   `write_env()` (replaces the file atomically through `.env.tmp`, keeps unrelated lines, drops duplicates).
 - `server.save_config()` validates every field before writing once; a key set in the Windows environment
   is refused with `409`; saving the calendar address resets the watcher so it re-reads at once.
 
 | Method and route | Body | Response |
 |---|---|---|
-| `GET /api/config` | — | `{NAME: {set, locked, value}}` (value only for `GMAIL_ADDRESS`) |
+| `GET /api/config` | — | `{NAME: {set, locked, value}}` (value only for the non-secret fields) |
 | `PUT /api/config` | `{NAME: "value" \| null}` | same shape · `400` invalid · `409` locked |
 | `POST /api/config/test-email` | — | `{}` · `409` with the reason if the email can't be sent |

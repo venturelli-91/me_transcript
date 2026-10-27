@@ -242,6 +242,10 @@ dialog::backdrop { background: var(--scrim); }
 .sheet h2 { margin: 0; font-weight: 400; }
 .field { display: grid; gap: 6px; }
 .cfg-fields { display: grid; gap: 22px; max-width: 640px; }
+.gacc { margin-top: 4px; }
+.glist { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 8px; }
+.glist li { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.glist label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
 .cfg-row { display: flex; gap: 16px; align-items: baseline; font-size: 14px; }
 .help { margin: 0; font-size: 12px; }
 .field input:disabled { background: var(--bg); color: var(--gray); }
@@ -423,7 +427,7 @@ const PT = {
   "Portfolio": "Portfólio",
   "Notice copied. Paste it in the meeting chat.": "Aviso copiado. Cole no chat da reunião.",
   "Could not copy the notice.": "Não foi possível copiar o aviso.",
-  "(05) Retention": "(05) Retenção",
+  "(04) Retention": "(04) Retenção",
   "Keep audio for (days)": "Manter o áudio por (dias)",
   "Compressed audio is kept only so you can re-transcribe. 0 deletes it as soon as the transcript is ready. Default: 30.": "O áudio comprimido só é mantido para você transcrever de novo. 0 apaga assim que a transcrição fica pronta. Padrão: 30.",
   "Delete whole meetings after (days)": "Excluir reuniões inteiras após (dias)",
@@ -514,20 +518,12 @@ const PT = {
   "(Writing the summary…)": "(Escrevendo o resumo…)",
   "{app} is using the microphone. Did a meeting start?": "{app} está usando o microfone. Uma reunião começou?",
   "{app} is using the microphone. Record this meeting?": "{app} está usando o microfone. Gravar esta reunião?",
-  "Add your calendar address in {link} to get reminders 30 and 2 minutes before meetings.": "Adicione o endereço do seu calendário em {link} para receber lembretes 30 e 2 minutos antes das reuniões.",
   "No meetings with a video link in the next 24 hours.": "Nenhuma reunião com link de vídeo nas próximas 24 horas.",
   "Record": "Gravar",
   "(01) AI summaries": "(01) Resumos com IA",
   "DeepSeek API key": "Chave da API do DeepSeek",
   "Used for summaries and chat. Create a key at platform.deepseek.com.": "Usada nos resumos e no chat. Crie uma chave em platform.deepseek.com.",
-  "(02) Gmail": "(02) Gmail",
-  "Gmail address": "Endereço do Gmail",
-  "App password": "Senha de app",
-  "Turn on 2-Step Verification in your Google Account, then create an app password at myaccount.google.com/apppasswords.": "Ative a verificação em duas etapas na sua conta Google e crie uma senha de app em myaccount.google.com/apppasswords.",
-  "(03) Calendar": "(03) Calendário",
-  "Secret address in iCal format": "Endereço secreto no formato iCal",
-  "Google Calendar → Settings → your calendar → Integrate calendar. Treat this address like a password.": "Google Agenda → Configurações → seu calendário → Integrar agenda. Trate este endereço como uma senha.",
-  "(04) Meeting alert": "(04) Alerta de reunião",
+  "(03) Meeting alert": "(03) Alerta de reunião",
   "Browser window words": "Palavras na janela do navegador",
   "A browser using the microphone only raises the alert when one of its window titles has one of these comma-separated words. Default: Meet, Zoom, Teams.": "Um navegador usando o microfone só dispara o alerta quando um título de janela dele tem uma destas palavras, separadas por vírgula. Padrão: Meet, Zoom, Teams.",
   "Set by a Windows environment variable": "Definida por uma variável de ambiente do Windows",
@@ -539,12 +535,30 @@ const PT = {
   "Keys are stored only in the .env file on this computer. This page never shows them back.": "As chaves ficam apenas no arquivo .env deste computador. Esta página nunca as mostra de volta.",
   "Send a test email": "Enviar um e-mail de teste",
   "Save settings": "Salvar configurações",
-  "(06) Protected terms": "(06) Termos protegidos",
+  "(05) Protected terms": "(05) Termos protegidos",
   "Names, clients and projects to hide": "Nomes, clientes e projetos a ocultar",
   "One per line, for example a client or project name": "Um por linha, por exemplo o nome de um cliente ou projeto",
   "Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.": "Cada um é trocado por um código antes de qualquer coisa ir ao DeepSeek e devolvido na resposta. E-mails, links, telefones, documentos, valores e chaves são sempre ocultados, sem precisar listá-los. Uma palavra que o Whisper escreve errado também é pega. A lista fica em sensitive-terms.txt neste computador.",
   "Save terms": "Salvar termos",
-  "(07) App": "(07) App",
+  "(06) App": "(06) App",
+  "(02) Google accounts": "(02) Contas Google",
+  "Google client ID": "ID do cliente Google",
+  "Google client secret": "Chave secreta do cliente Google",
+  "Create it once in Google Cloud (a Desktop app). The README has the steps. The accounts you connect are stored encrypted on this computer.": "Crie uma vez no Google Cloud (app para computador). O README tem o passo a passo. As contas conectadas ficam criptografadas neste computador.",
+  "Connected accounts": "Contas conectadas",
+  "The account marked is the one that emails you the summaries.": "A conta marcada é a que envia os resumos para você por e-mail.",
+  "No account connected yet.": "Nenhuma conta conectada ainda.",
+  "Sign in with Google": "Entrar com Google",
+  "Save the client ID and secret first.": "Salve antes o ID e a chave secreta do cliente.",
+  "Sign in again": "Entrar de novo",
+  "Disconnect": "Desconectar",
+  "Disconnected.": "Desconectada.",
+  "Disconnected here, but Google did not confirm. Also remove MeTranscript at myaccount.google.com/permissions.": "Desconectada aqui, mas o Google não confirmou. Remova também o MeTranscript em myaccount.google.com/permissions.",
+  "Sending summaries from {a}.": "Enviando os resumos de {a}.",
+  "Google account connected.": "Conta Google conectada.",
+  "Google sign-in was cancelled.": "O login com o Google foi cancelado.",
+  "Could not connect the Google account. Try again.": "Não foi possível conectar a conta Google. Tente de novo.",
+  "Sign in with Google in {link} to get reminders 30 and 2 minutes before meetings.": "Entre com o Google em {link} para receber lembretes 30 e 2 minutos antes das reuniões.",
   "Run in background and start with Windows": "Rodar em segundo plano e iniciar com o Windows",
   "Quit MeTranscript": "Fechar o MeTranscript",
   "MeTranscript is closed": "O MeTranscript foi fechado",
@@ -1128,11 +1142,12 @@ let agenda = { configured: false, events: [], error: null };
 async function loadAgenda() {
   if (closed) return;
   try { agenda = await api("/api/agenda"); } catch { return; }
+  const accounts = new Set(agenda.events.map(e => e.account)).size;
   $("#nav-upcoming").textContent = agenda.events.length ? t("Upcoming ({n})", { n: agenda.events.length }) : t("Upcoming");
   $("#upcoming").innerHTML = !agenda.configured
-    ? `<li><span></span><span class="muted">${t("Add your calendar address in {link} to get reminders 30 and 2 minutes before meetings.", { link: `<a href="#/settings">${t("Settings")}</a>` })}</span></li>`
+    ? `<li><span></span><span class="muted">${t("Sign in with Google in {link} to get reminders 30 and 2 minutes before meetings.", { link: `<a href="#/settings">${t("Settings")}</a>` })}</span></li>`
     : agenda.error ? `<li><span></span><span class="error">${esc(agenda.error)}</span></li>`
-    : agenda.events.length ? agenda.events.map((e, i) => `<li><span class="time">${timeOf(e.start)}</span><span>${esc(e.title)} <span class="muted">${esc(e.app)}</span></span><button class="pill ghost" data-event="${i}">${t("Record")}</button></li>`).join("")
+    : agenda.events.length ? agenda.events.map((e, i) => `<li><span class="time">${timeOf(e.start)}</span><span>${esc(e.title)} <span class="muted">${esc(e.app)}${accounts > 1 ? ` · ${esc(e.account)}` : ""}</span></span><button class="pill ghost" data-event="${i}">${t("Record")}</button></li>`).join("")
     : `<li><span></span><span class="muted">${t("No meetings with a video link in the next 24 hours.")}</span></li>`;
 }
 $("#nav-upcoming").addEventListener("click", e => {
@@ -1171,17 +1186,14 @@ function bindSettings() {
 const SETTINGS = [
   { num: "(01) AI summaries", fields: [
     { name: "DEEPSEEK_API_KEY", label: "DeepSeek API key", secret: true, help: "Used for summaries and chat. Create a key at platform.deepseek.com." }] },
-  { num: "(02) Gmail", testEmail: true, fields: [
-    { name: "GMAIL_ADDRESS", label: "Gmail address", secret: false },
-    { name: "GMAIL_APP_PASSWORD", label: "App password", secret: true,
-      help: "Turn on 2-Step Verification in your Google Account, then create an app password at myaccount.google.com/apppasswords." }] },
-  { num: "(03) Calendar", fields: [
-    { name: "GOOGLE_CALENDAR_ICS", label: "Secret address in iCal format", secret: true,
-      help: "Google Calendar → Settings → your calendar → Integrate calendar. Treat this address like a password." }] },
-  { num: "(04) Meeting alert", fields: [
+  { num: "(02) Google accounts", google: true, fields: [
+    { name: "GOOGLE_CLIENT_ID", label: "Google client ID", secret: false,
+      help: "Create it once in Google Cloud (a Desktop app). The README has the steps. The accounts you connect are stored encrypted on this computer." },
+    { name: "GOOGLE_CLIENT_SECRET", label: "Google client secret", secret: true }] },
+  { num: "(03) Meeting alert", fields: [
     { name: "MEETING_KEYWORDS", label: "Browser window words", secret: false,
       help: "A browser using the microphone only raises the alert when one of its window titles has one of these comma-separated words. Default: Meet, Zoom, Teams." }] },
-  { num: "(05) Retention", fields: [
+  { num: "(04) Retention", fields: [
     { name: "AUDIO_KEEP_DAYS", label: "Keep audio for (days)", secret: false,
       help: "Compressed audio is kept only so you can re-transcribe. 0 deletes it as soon as the transcript is ready. Default: 30." },
     { name: "MEETING_KEEP_DAYS", label: "Delete whole meetings after (days)", secret: false,
@@ -1190,8 +1202,17 @@ const SETTINGS = [
 const stateText = f => t(f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set");
 
 async function renderSettings() {
-  let cfg, terms;
-  try { [cfg, { terms }] = await Promise.all([api("/api/config"), api("/api/privacy")]); } catch (err) { return showError(err.message); }
+  let cfg, terms, google;
+  try { [cfg, { terms }, google] = await Promise.all([api("/api/config"), api("/api/privacy"), api("/api/google")]); } catch (err) { return showError(err.message); }
+  const googleBlock = g => `<div class="gacc"><span class="lbl">${t("Connected accounts")}</span>
+    ${g.accounts.length ? `<ul class="glist">${g.accounts.map(a => `<li>
+        <label><input type="radio" name="sender" value="${esc(a.email)}" ${a.sender ? "checked" : ""}> <span>${esc(a.email)}</span></label>
+        ${a.needs_reconnect ? `<span class="error">${t("Sign in again")}</span>` : ""}
+        <button type="button" class="link danger" data-disconnect="${esc(a.email)}">${t("Disconnect")}</button></li>`).join("")}</ul>
+      <p class="muted help">${t("The account marked is the one that emails you the summaries.")}</p>` : `<p class="muted">${t("No account connected yet.")}</p>`}
+    <div class="actions"><button type="button" class="pill dark" id="google-login" ${g.configured ? "" : "disabled"}>${t("Sign in with Google")}</button>
+      <button type="button" class="pill ghost" id="test-email" ${g.accounts.length ? "" : "disabled"}>${t("Send a test email")}</button>
+      ${g.configured ? "" : `<span class="muted">${t("Save the client ID and secret first.")}</span>`}</div></div>`;
   const field = d => {
     const f = cfg[d.name];
     return `<div class="field">
@@ -1209,16 +1230,16 @@ async function renderSettings() {
     <p class="muted" style="max-width:60ch">${t("Keys are stored only in the .env file on this computer. This page never shows them back.")}</p>
     <form id="cfg-form" autocomplete="off">
       ${SETTINGS.map(s => `<section class="sec"><span class="lbl">${t(s.num)}</span><div class="cfg-fields">${s.fields.map(field).join("")}
-        ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>${t("Send a test email")}</button></div>` : ""}</div></section>`).join("")}
+        ${s.google ? googleBlock(google) : ""}</div></section>`).join("")}
       <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">${t("Save settings")}</button></div>
     </form>
-    <section class="sec"><span class="lbl">${t("(06) Protected terms")}</span><div class="cfg-fields">
+    <section class="sec"><span class="lbl">${t("(05) Protected terms")}</span><div class="cfg-fields">
       <form id="terms-form"><div class="field">
         <label class="lbl" for="terms">${t("Names, clients and projects to hide")}</label>
         <textarea id="terms" rows="8" spellcheck="false" placeholder="${t("One per line, for example a client or project name")}">${esc(terms.join("\n"))}</textarea>
         <p class="muted help">${t("Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.")}</p></div>
         <div class="actions"><button class="pill dark" id="terms-save">${t("Save terms")}</button></div></form></div></section>
-    <section class="sec"><span class="lbl">${t("(07) App")}</span><div class="settings">
+    <section class="sec"><span class="lbl">${t("(06) App")}</span><div class="settings">
       <label><input type="checkbox" id="autostart"> ${t("Run in background and start with Windows")}</label>
       <button class="link" id="quit">${t("Quit MeTranscript")}</button></div></section>`;
   $("#cfg-form").addEventListener("submit", async e => {
@@ -1240,6 +1261,22 @@ async function renderSettings() {
   view.querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
     try { await api("/api/config", { method: "PUT", body: JSON.stringify({ [b.dataset.remove]: null }) }); await renderSettings(); showInfo(t("Removed.")); }
     catch (err) { showError(err.message); }
+  }));
+  $("#google-login")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    try { const { url } = await api("/api/google/login", { method: "POST", body: "{}" }); location.href = url; }
+    catch (err) { e.target.disabled = false; showError(err.message); }
+  });
+  view.querySelectorAll('input[name="sender"]').forEach(r => r.addEventListener("change", async () => {
+    try { await api("/api/google/sender", { method: "POST", body: JSON.stringify({ email: r.value }) }); showInfo(t("Sending summaries from {a}.", { a: r.value })); }
+    catch (err) { showError(err.message); await renderSettings(); }
+  }));
+  view.querySelectorAll("[data-disconnect]").forEach(b => b.addEventListener("click", async () => {
+    try {
+      const { revoked } = await api("/api/google/disconnect", { method: "POST", body: JSON.stringify({ email: b.dataset.disconnect }) });
+      await renderSettings();
+      showInfo(revoked ? t("Disconnected.") : t("Disconnected here, but Google did not confirm. Also remove MeTranscript at myaccount.google.com/permissions."));
+    } catch (err) { showError(err.message); }
   }));
   $("#test-email")?.addEventListener("click", async e => {
     e.target.disabled = true;
@@ -1268,6 +1305,13 @@ document.querySelectorAll(".langsw button").forEach(b => b.addEventListener("cli
   loadAgenda();
   setInterval(loadAgenda, 60000);
   (async function loop() { if (closed) return; await poll(); setTimeout(loop, 1000); })();
+  const google = new URLSearchParams(location.search).get("google");
+  if (google) {
+    history.replaceState(null, "", "/" + location.hash);
+    if (google === "connected") showInfo(t("Google account connected."));
+    else if (google === "denied") showInfo(t("Google sign-in was cancelled."));
+    else showError(t("Could not connect the Google account. Try again."));
+  }
   const reminderToken = new URLSearchParams(location.search).get("record");
   if (reminderToken) {
     history.replaceState(null, "", "/" + location.hash);

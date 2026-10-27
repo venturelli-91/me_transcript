@@ -8,5 +8,6 @@
 | [0004](0004-folder-per-meeting.md) | A folder of files per meeting instead of a database | accepted |
 | [0005](0005-two-tracks-wasapi.md) | Two tracks: microphone and WASAPI loopback | accepted |
 | [0006](0006-consentstore-detection.md) | Meeting detection via the Windows ConsentStore | accepted |
-| [0007](0007-email-smtp-app-password.md) | Summary by email via Gmail SMTP with an app password | accepted |
-| [0008](0008-calendar-ical-secret-address.md) | Calendar reminders from the Google Calendar secret iCal address | accepted |
+| [0007](0007-email-smtp-app-password.md) | Summary by email via Gmail SMTP with an app password | superseded by 0009 |
+| [0008](0008-calendar-ical-secret-address.md) | Calendar reminders from the Google Calendar secret iCal address | superseded by 0009 |
+| [0009](0009-google-sign-in.md) | Google sign-in (OAuth + PKCE) for the summary email and the calendars | accepted |

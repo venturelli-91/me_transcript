@@ -22,9 +22,9 @@ What leaves your computer, and what does not:
 |---|---|
 | Audio | Never leaves your computer. It is transcribed locally by whisper.cpp; the compressed copy is deleted after 30 days (you can shorten that, or delete it right away, in Settings → **(05) Retention**). |
 | Transcript, your notes and the chat | Sent to DeepSeek, only when you generate a summary or use the chat, after the [protection mask](#protecting-sensitive-data) swaps contacts, amounts, IDs, keys and your listed terms for codes. The mask has limits (see below). |
-| The summary and transcript by email | Sent to your own Gmail, only if you configure it. This copy uses the real names. |
-| Your calendar | Read from Google through your secret iCal address, only if you configure it. |
-| Analytics or telemetry | None. The page makes no request outside `127.0.0.1`. |
+| The summary by email | Sent to your own address through the Gmail API, only if you sign in with Google. This copy uses the real names; the transcript is not attached. |
+| Your calendar | The title, time and link of your next meetings are read from each Google account you connect, only if you sign in. |
+| Analytics or telemetry | None. The page makes no request outside `127.0.0.1`; only the server talks to DeepSeek and, if you signed in, to Google. |
 
 To help you remember, MeTranscript asks you to confirm **"I told the participants that this meeting is being recorded"**
 before every recording (and keeps when you confirmed it in the meeting's `meta.json`), and has a **Copy a recording
@@ -65,7 +65,7 @@ you record; nothing is transcribed until you stop.
 
 **Settings**: paste the keys once. They are saved to `.env` and never shown back.
 
-![Settings: DeepSeek, Gmail and calendar keys](docs/screenshots/settings.png)
+![Settings: the DeepSeek key and the Google accounts](docs/screenshots/settings.png)
 
 ## Requirements
 
@@ -97,42 +97,37 @@ In Settings → **(01) AI summaries**, or in `.env`:
 DEEPSEEK_API_KEY=sk-...
 ```
 
-### Summary in your Gmail (optional)
+### Google accounts: the summary by email and calendar reminders (optional)
 
-1. Turn on 2-Step Verification in your Google Account.
-2. Create an app password at https://myaccount.google.com/apppasswords (name: "MeTranscript").
-3. Paste both in Settings → **(02) Gmail** (use **Send a test email** to check), or add to `.env`:
+Sign in with Google inside the app to get each summary in your inbox and a reminder before every meeting that has a Meet, Zoom
+or Teams link (30 and 2 minutes before; the 2-minute one has a **Record** button that opens the record sheet). You can connect
+several personal accounts: their calendars are merged in **Upcoming**, and one of them (you choose which) sends the summaries to
+itself. The summary goes in the email body; the transcript is not attached.
 
-```
-GMAIL_ADDRESS=you@gmail.com
-GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-```
+Google asks every app that signs people in to be registered, so you create yours once (it is free and takes about 10 minutes):
 
-Each new summary arrives in your inbox (body = summary, attachment = transcript). To turn it off, delete both lines; to revoke access, remove the app password
-in your Google Account.
+1. Open [console.cloud.google.com](https://console.cloud.google.com), create a project called `MeTranscript`.
+2. **APIs & Services → Library**: enable the **Gmail API** and the **Google Calendar API**.
+3. **Google Auth Platform → Get started**: app name `MeTranscript`, your email, audience **External**. Under **Data access**, add the
+   scopes `.../auth/gmail.send` (send the summary) and `.../auth/calendar.readonly` (read your events, never change them).
+4. Under **Audience**, add your Google accounts as test users, then **Publish app**. Without publishing, the login expires every
+   7 days. Published without Google's verification, it works for up to 100 accounts, which is plenty for personal use.
+5. **Clients → Create client → Desktop app**. Copy the **Client ID** and the **Client secret**.
+6. In MeTranscript, open Settings → **(02) Google accounts**, paste both, press **Save settings**, then **Sign in with Google**.
+   Google warns that the app is not verified (it is yours): choose **Advanced → Go to MeTranscript**, and tick every permission.
+   Repeat for each account. **Send a test email** checks the sender.
 
-### Calendar reminders (optional)
-
-MeTranscript can remind you 30 and 2 minutes before every meeting in your Google Calendar that has a
-Meet, Zoom or Teams link; the 2-minute reminder has a **Record** button that opens the record sheet.
-
-1. In Google Calendar, open **Settings → your calendar → Integrate calendar**.
-2. Copy **Secret address in iCal format** and paste it in Settings → **(03) Calendar**, or add it to `.env` (comma-separate several calendars):
-
-```
-GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
-```
-
-Reminders only fire while MeTranscript is running: turn on **Run in background and start with
-Windows** in Settings → **(07) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
-password; if it leaks, reset it in the same Google Calendar screen.
+The logins are stored in `google-accounts.json` (not in git), encrypted so that only your Windows user can read them. **Disconnect**
+removes an account and tells Google to cancel its login. If Google stops accepting a login, the account shows **Sign in again**.
+Reminders only fire while MeTranscript is running: turn on **Run in background and start with Windows** in Settings →
+**(06) App** (and use **Quit MeTranscript** to stop it).
 
 ### Meeting alert (browser words)
 
 Zoom and Teams raise the alert as soon as they use the microphone. A browser also uses the microphone for
 other things (a voice message, a dictation tool), so it only raises the alert when one of its own windows has a
 meeting word in the title (whole word, any case). The default is `Meet, Zoom, Teams`; change it in Settings →
-**(04) Meeting alert** (comma-separated) or in `.env`:
+**(03) Meeting alert** (comma-separated) or in `.env`:
 
 ```
 MEETING_KEYWORDS=Meet,Zoom,Teams,Whereby
@@ -146,7 +141,7 @@ Everything that goes to DeepSeek (summary and chat) is cleaned first, always, wi
 
 - Emails, links, phone and ID numbers (CPF, CNPJ, cards), money amounts and API keys are replaced by codes
   like `[EMAIL_1]` or `[AMOUNT_1]` automatically.
-- Names of clients, people and projects are replaced when you list them in Settings → **(06) Protected
+- Names of clients, people and projects are replaced when you list them in Settings → **(05) Protected
   terms** (one per line, 3+ characters, a line starting with `# ` is a comment; the list lives in
   `sensitive-terms.txt`, which is not in git). Matching ignores case, accents and invisible characters, finds a
   name split by a line break, and catches a single word that Whisper misspells ("Falkon" for "Falcon").
@@ -201,7 +196,7 @@ Open http://127.0.0.1:8765 and keep the tab open.
    browse other meetings and come back with **Back to recording**.
 4. Click the square to stop. The audio is transcribed on your computer (with a progress percentage), then the
    summary is written. The meeting opens as an article: (01) Summary, (02) Next steps,
-   (03) Notes; if Gmail is configured, the summary also arrives in your inbox.
+   (03) Notes; if a Google account is connected, the summary also arrives in your inbox.
 5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions about what was said (with the
    timestamps), "Add to summary", tweaks and **Undo**. The buttons **Explain**, **Risks**, **Suggestions** and **Your opinion**
    ask the AI to help you understand the processes: it says what the meeting said and then, under **My opinion**, what it
@@ -213,7 +208,7 @@ Each meeting lives in `meetings/YYYY-MM-DD_HHMM/` (`notes.md`, `transcript.md`, 
 `chat.json`). When transcription finishes, the audio is compressed to `mic.opus` and `system.opus`
 (about 11 MB per hour each) so you can press **Re-transcribe** later, for example after adding a name to
 your protected terms; the old transcript is kept as `transcript.previous.md` and the summary is rewritten
-(Undo brings the old one back). The compressed audio is deleted after 30 days by default (Settings → **(05) Retention**: set it to 0 to delete it at once, or have whole meetings deleted after N days). If transcription fails, the
+(Undo brings the old one back). The compressed audio is deleted after 30 days by default (Settings → **(04) Retention**: set it to 0 to delete it at once, or have whole meetings deleted after N days). If transcription fails, the
 original WAV stays in the folder.
 
 ## Configuration
@@ -226,7 +221,7 @@ original WAV stays in the folder.
 | `ATA_VAD` | `models/ggml-silero-v5.1.2.bin` |
 | `ATA_THREADS` | `4` |
 | `ATA_PORT` | `8765` |
-| `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | — (enables sending the summary by email) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | — (your Google Cloud client; enables the Google sign-in) |
 | `MEETING_KEYWORDS` | `Meet,Zoom,Teams` (title words that make a browser's microphone use count as a meeting) |
 | `AUDIO_KEEP_DAYS` | `30` (days to keep the compressed audio; `0` deletes it as soon as the transcript is ready) |
 | `MEETING_KEEP_DAYS` | — (empty keeps meetings until you delete them; a number deletes each meeting that many days after it ends) |

@@ -10,7 +10,8 @@ Everything lives in plain files in the project folder, on your computer:
 | Where | What |
 |---|---|
 | `meetings/<date>/` | The audio (compressed, see below), the transcript, your notes, the summary, the chat and `meta.json` (title, language, times, and when you confirmed you had told the participants) |
-| `.env` | Your keys (DeepSeek, Gmail app password, calendar address) in plain text |
+| `.env` | Your keys (DeepSeek, your Google client secret) in plain text |
+| `google-accounts.json` | The Google accounts you connected: the address in plain text, and the login encrypted so that only your Windows user can read it |
 | `sensitive-terms.txt` | The names you asked it to hide |
 
 Nothing is uploaded anywhere automatically, and the app has no analytics or telemetry. The page it shows only talks
@@ -21,8 +22,8 @@ to `127.0.0.1`.
 | To | What | When |
 |---|---|---|
 | DeepSeek | The transcript, your notes and the chat, after contacts, amounts, IDs, keys and your protected terms are swapped for codes | Only when a summary is generated or you use the chat |
-| Your own Gmail | The summary and the transcript, with real names | Only if you configured Gmail |
-| Google Calendar | Your calendar is read through your secret iCal address | Only if you configured it |
+| Gmail (your own address) | The summary, with real names. The transcript is not sent | Only if you signed in with Google |
+| Google Calendar | The title, time, link and your answer for the events of the next 24 hours, from each account you connected. Read only | Only if you signed in with Google |
 
 Audio is never sent anywhere: it is transcribed on your computer. The protection mask has limits (it only hides
 what matches its patterns or your list), so do not rely on it for secrets it cannot recognise.
@@ -52,5 +53,5 @@ between countries and states, so check the ones that apply to you. This is not l
 ## Your data
 
 Because everything is a file, you can open, copy, move or delete any of it yourself. To revoke access to the
-optional integrations, delete the app password in your Google Account and reset the secret calendar address in
-Google Calendar.
+optional integrations, use **Disconnect** in Settings (it also tells Google to cancel the login) or remove MeTranscript at
+myaccount.google.com/permissions.

@@ -76,18 +76,20 @@ it to ask, quote or rephrase — instead of meeting notes with fixed sections.
       Zoom and Teams don't need a title.
 
 ## F8 — Summary by email (Gmail)
-CEO decision (2026-10-26): receive the summary in their own personal Gmail, automatically.
+CEO decision (2026-10-26): receive the summary in their own personal Gmail, automatically. Since DEV-0068 to DEV-0073 it is sent through the
+Gmail API from a Google account connected with "Sign in with Google" (no app password).
 
-- [ ] When a meeting's first summary is ready, it is sent from the user's Gmail
-      to themselves: subject "MeTranscript: <title> (dd/mm HH:MM)", body = summary, attachment `transcript.md`.
+- [ ] When a meeting's first summary is ready, it is sent from the chosen Google account
+      to itself: subject "MeTranscript: <title> (yyyy-mm-dd HH:MM)", body = summary, no attachment (the transcript is not shown anywhere).
 - [ ] Sent once per meeting; "Regenerate" and chat edits don't resend.
 - [ ] A "Email it to me" button sends the current version whenever the user wants.
 - [ ] A meeting flagged private by an older version is never sent.
 - [ ] A send failure shows "Email not sent: reason" and doesn't affect the summary.
-- [ ] Without `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` in `.env`, the feature is off with a subtle notice.
+- [ ] With no connected account, the feature is off.
 
 ## F9 — Calendar reminders
-CEO decision (2026-10-26): reminders before meetings, read from Google Calendar.
+CEO decision (2026-10-26): reminders before meetings, read from Google Calendar. Since DEV-0070 the events come from the Google Calendar API,
+for every account connected with "Sign in with Google" (primary calendars, merged).
 
 - [ ] 30 minutes before a calendar event that has a Meet, Zoom or Teams link, a Windows notification
       shows the title, time and app. A late start still gets it ("In 15 min").
@@ -95,9 +97,11 @@ CEO decision (2026-10-26): reminders before meetings, read from Google Calendar.
       starts recording with the event title.
 - [ ] Ignores events without a meeting link, all-day events, declined events and past events.
 - [ ] Each reminder fires once per occurrence, even across restarts.
-- [ ] "Upcoming meetings" in the sidebar lists the next linked meetings (24 h).
+- [ ] "Upcoming meetings" in the sidebar lists the next linked meetings (24 h) of all connected accounts, merged by time; with two or more
+      accounts each row shows which account it comes from.
 - [ ] "Run in background and start with Windows" toggle and a "Quit MeTranscript" button on the page.
-- [ ] Without `GOOGLE_CALENDAR_ICS` in `.env`, reminders are off with a hint in the sidebar.
+- [ ] With no connected account, reminders are off with a hint in the sidebar; an account whose login Google no longer accepts shows an error there
+      and "Sign in again" in Settings.
 
 ## F10 — Choose audio devices
 CEO decision (2026-10-26): after a recording silently used the webcam microphone (Windows switched
@@ -168,14 +172,23 @@ From the ponytail audit (2026-10-26): the only way to remove a meeting was delet
 ## F13 — Settings page for the keys
 Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand was the main friction.
 
-- [ ] `#/settings` (top bar) lists DeepSeek key, Gmail address, Gmail app password and calendar address,
-      plus the background-mode toggle and Quit.
-- [ ] Secrets are never sent back: each shows "Saved" / "Not set"; the Gmail address is shown in full.
+- [ ] `#/settings` (top bar) lists the DeepSeek key, the Google client ID and secret with the connected Google accounts (DEV-0073), the meeting-alert
+      words, the retention days and the protected terms, plus the background-mode toggle and Quit.
+- [ ] Secrets are never sent back: each shows "Saved" / "Not set"; the Google client ID is shown in full.
 - [ ] Save writes only the filled fields to `.env`, keeps every other line, and applies without restart
-      (the calendar is re-read right away).
-- [ ] **Remove** deletes a key; invalid values are rejected with a clear message (single line, https://
-      calendar addresses, a full email address) and nothing is written.
+      (the calendars are re-read right away after a Google change).
+- [ ] **Remove** deletes a key; invalid values are rejected with a clear message (single line, a client ID ending in
+      `.apps.googleusercontent.com`, no spaces in the secrets) and nothing is written. The old `GMAIL_*` and `GOOGLE_CALENDAR_ICS` keys are unknown now.
 - [ ] A key set as a Windows environment variable is shown as locked.
 - [ ] (DEV-0040) The browser window words (`MEETING_KEYWORDS`) are a fifth, non-secret field; an empty or
       separators-only value falls back to the defaults.
-- [ ] **Send a test email** sends one message to the configured address.
+- [ ] **Send a test email** sends one message from the chosen Google account to itself.
+
+## F18 — Google accounts (DEV-0068 to DEV-0073)
+- [ ] **Sign in with Google** (Settings -> Google accounts) opens Google's consent page (OAuth code flow with PKCE, redirect to the app's own
+      `/oauth/google`) and, on return, lists the account; it needs the Google Cloud client ID and secret first.
+- [ ] Several accounts can be connected; one is marked as the sender of the summaries (the first by default); **Disconnect** removes the account and
+      asks Google to cancel its login (the page says when Google did not confirm).
+- [ ] Logins are stored in `google-accounts.json`, encrypted with Windows DPAPI; the page and `/api/*` never receive a token or the client secret.
+- [ ] A refused or partial consent (not every permission ticked), a stale or replayed sign-in link and a login Google no longer accepts end in a short,
+      clear message and save nothing (or mark the account "Sign in again").

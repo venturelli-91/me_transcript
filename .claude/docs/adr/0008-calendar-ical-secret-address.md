@@ -1,7 +1,7 @@
 # ADR-0008: Calendar reminders from the Google Calendar secret iCal address
 
 **Date**: 2026-10-26
-**Status**: accepted
+**Status**: superseded by [ADR-0009](0009-google-sign-in.md)
 **Deciders**: CEO, Claude
 
 ## Context
