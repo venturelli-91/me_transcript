@@ -6,6 +6,30 @@ chat with the meeting: ask something specific, add something to the summary or r
 
 Only the DeepSeek API is paid. Audio, transcripts and summaries stay in `meetings/`, in Markdown.
 
+> **Status: test version.** MeTranscript is a personal project that its author is still testing. It works, but
+> expect rough edges, and it only runs on Windows. Issues and ideas are welcome.
+
+## Before you record: consent and privacy
+
+MeTranscript has no bot and shows nothing to the other people on the call, so **they are not told that you
+are recording.** Many places (Brazil's LGPD, the EU's GDPR, and several US states, among others) require the
+consent of the people in a conversation before you record it. Rules vary; check yours, and tell the
+participants. This is a tool, not legal advice, and you are responsible for how you use it.
+
+What leaves your computer, and what does not:
+
+| Data | Where it goes |
+|---|---|
+| Audio | Never leaves your computer. It is transcribed locally by whisper.cpp and compressed audio is deleted after 30 days. |
+| Transcript, your notes and the chat | Sent to DeepSeek, only when you generate a summary or use the chat, after the [protection mask](#protecting-sensitive-data) swaps contacts, amounts, IDs, keys and your listed terms for codes. The mask has limits (see below). |
+| The summary and transcript by email | Sent to your own Gmail, only if you configure it. This copy uses the real names. |
+| Your calendar | Read from Google through your secret iCal address, only if you configure it. |
+| Analytics or telemetry | None. The page makes no request outside `127.0.0.1`. |
+
+Everything else is stored in plain files on your computer: `meetings/` (audio, transcripts, summaries, chats),
+`.env` (your keys) and `sensitive-terms.txt`. Protect them like any other private file, and do not commit them
+(they are in `.gitignore`).
+
 ## Screenshots
 
 The screenshots use demo meetings, not real data.
@@ -19,12 +43,18 @@ on the side. Times like `[00:31:12]` in the answers jump to that line of the tra
 
 ![Meeting: summary, next steps and the chat drawer](docs/screenshots/meeting.png)
 
+The transcript shows who spoke: **Me** and **Others** each have their own marker, and a bar above it shows who spoke
+when, with the share of each. Click the bar to jump to that line.
+
+![Transcript: the Me / Others bar and the lines](docs/screenshots/transcript.png)
+
 **Record**: pick the language and the devices.
 
 ![Record: the new recording sheet](docs/screenshots/record.png)
 
 **Recording**: a strip stays on top of every page with the clock, the devices in use (switch them
-mid-meeting) and level meters. Take notes while the live transcript fills in.
+mid-meeting) and a level meter per track, and the browser tab title shows the elapsed time. Take notes while
+the live transcript fills in.
 
 ![Recording: the pinned strip, notes and live transcript](docs/screenshots/recording.png)
 
@@ -202,3 +232,8 @@ python -m unittest
 ```
 
 Project documentation, decisions (ADRs), backlog and standards in [`.claude/docs/`](.claude/docs/README.md).
+
+## License
+
+[MIT](LICENSE). The bundled fonts, Hanken Grotesk and JetBrains Mono, are under the SIL Open Font License
+(see the `OFL-*.txt` files in `metranscript/web/fonts/`).
