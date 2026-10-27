@@ -19,6 +19,8 @@ from metranscript.transcribe import Transcriber, check_ready
 log = logging.getLogger("metranscript")
 INDEX = Path(__file__).parent / "web" / "index.html"
 FONTS = INDEX.parent / "fonts"
+ABOUT = INDEX.parent / "about"
+POLICIES = {"en": "PRIVACY.md", "pt": "PRIVACY.pt.md"}
 LANGS = {"pt", "en"}
 MAX_BODY = 2_000_000
 PORT = int(os.environ.get("ATA_PORT", "8765"))
@@ -382,6 +384,15 @@ class Handler(BaseHTTPRequestHandler):
         font = FONTS / path.removeprefix("/fonts/") if path.startswith("/fonts/") else None
         if font and font.parent == FONTS and font.suffix == ".woff2" and font.is_file():
             return self._send(200, font.read_bytes(), "font/woff2")
+        image = ABOUT / path.removeprefix("/about/") if path.startswith("/about/") else None
+        if image and image.parent == ABOUT and image.suffix == ".png" and image.is_file():
+            return self._send(200, image.read_bytes(), "image/png")
+        if path == "/api/policy":
+            lang = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("lang", ["en"])[0]
+            file = INDEX.parent.parent.parent / POLICIES.get(lang, POLICIES["en"])
+            if not file.is_file():
+                file = INDEX.parent.parent.parent / POLICIES["en"]
+            return self._guard(lambda: self._send(200, {"markdown": file.read_text(encoding="utf-8")}))
         if self.path == "/api/agenda":
             return self._send(200, {"configured": bool(google.emails()), "events": watcher.events if watcher else [],
                                     "error": watcher.error if watcher else None})

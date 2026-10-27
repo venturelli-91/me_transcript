@@ -55,6 +55,34 @@ class RoutesTest(ServerCase):
             conn.close()
             self.assertEqual(res.status, expected)
 
+    def test_about_images_and_the_privacy_policy_are_served_read_only(self):
+        about = server.ABOUT
+        about.mkdir(exist_ok=True)
+        image = about / "zz-test.png"
+        image.write_bytes(b"\x89PNG\r\n\x1a\nfake")
+        self.addCleanup(lambda: image.unlink(missing_ok=True))
+
+        def fetch(path):
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+            conn.request("GET", path, headers={"Host": f"127.0.0.1:{self.port}"})
+            res = conn.getresponse()
+            body = res.read()
+            conn.close()
+            return res.status, res.getheader("Content-Type"), body
+
+        status, ctype, body = fetch("/about/zz-test.png?v=1")
+        self.assertEqual((status, ctype.split(";")[0], body[:4]), (200, "image/png", b"\x89PNG"))
+        for bad in ("/about/../index.html", "/about/zz-test.png/x", "/about/missing.png", "/about/zz-test.txt", "/about/%2e%2e/index.html"):
+            self.assertEqual(fetch(bad)[0], 404, bad)
+        status, body = self.call("GET", "/api/policy?lang=en")
+        self.assertEqual(status, 200)
+        self.assertTrue(body["markdown"].startswith("# Privacy"))
+        self.assertTrue(self.call("GET", "/api/policy?lang=pt")[1]["markdown"].startswith("# Privacidade"))
+        for odd in ("/api/policy", "/api/policy?lang=../../.env", "/api/policy?lang=fr"):
+            self.assertTrue(self.call("GET", odd)[1]["markdown"].startswith("# Privacy"), odd)
+        self.assertEqual(self.call("GET", "/api/policy", headers={"Host": "evil.com"})[0], 403)
+        self.assertIn("img-src 'self' data:", self.call("GET", "/")[1])
+
     def test_unknown_routes_and_meetings(self):
         self.assertEqual(self.call("GET", "/nope"), (404, {"error": "Not found."}))
         self.assertEqual(self.call("DELETE", "/api/meetings"), (404, {"error": "Not found."}))
