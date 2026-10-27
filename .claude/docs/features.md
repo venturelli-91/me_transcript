@@ -56,6 +56,11 @@ it to ask, quote or rephrase — instead of meeting notes with fixed sections.
 - [ ] Written in the meeting's language.
 - [ ] Message box per meeting: a specific question gets a short answer with the
       `[hh:mm:ss]` timestamp of the passages; a change request rewrites the summary and says what changed.
+- [ ] (DEV-0066) Explain / assess / advise: the chat explains terms, acronyms and processes, points out risks, proposes solutions and gives an
+      opinion using the AI's own knowledge. It says first what the meeting said (with timestamps) and then its own part under **My opinion:**
+      / **Minha opinião:**, never presents its inference as said by the participants, offers a guess when a term is ambiguous, and does not
+      change the summary unless asked. A factual question is still answered only from the transcript.
+- [ ] (DEV-0066) Four buttons above the message box (Explain, Risks, Suggestions, Your opinion) send these requests; they follow the language switch.
 - [ ] Each chat answer has "Add to summary".
 - [ ] "Undo" reverts the summary to the previous version (all versions are kept).
 - [ ] Chat saved to `chat.json`; when the meeting is reopened, the conversation continues.

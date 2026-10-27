@@ -18,7 +18,8 @@ A local program (Python) with a single browser page (`127.0.0.1:8765`):
 4. You write short notes while you talk.
 5. Then DeepSeek writes a complete summary of the **ideas by topic**, the decisions and the next steps.
 6. You chat with the meeting: ask something specific (the answer cites the timestamp of the passage),
-   ask it to add something to the summary or to rephrase it — and you can undo.
+   ask it to add something to the summary or to rephrase it — and you can undo. You can also ask it to explain what you do not
+   understand, point out risks, suggest solutions and give its opinion on the processes.
 
 ## Goals
 - Replace another note-taking app in the CEO's daily use for Meet, Zoom and Teams.

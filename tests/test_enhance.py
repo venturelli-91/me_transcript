@@ -51,6 +51,12 @@ class EnhanceTest(unittest.TestCase):
             enhance.summarize(MEETING, Mask())
         self.assertEqual((complete.call_args.kwargs["temperature"], complete.call_args.kwargs["max_tokens"]), (0.2, 8000))
 
+    def test_the_chat_may_explain_assess_and_advise_but_keeps_its_opinion_apart(self):
+        system = enhance.chat_messages(MEETING, "what is a CRQ?", Mask())[0]["content"]
+        for rule in ("your own knowledge", "My opinion:", "Minha opinião:", "Never present your own knowledge", "do not invent facts"):
+            self.assertIn(rule.lower(), system.lower())
+        self.assertIn("**Question about what was said in the meeting**", system)
+
     def test_empty_parts_are_explicit(self):
         _, user = enhance.summary_messages({**MEETING, "title": "", "notes": " ", "transcript": ""}, Mask())
         self.assertIn("Title: untitled", user["content"])

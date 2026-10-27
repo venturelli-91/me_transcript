@@ -202,8 +202,10 @@ Open http://127.0.0.1:8765 and keep the tab open.
 4. Click the square to stop. The audio is transcribed on your computer (with a progress percentage), then the
    summary is written. The meeting opens as an article: (01) Summary, (02) Next steps,
    (03) Notes; if Gmail is configured, the summary also arrives in your inbox.
-5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions with clickable
-   timestamps, "Add to summary", tweaks and **Undo**.
+5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions about what was said (with the
+   timestamps), "Add to summary", tweaks and **Undo**. The buttons **Explain**, **Risks**, **Suggestions** and **Your opinion**
+   ask the AI to help you understand the processes: it says what the meeting said and then, under **My opinion**, what it
+   thinks from its own knowledge. That part is the AI's view, not something the participants said, so check it before relying on it.
 6. **Rename** or **Delete** a meeting from the links above its title (deleting asks for confirmation and
    removes the whole folder).
 

@@ -208,7 +208,7 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); 
 .handle { align-self: stretch; cursor: col-resize; display: grid; place-items: center; touch-action: none; }
 .handle::after { content: ""; width: 2px; height: 48px; border-radius: 2px; background: var(--line); }
 .handle:hover::after, .handle:focus-visible::after { background: var(--gray); }
-.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
+.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
 .drawer header { padding: 18px 20px 4px; }
 .drawer .privacy { padding: 0 20px 10px; font-size: 12px; color: var(--gray); }
 .chat-log { overflow-y: auto; padding: 4px 20px 16px; display: grid; align-content: start; gap: 10px; }
@@ -218,7 +218,9 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); 
 .msg.me { justify-self: end; background: var(--btn); color: var(--on-btn); }
 .msg.bot { justify-self: start; background: var(--bg); }
 .msg small { display: block; margin-top: 6px; color: var(--gray); font-size: 12px; }
-.chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
+.chat-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; border-top: 1px solid var(--line); }
+.chat-chips .pill { padding: 4px 10px; font-size: 12px; }
+.chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 10px 16px 16px; }
 .chat-form textarea { border: 1px solid var(--edge); border-radius: var(--r); padding: 9px 14px; background: var(--surface); resize: none; max-height: 160px; }
 #chat-msg { grid-column: 1 / -1; font-size: 12px; }
 #chat-msg:empty { display: none; }
@@ -470,7 +472,16 @@ const PT = {
   "Sending…": "Enviando…",
   "Sent to your email.": "Enviado ao seu e-mail.",
   "“{t}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.": "“{t}”, com suas notas, transcrição, resumo e chat, será removida deste computador. Isso não pode ser desfeito.",
-  "Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter”.": "Faça uma pergunta específica, como “Que prazo o João deu?”, ou peça uma mudança, como “Deixe mais curto”.",
+  "Ask something specific, like “What deadline did John give?”, request a change, like “Make it shorter”, or ask for help understanding the processes.": "Faça uma pergunta específica, como “Que prazo o João deu?”, peça uma mudança, como “Deixe mais curto”, ou peça ajuda para entender os processos.",
+  "Ask the AI to help you understand": "Peça à IA para ajudar você a entender",
+  "Explain": "Explicar",
+  "Risks": "Riscos",
+  "Suggestions": "Sugestões",
+  "Your opinion": "Sua opinião",
+  "Explain the terms, acronyms and processes mentioned that I may not know.": "Explique os termos, as siglas e os processos citados que eu possa não conhecer.",
+  "What risks or problems do you see in what was discussed?": "Que riscos ou problemas você vê no que foi discutido?",
+  "What would you suggest I do, or do differently?": "O que você sugere que eu faça, ou faça diferente?",
+  "What is your opinion on these processes?": "Qual é a sua opinião sobre esses processos?",
   "Summary updated": "Resumo atualizado",
   "Add to summary": "Adicionar ao resumo",
   "Thinking…": "Pensando…",
@@ -714,6 +725,7 @@ function renderMeeting() {
         <p class="privacy">${m.private ? t("Private meeting: chat is off and nothing is sent to the AI or by email.")
           : `${t("Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.")}${m.protected ? t(" Hidden so far: {n}.", { n: m.protected }) : ""}`}</p>
         <div class="chat-log" id="chat-log">${chatLog()}</div>
+        <div class="chat-chips" role="group" aria-label="${t("Ask the AI to help you understand")}">${advice().map(([label, ask]) => `<button type="button" class="pill ghost" data-ask="${esc(ask)}" ${off}>${label}</button>`).join("")}</div>
         <form class="chat-form" id="chat-form">
           <label class="sr" for="chat-input">${t("Message")}</label>
           <textarea id="chat-input" rows="2" placeholder="${t("Ask or request a change…")}" ${off}></textarea>
@@ -742,10 +754,16 @@ function renderMeeting() {
   bindHandle();
 }
 /* ---------- chat ---------- */
+const advice = () => [
+  [t("Explain"), t("Explain the terms, acronyms and processes mentioned that I may not know.")],
+  [t("Risks"), t("What risks or problems do you see in what was discussed?")],
+  [t("Suggestions"), t("What would you suggest I do, or do differently?")],
+  [t("Your opinion"), t("What is your opinion on these processes?")],
+];
 function chatLog() {
   const m = openMeeting;
   if (!m.chat.length && waiting !== m.id) {
-    return m.private ? "" : `<p class="muted t14">${t("Ask something specific, like “What deadline did John give?”, or request a change, like “Make it shorter”.")}</p>`;
+    return m.private ? "" : `<p class="muted t14">${t("Ask something specific, like “What deadline did John give?”, request a change, like “Make it shorter”, or ask for help understanding the processes.")}</p>`;
   }
   return m.chat.map((c, i) => c.role === "user"
     ? `<div class="msg me"><p>${esc(c.content)}</p></div>`
@@ -758,6 +776,7 @@ function bindChat() {
   input.value = draft;
   input.addEventListener("input", () => { draft = input.value; });
   $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send(input.value, true); });
+  $(".chat-chips").addEventListener("click", e => { const b = e.target.closest("[data-ask]"); if (b) send(b.dataset.ask, false); });
   input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value, true); } });
   log.addEventListener("click", e => {
     const b = e.target.closest("button[data-include]");

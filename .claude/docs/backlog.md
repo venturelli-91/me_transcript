@@ -200,6 +200,12 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   voice styling and the clickable timestamps from the page (the transcript is still made, saved and used by the summary, the chat
   and the email attachment). Re-transcribe stays.
 
+## DEV-0066 — The chat can explain, assess and advise · `engenheiro-prompt` + `dev-frontend`
+- `chat.md` gets a third kind of request (explain / risks / solutions / opinion) with rules that keep the AI's view apart from what was said;
+  four buttons above the message box. Checked on the real 22-min meeting: every opinion answer carried **Minha opinião**, nothing the participants
+  did not say was attributed to them, ambiguous terms (X1, DO) were flagged instead of expanded, the summary never changed, and a factual
+  question was still answered only from the transcript.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the
