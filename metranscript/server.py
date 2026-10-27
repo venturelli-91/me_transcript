@@ -293,8 +293,8 @@ def save_config(updates: dict) -> dict:
             settings.write_env(clean)
         except OSError:
             raise RuntimeError("Could not save the .env file.") from None
-    if "GOOGLE_CALENDAR_ICS" in clean and watcher:
-        watcher.last_fetch = None  # re-read the calendar on its next pass instead of in up to 5 minutes
+    if any(name.startswith("GOOGLE_") for name in clean):
+        _refresh_agenda()
     return settings.status()
 
 
@@ -315,7 +315,24 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         log.debug(fmt, *args)
 
+    def handle_one_request(self) -> None:
+        self._consumed = False
+        super().handle_one_request()
+
+    def _drain(self) -> None:
+        """Read a request body nobody asked for. Answering and closing with unread data makes Windows reset the connection,
+        and the client sees an error instead of the 403, 404 or 415 we sent."""
+        self._consumed = True
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            return
+        if 0 < length <= MAX_BODY:
+            self.rfile.read(length)
+
     def _send(self, status: int, body: object = None, content_type: str = "application/json") -> None:
+        if self.command in ("POST", "PUT", "PATCH", "DELETE") and not self._consumed:
+            self._drain()
         data = body if isinstance(body, bytes) else json.dumps(body if body is not None else {}, ensure_ascii=False).encode()
         self.send_response(status)
         self.send_header("Content-Type", f"{content_type}; charset=utf-8")
@@ -332,6 +349,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _body(self) -> dict:
+        self._consumed = True
         length = int(self.headers.get("Content-Length") or 0)
         if not 0 <= length <= MAX_BODY:
             raise ValueError("Invalid body size.")
@@ -436,6 +454,7 @@ class Handler(BaseHTTPRequestHandler):
                     google.set_sender(email)
                 else:
                     revoked = google.disconnect(email)
+                    _refresh_agenda()
                 self._send(200, {"accounts": google.accounts(), "revoked": revoked})
             return self._guard(run)
         if self.path == "/api/devices":
@@ -529,6 +548,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": str(e)})
 
 
+def _refresh_agenda() -> None:
+    """Read the calendars on the watcher's next pass instead of in up to 5 minutes."""
+    if watcher:
+        watcher.last_fetch = None
+
+
 def _google_outcome(query: dict) -> str:
     """What the page should tell the user after Google sent them back here; the details go to the log, never to the URL."""
     one = lambda key: query.get(key, [""])[0]
@@ -539,6 +564,7 @@ def _google_outcome(query: dict) -> str:
     except (RuntimeError, OSError, ValueError) as e:
         log.warning("Google sign-in failed: %s", type(e).__name__ if not isinstance(e, RuntimeError) else e)
         return "error"
+    _refresh_agenda()
     return "connected"
 
 

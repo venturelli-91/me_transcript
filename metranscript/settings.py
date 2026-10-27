@@ -6,9 +6,6 @@ ROOT = Path(__file__).resolve().parent.parent
 # The keys the Settings page may edit, and whether each one is a secret (never sent back to the page).
 FIELDS = {
     "DEEPSEEK_API_KEY": True,
-    "GMAIL_ADDRESS": False,
-    "GMAIL_APP_PASSWORD": True,
-    "GOOGLE_CALENDAR_ICS": True,
     "GOOGLE_CLIENT_ID": False,
     "GOOGLE_CLIENT_SECRET": True,
     "MEETING_KEYWORDS": False,
@@ -66,10 +63,6 @@ def validate(name: str, value: str) -> str:
         raise ValueError("The client secret has no spaces.")
     if name == "DEEPSEEK_API_KEY" and " " in value:
         raise ValueError("The DeepSeek key has no spaces.")
-    if name == "GMAIL_ADDRESS" and ("@" not in value or " " in value):
-        raise ValueError("Enter a full email address.")
-    if name == "GOOGLE_CALENDAR_ICS" and not all(u.strip().startswith("https://") for u in value.split(",")):
-        raise ValueError("Calendar addresses must start with https://")
     return value
 
 

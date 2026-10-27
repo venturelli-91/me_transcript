@@ -1,4 +1,5 @@
 import http.client
+import json
 import time
 import unittest
 from unittest import mock
@@ -36,6 +37,23 @@ class RoutesTest(ServerCase):
         self.assertEqual(fetch("/fonts/hanken-grotesk-latin.woff2/x")[0], 404)
         _, html = self.call("GET", "/")
         self.assertNotIn("googleapis", html)
+
+    def test_a_refused_request_with_a_body_never_resets_the_connection(self):
+        body = json.dumps({"x": "y" * 60000})
+        for _ in range(150):
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+            conn.request("POST", "/api/stop", body=body, headers={"Host": "evil.com", "Content-Type": "application/json"})
+            res = conn.getresponse()
+            res.read()
+            conn.close()
+            self.assertEqual(res.status, 403)
+        for headers, expected in (({"Content-Type": "text/plain"}, 415), ({"Content-Type": "application/json"}, 404)):
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+            conn.request("POST", "/api/nope" if expected == 404 else "/api/stop", body=body, headers={"Host": f"127.0.0.1:{self.port}", **headers})
+            res = conn.getresponse()
+            res.read()
+            conn.close()
+            self.assertEqual(res.status, expected)
 
     def test_unknown_routes_and_meetings(self):
         self.assertEqual(self.call("GET", "/nope"), (404, {"error": "Not found."}))
