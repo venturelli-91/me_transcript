@@ -43,15 +43,11 @@ The screenshots use demo meetings, not real data.
 
 ![Index: the list of meetings with filters](docs/screenshots/index.png)
 
-**Meeting**: the summary by topic, the next steps, your notes and the transcript, with a resizable chat
-on the side. Times like `[00:31:12]` in the answers jump to that line of the transcript.
+**Meeting**: the summary by topic, the next steps and your notes, with a resizable chat on the side. The transcript is
+not shown: it stays in a file and is only what the summary and the chat read. Times like `[00:31:12]` in the answers say
+where in the recording the point was said.
 
 ![Meeting: summary, next steps and the chat drawer](docs/screenshots/meeting.png)
-
-The transcript shows who spoke: **Me** and **Others** each have their own marker, and a bar above it shows who spoke
-when, with the share of each. Click the bar to jump to that line.
-
-![Transcript: the Me / Others bar and the lines](docs/screenshots/transcript.png)
 
 **Record**: pick the language and the devices.
 
@@ -205,7 +201,7 @@ Open http://127.0.0.1:8765 and keep the tab open.
    browse other meetings and come back with **Back to recording**.
 4. Click the square to stop. The audio is transcribed on your computer (with a progress percentage), then the
    summary is written. The meeting opens as an article: (01) Summary, (02) Next steps,
-   (03) Notes and (04) Transcript; if Gmail is configured, the summary also arrives in your inbox.
+   (03) Notes; if Gmail is configured, the summary also arrives in your inbox.
 5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions with clickable
    timestamps, "Add to summary", tweaks and **Undo**.
 6. **Rename** or **Delete** a meeting from the links above its title (deleting asks for confirmation and

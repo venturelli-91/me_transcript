@@ -115,23 +115,20 @@ direction "E · Index" chosen among five mockups. Full design:
 - [ ] Index: numbered list (oldest = 01, newest first), filters All / This week / With next steps.
 - [ ] Record sheet: title, language, devices (defaults preselected).
 - [ ] Recording strip pinned on every page: clock, stop, devices + levels, Back to recording.
-- [ ] Meeting article: (01) Summary, (02) Next steps (split from the summary), (03) Notes, (04) Transcript.
+- [ ] Meeting article: (01) Summary, (02) Next steps (split from the summary), (03) Notes. The transcript is not shown (DEV-0065).
 - [ ] Chat drawer: default 380 px, drag 320 px – min(50vw, 640 px), double-click resets, ←/→ keys,
-      width remembered per browser; clickable `[hh:mm:ss]` timestamps scroll to the transcript line.
+      width remembered per browser; `[hh:mm:ss]` timestamps in the answers are plain text (they point at the recording).
 - [ ] Works at 400 px (drawer stacks under the article), WCAG AA contrast, keyboard access.
 
 ## F11b — Look and language (DEV-0047, DEV-0048)
 - [ ] Square-ish controls (4 px) and 6 px cards; only the Record button is round; filters are underlined tabs.
 - [ ] Timecodes, dates and meeting numbers use JetBrains Mono (served locally); the meeting page opens with its number as a large numeral.
-- [ ] (DEV-0050) "Me" and "Others" have a fixed look (a square marker, mono label; Others lines are indented) in the transcript
-      and the transcript; above the transcript a two-lane bar shows who spoke when with the "Me X% · Others Y%" split, and a click
-      jumps to that line (keyboard users use the timestamps in the lines).
 - [ ] (DEV-0050) While recording: red top edge, a pulsing dot (still under reduced motion), a 40 px clock, tick-style level meters
       per track and the tab title `● mm:ss MeTranscript`.
 - [ ] (DEV-0057) A footer on every page shows the MIT license line with a link to `LICENSE`, and icon links to LinkedIn, WhatsApp,
       email and the portfolio (inline SVG, no external request until clicked; labels follow the language switch).
-- [ ] (DEV-0059) While recording, the page shows the notes and a quiet note that the transcript is made after you stop; the transcript
-      on the meeting page is hidden behind a **Show transcript** button (the Me / Others bar and timestamp links stay).
+- [ ] (DEV-0059, DEV-0065) While recording, the page shows the notes and a quiet note that the transcript is made after you stop; the
+      meeting page does not show the transcript at all (it stays in `transcript.md` for the summary, the chat and the email attachment).
 - [ ] An **EN | PT-BR** switch in the top bar and the recording strip changes every page text without a reload; the choice
       is kept in the browser (first visit follows the browser language); dates follow the chosen language.
 

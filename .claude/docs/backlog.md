@@ -195,6 +195,11 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   DEV-0060 added a glossary and DEV-0064 removed it (the user does not want to maintain a list; the model decides the spelling from the notes and
   the context). DEV-0061: new summary prompt (Overview, topics, Open questions, Decisions, Next steps last), low temperature, 8000 tokens.
 
+## DEV-0065 — Do not show the transcript · `dev-frontend`
+- The user wants only the audio recorded and the summary plus the chat: removed the (04) Transcript section, the Me / Others bar, the
+  voice styling and the clickable timestamps from the page (the transcript is still made, saved and used by the summary, the chat
+  and the email attachment). Re-transcribe stays.
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

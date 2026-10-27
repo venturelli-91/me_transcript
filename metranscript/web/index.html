@@ -35,9 +35,7 @@
   --btn: #1F1A16;
   --on-btn: #FBF8F3;
   --rec: #C8412F;
-  --others: #A66A1F;
   --rec-bg: #C8412F;
-  --hit: #F3E7D6;
   --scrim: rgba(24, 24, 24, .35);
   --font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -59,8 +57,6 @@
   --btn: #EFEBE4;
   --on-btn: #1A1613;
   --rec: #EC6B55;
-  --others: #D39A52;
-  --hit: #3A3226;
   --scrim: rgba(0, 0, 0, .6);
 }
 * { box-sizing: border-box; }
@@ -207,19 +203,6 @@ input.rename { display: block; width: 100%; margin: 6px 0 12px; font: inherit; f
 .actions .msg { color: var(--gray); }
 textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); border-radius: var(--r-lg); padding: 16px 18px; background: var(--surface); font-size: 16px; line-height: 1.6; resize: vertical; }
 .saved { color: var(--gray); font-size: 12px; }
-.transcript p { margin: 0 0 8px; }
-.transcript time { color: var(--gray); font: 400 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; margin-right: 8px; }
-.who { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .04em; margin-right: 8px; }
-.who::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--ink); }
-p.others { margin-left: 28px; }
-p.others .who::before { background: var(--others); }
-.tl { margin: 0 0 18px; }
-.tl-bar { position: relative; height: 16px; background: var(--line); cursor: pointer; }
-.tl-bar span { position: absolute; top: 0; bottom: 0; background: var(--ink); }
-.tl-bar span.others { background: var(--others); top: 40%; }
-.tl-bar span.me { bottom: 40%; }
-.tl-share { margin-top: 6px; font: 400 12px/1.5 var(--mono); color: var(--gray); }
-.transcript p.hit { background: var(--hit); border-radius: 6px; box-shadow: 0 0 0 6px var(--hit); }
 
 /* resizable drawer */
 .handle { align-self: stretch; cursor: col-resize; display: grid; place-items: center; touch-action: none; }
@@ -235,7 +218,6 @@ p.others .who::before { background: var(--others); }
 .msg.me { justify-self: end; background: var(--btn); color: var(--on-btn); }
 .msg.bot { justify-self: start; background: var(--bg); }
 .msg small { display: block; margin-top: 6px; color: var(--gray); font-size: 12px; }
-.msg a[data-t] { font: 400 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
 .chat-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
 .chat-form textarea { border: 1px solid var(--edge); border-radius: var(--r); padding: 9px 14px; background: var(--surface); resize: none; max-height: 160px; }
 #chat-msg { grid-column: 1 / -1; font-size: 12px; }
@@ -458,7 +440,6 @@ const PT = {
   "Private": "Privada",
   "Email not sent: {e}": "E-mail não enviado: {e}",
   "Sent to Gmail {d}": "Enviado ao Gmail em {d}",
-  "No transcript.": "Sem transcrição.",
   "← Index": "← Índice",
   "Rename": "Renomear",
   "Delete": "Excluir",
@@ -475,14 +456,12 @@ const PT = {
   "(01) Summary": "(01) Resumo",
   "(02) Next steps": "(02) Próximos passos",
   "(03) Notes": "(03) Notas",
-  "(04) Transcript": "(04) Transcrição",
   "Your notes for this meeting": "Suas notas desta reunião",
   "Resize chat": "Redimensionar o chat",
   "(Ask this meeting)": "(Pergunte à reunião)",
   "Private meeting: chat is off and nothing is sent to the AI or by email.": "Reunião privada: o chat está desligado e nada é enviado à IA nem por e-mail.",
   "Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.": "Antes de qualquer coisa ir ao DeepSeek, nomes, contatos e valores são trocados por códigos e devolvidos na resposta.",
   " Hidden so far: {n}.": " Ocultados até agora: {n}.",
-  "Who spoke when: Me {a}%, Others {b}%": "Quem falou e quando: Me {a}%, Others {b}%",
   "Message": "Mensagem",
   "Ask or request a change…": "Pergunte ou peça uma mudança…",
   "Send": "Enviar",
@@ -508,8 +487,6 @@ const PT = {
   "The audio stays on this computer. When you stop, it is transcribed here and the summary is written.": "O áudio fica neste computador. Quando você parar, ele é transcrito aqui e o resumo é escrito.",
   "(Transcribing – {n}%)": "(Transcrevendo – {n}%)",
   "Transcribing the audio… {n}%": "Transcrevendo o áudio… {n}%",
-  "Hide transcript": "Ocultar a transcrição",
-  "Show transcript ({n} lines)": "Mostrar a transcrição ({n} linhas)",
   "{d} (default)": "{d} (padrão)",
   "Could not list audio devices: {e}": "Não foi possível listar os dispositivos de áudio: {e}",
   "Now recording your voice from {d}.": "Agora gravando sua voz de {d}.",
@@ -601,7 +578,7 @@ function applyLang(save = true) {
 
 let status = { phase: "idle", levels: { mic: 0, system: 0 } };
 let meetings = [], numbers = new Map(), filter = "all";
-let openId = null, openMeeting = null, showAllTranscript = false;
+let openId = null, openMeeting = null;
 let waiting = null, draft = "", notice = null, closed = false, prevPhase = "idle", recordingId = null;
 
 const api = async (path, opts = {}) => {
@@ -624,7 +601,6 @@ function markdown(md) {
   }
   return html + (list ? "</ul>" : "");
 }
-const withTimeLinks = html => html.replace(/\[(\d{2}):(\d{2}):(\d{2})\]/g, (_, h, m, s) => `<a href="#" data-t="${h}${m}${s}">[${h}:${m}:${s}]</a>`);
 
 const clock = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
   return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(x).padStart(2, "0"); };
@@ -658,7 +634,7 @@ async function route() {
     location.hash = "#/";
     return showError(t("That meeting no longer exists."));
   }
-  if (openId !== r.id) { showAllTranscript = false; draft = ""; }
+  if (openId !== r.id) draft = "";
   openId = r.id;
   renderMeeting();
   window.scrollTo(0, 0);
@@ -700,34 +676,6 @@ function mailStatus(m) {
   if (m.emailed_at) return esc(t("Sent to Gmail {d}", { d: when(m.emailed_at) }));
   return "";
 }
-function transcriptLines(text) {
-  return text.split(/\r?\n/).filter(Boolean).map(line => {
-    const m = line.match(/^\[(\d{2}):(\d{2}):(\d{2})\] \*\*(.+?):\*\* (.*)$/);
-    return m ? { t: `${m[1]}${m[2]}${m[3]}`, label: `${m[1]}:${m[2]}:${m[3]}`, who: m[4], text: m[5] } : { t: "", label: "", who: "", text: line };
-  });
-}
-const seconds = t => +t.slice(0, 2) * 3600 + +t.slice(2, 4) * 60 + +t.slice(4, 6);
-// Each line lasts until the next one starts, capped so a long silence does not read as speech.
-function timeline(lines) {
-  const timed = lines.filter(l => l.t && l.who);
-  if (timed.length < 2) return "";
-  const starts = timed.map(l => seconds(l.t)), end = Math.max(...starts) + 8;
-  const spoke = { Me: 0, Others: 0 }, blocks = timed.map((l, i) => {
-    const len = Math.max(0, Math.min(20, (starts[i + 1] ?? end) - starts[i]));
-    spoke[l.who] = (spoke[l.who] || 0) + len;
-    return `<span class="${l.who === "Others" ? "others" : "me"}" data-t="${l.t}" style="left:${(starts[i] / end * 100).toFixed(2)}%;width:${Math.max(0.3, len / end * 100).toFixed(2)}%" title="${l.label} ${esc(l.who)}"></span>`;
-  }).join("");
-  const total = spoke.Me + spoke.Others || 1, me = Math.round(spoke.Me / total * 100);
-  return `<div class="tl"><div class="tl-bar" role="img" aria-label="${esc(t("Who spoke when: Me {a}%, Others {b}%", { a: me, b: 100 - me }))}">${blocks}</div>
-    <div class="tl-share" aria-hidden="true">Me ${me}% · Others ${100 - me}%</div></div>`;
-}
-function renderTranscript() {
-  const lines = transcriptLines(openMeeting.transcript);
-  if (!lines.length) return `<p class="muted">${t("No transcript.")}</p>`;
-  return `${timeline(lines)}${showAllTranscript ? `<div class="transcript t14">${lines.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}${l.who === "Others" ? ' class="others"' : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>` : ""}
-    <button class="link" id="show-all">${showAllTranscript ? t("Hide transcript") : t("Show transcript ({n} lines)", { n: lines.length })}</button>`;
-}
-
 function renderMeeting() {
   const m = openMeeting;
   const processing = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === m.id;
@@ -759,7 +707,6 @@ function renderMeeting() {
         <section class="sec" aria-labelledby="s3"><span class="lbl" id="s3"><label for="notes">${t("(03) Notes")}</label></span><div>
           <textarea class="notes" id="notes" placeholder="${t("Your notes for this meeting")}"></textarea><span class="saved" aria-live="polite"></span>
         </div></section>
-        <section class="sec" aria-labelledby="s4"><span class="lbl" id="s4">${t("(04) Transcript")}</span><div id="transcript">${renderTranscript()}</div></section>
       </div>
       <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="${t("Resize chat")}" tabindex="0"></div>
       <section class="drawer" aria-labelledby="chat-title">
@@ -791,24 +738,9 @@ function renderMeeting() {
     $("#confirm-text").textContent = t("“{t}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.", { t: titleOf(openMeeting) });
     confirmDialog.showModal();
   });
-  bindTranscript();
   bindChat();
   bindHandle();
 }
-function bindTranscript() {
-  $(".tl-bar")?.addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (b) jumpTo(b.dataset.t); });
-  $("#show-all")?.addEventListener("click", () => { showAllTranscript = !showAllTranscript; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); });
-}
-function jumpTo(t) {
-  if (!showAllTranscript) { showAllTranscript = true; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); }
-  const lines = [...document.querySelectorAll(".transcript p[id]")];
-  const target = lines.filter(p => p.id.slice(2) <= t).pop() || lines[0];
-  if (!target) return;
-  target.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-  target.classList.add("hit");
-  setTimeout(() => target.classList.remove("hit"), 2000);
-}
-
 /* ---------- chat ---------- */
 function chatLog() {
   const m = openMeeting;
@@ -817,7 +749,7 @@ function chatLog() {
   }
   return m.chat.map((c, i) => c.role === "user"
     ? `<div class="msg me"><p>${esc(c.content)}</p></div>`
-    : `<div class="msg bot">${withTimeLinks(markdown(c.content))}${c.changed_summary
+    : `<div class="msg bot">${markdown(c.content)}${c.changed_summary
         ? `<small>${t("Summary updated")}</small>` : `<button class="link t12" data-include="${i}">${t("Add to summary")}</button>`}</div>`
   ).join("") + (waiting === m.id ? `<div class="msg bot"><p class="muted">${t("Thinking…")}</p></div>` : "");
 }
@@ -828,8 +760,6 @@ function bindChat() {
   $("#chat-form").addEventListener("submit", e => { e.preventDefault(); send(input.value, true); });
   input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input.value, true); } });
   log.addEventListener("click", e => {
-    const t = e.target.closest("a[data-t]");
-    if (t) { e.preventDefault(); return jumpTo(t.dataset.t); }
     const b = e.target.closest("button[data-include]");
     if (b) send(`Add this to the summary: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
   });
