@@ -2,6 +2,7 @@ import http.client
 import json
 import time
 import unittest
+from datetime import datetime
 from unittest import mock
 
 from metranscript import server, store
@@ -142,6 +143,27 @@ class RoutesTest(ServerCase):
         self.assertEqual((status, m["title"]), (200, "After title"))
         self.assertEqual(self.call("PUT", f"/api/meetings/{mid}/title", {"title": 3})[1]["error"], "Title must be text.")
         self.assertEqual(self.call("PUT", "/api/meetings/2026-01-01_0000/title", {"title": "x"})[0], 404)
+
+    def test_pin_route_puts_a_meeting_first_in_the_list(self):
+        old = store.create("Old", "pt", now=datetime(2026, 1, 1, 9, 0))
+        new = store.create("New", "pt", now=datetime(2026, 1, 2, 9, 0))
+        mine = lambda: [(m["id"], m["pinned"]) for m in self.call("GET", "/api/meetings")[1] if m["id"] in (old, new)]
+        self.assertEqual(mine(), [(new, False), (old, False)])
+        self.assertEqual(self.call("PUT", f"/api/meetings/{old}/pin", {"pinned": True})[1]["pinned"], True)
+        self.assertEqual(mine(), [(old, True), (new, False)])
+        self.assertEqual(self.call("PUT", f"/api/meetings/{old}/pin", {"pinned": False})[1]["pinned"], False)
+        self.assertEqual(self.call("PUT", f"/api/meetings/{old}/pin", {"pinned": "yes"})[1]["error"], "pinned must be true or false.")
+        self.assertEqual(self.call("PUT", "/api/meetings/2026-01-01_0000/pin", {"pinned": True})[0], 404)
+
+    def test_clear_chat_route_empties_only_the_chat(self):
+        mid = store.create("Talk", "pt")
+        store.save_notes(mid, "my notes")
+        store.append_chat(mid, {"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"})
+        status, m = self.call("DELETE", f"/api/meetings/{mid}/chat")
+        self.assertEqual((status, m["chat"], m["notes"]), (200, [], "my notes"))
+        self.assertEqual(self.call("GET", f"/api/meetings/{mid}")[1]["chat"], [])
+        self.assertEqual(self.call("DELETE", "/api/meetings/2026-01-01_0000/chat")[0], 404)
+        self.assertEqual(self.call("DELETE", f"/api/meetings/{mid}/chat", headers={"Host": "evil.com"})[0], 403)
 
     def test_delete_route(self):
         mid = store.create("Delete me", "pt")

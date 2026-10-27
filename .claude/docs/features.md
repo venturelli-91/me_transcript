@@ -197,3 +197,7 @@ Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand
 - [ ] **About** (top bar and footer, `#/about`) explains the app in plain words, with screenshots of fictional meetings in the page language, what leaves the computer, the consent reminder and a **Get started** button.
 - [ ] **Get started** opens Settings with a short notice when the DeepSeek key is not set; otherwise it opens the record sheet.
 - [ ] **Privacy** (footer, `#/privacy`) shows the full policy (`PRIVACY.md`, or `PRIVACY.pt.md` in Portuguese); the empty Index links to About.
+
+## F20 — Pin a meeting and clear its chat (DEV-0083)
+- [ ] **Pin to top** (meeting page) keeps a meeting first in the Index with a "Pinned" mark; **Unpin** restores date order. Meeting numbers do not change.
+- [ ] **Clear chat** (chat drawer, two clicks to confirm) deletes only the conversation with the AI; notes, summary and transcript stay.

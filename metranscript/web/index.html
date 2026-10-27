@@ -248,7 +248,8 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); 
 .handle::after { content: ""; width: 2px; height: 48px; border-radius: 2px; background: var(--line); }
 .handle:hover::after, .handle:focus-visible::after { background: var(--gray); }
 .drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
-.drawer header { padding: 18px 20px 4px; }
+.drawer header { padding: 18px 20px 4px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pinmark { margin-left: 12px; font: 400 12px/1 var(--mono); color: var(--red); letter-spacing: .04em; vertical-align: middle; }
 .drawer .privacy { padding: 0 20px 10px; font-size: 12px; color: var(--gray); }
 .chat-log { overflow-y: auto; padding: 4px 20px 16px; display: grid; align-content: start; gap: 10px; }
 .msg { border-radius: var(--r-lg); padding: 10px 14px; max-width: 92%; overflow-wrap: anywhere; font-size: 14px; }
@@ -498,6 +499,11 @@ const PT = {
   "Sent to Gmail {d}": "Enviado ao Gmail em {d}",
   "← Index": "← Índice",
   "Rename": "Renomear",
+  "Pin to top": "Fixar no topo",
+  "Unpin": "Desafixar",
+  "Pinned": "Fixada",
+  "Clear chat": "Limpar chat",
+  "Click again to clear": "Clique de novo para limpar",
   "Delete": "Excluir",
   "Meeting ": "Reunião ",
   "Writing the summary…": "Escrevendo o resumo…",
@@ -788,7 +794,7 @@ async function renderIndex() {
     ${!meetings.length ? `<div class="empty-state"><p class="t20">${t("No meetings yet.")}</p><p class="muted">${t("Press Record to start your first one.")}</p><p><a href="#/about">${t("New here? See how it works.")}</a></p></div>`
       : !shown.length ? `<div class="empty-state"><p class="muted">${t("No meetings match this filter.")}</p></div>`
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
-          <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}</span>
+          <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}${m.pinned ? `<span class="pinmark">${t("Pinned")}</span>` : ""}</span>
           <span class="app">${esc(m.app || "")}</span><span class="date">${dateOnly(m.started_at)}</span></a></li>`).join("")}</ol>`}
     `;
   view.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => { filter = b.dataset.filter; renderIndex(); }));
@@ -813,7 +819,8 @@ function renderMeeting() {
     <div class="article">
       <div class="body">
         <div class="toolrow"><a href="#/" class="lbl">${t("← Index")}</a>
-          <span class="tools"><button class="link" id="rename">${t("Rename")}</button>
+          <span class="tools"><button class="link" id="pin">${m.pinned ? t("Unpin") : t("Pin to top")}</button>
+            <button class="link" id="rename">${t("Rename")}</button>
             <button class="link danger" id="delete" ${processing ? "disabled" : ""}>${t("Delete")}</button></span></div>
         <div class="masthead"><span class="big-num"><span class="sr">${t("Meeting ")}</span>${numbers.get(m.id) || "–"}</span>
           <h1 class="meeting-title">${esc(titleOf(m))}</h1></div>
@@ -836,7 +843,8 @@ function renderMeeting() {
       </div>
       <div class="handle" id="handle" role="separator" aria-orientation="vertical" aria-label="${t("Resize chat")}" tabindex="0"></div>
       <section class="drawer" aria-labelledby="chat-title">
-        <header><span class="lbl" id="chat-title">${t("(Ask this meeting)")}</span></header>
+        <header><span class="lbl" id="chat-title">${t("(Ask this meeting)")}</span>
+          ${m.chat.length ? `<button class="link t12" id="chat-clear" ${off}>${t("Clear chat")}</button>` : ""}</header>
         <p class="privacy">${m.private ? t("Private meeting: chat is off and nothing is sent to the AI or by email.")
           : `${t("Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.")}${m.protected ? t(" Hidden so far: {n}.", { n: m.protected }) : ""}`}</p>
         <div class="chat-log" id="chat-log">${chatLog()}</div>
@@ -861,6 +869,14 @@ function renderMeeting() {
   });
   $("#mail")?.addEventListener("click", () => docAction("email", t("Sending…"), t("Sent to your email.")));
   $("#rename").addEventListener("click", startRename);
+  $("#pin").addEventListener("click", async () => {
+    const id = openId;
+    try {
+      const updated = await api(`/api/meetings/${id}/pin`, { method: "PUT", body: JSON.stringify({ pinned: !openMeeting.pinned }) });
+      if (openId === id) { openMeeting = updated; renderMeeting(); }
+    } catch (err) { showError(err.message); }
+  });
+  $("#chat-clear")?.addEventListener("click", clearChat);
   $("#delete").addEventListener("click", () => {
     $("#confirm-text").textContent = t("“{t}” and its notes, transcript, summary and chat will be removed from this computer. This can't be undone.", { t: titleOf(openMeeting) });
     confirmDialog.showModal();
@@ -898,6 +914,19 @@ function bindChat() {
     if (b) send(`Add this to the summary: ${openMeeting.chat[b.dataset.include].content.slice(0, 3500)}`, false);
   });
   log.scrollTop = log.scrollHeight;
+}
+async function clearChat(e) {
+  const b = e.currentTarget;
+  if (!b.dataset.sure) {
+    b.dataset.sure = "1";
+    b.textContent = t("Click again to clear");
+    return setTimeout(() => { if (b.isConnected) { delete b.dataset.sure; b.textContent = t("Clear chat"); } }, 4000);
+  }
+  const id = openId;
+  try {
+    const updated = await api(`/api/meetings/${id}/chat`, { method: "DELETE" });
+    if (openId === id) { openMeeting = updated; renderMeeting(); }
+  } catch (err) { showError(err.message); }
 }
 async function send(text, typed) {
   text = text.trim();

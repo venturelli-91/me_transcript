@@ -310,7 +310,7 @@ def undo(meeting_id: str) -> dict:
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/undo|/email|/retranscribe)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/undo|/email|/retranscribe)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -516,6 +516,8 @@ class Handler(BaseHTTPRequestHandler):
         m = MEETING_RE.fullmatch(self.path)
         if m and not m.group(2):
             return self._guard(lambda: (delete_meeting(m.group(1)), self._send(200)))
+        if m and m.group(2) == "/chat":
+            return self._guard(lambda: (store.clear_chat(m.group(1)), self._send(200, load(m.group(1)))))
         self._send(404, {"error": "Not found."})
 
     def do_PUT(self) -> None:
@@ -537,6 +539,14 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(title, str):
                     raise ValueError("Title must be text.")
                 self._send(200, rename_meeting(m.group(1), title))
+            return self._guard(run)
+        if m and m.group(2) == "/pin":
+            def run():
+                pinned = self._body().get("pinned")
+                if not isinstance(pinned, bool):
+                    raise ValueError("pinned must be true or false.")
+                store.set_pinned(m.group(1), pinned)
+                self._send(200, load(m.group(1)))
             return self._guard(run)
         if m and m.group(2) == "/notes":
             def run():

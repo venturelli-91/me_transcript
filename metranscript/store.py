@@ -92,11 +92,12 @@ def list_meetings() -> list[dict]:
                 "started_at": meta["started_at"],
                 "ended_at": meta.get("ended_at"),
                 "private": bool(meta.get("private")),
+                "pinned": bool(meta.get("pinned")),
                 "app": meta.get("app"),
                 "has_summary": bool(summary),
                 "has_next_steps": has_next_steps(summary),
             })
-    return sorted(out, key=lambda m: m["started_at"], reverse=True)
+    return sorted(out, key=lambda m: (m["pinned"], m["started_at"]), reverse=True)
 
 
 def load(meeting_id: str) -> dict:
@@ -153,6 +154,20 @@ def append_chat(meeting_id: str, *messages: dict) -> None:
     folder = meeting_dir(meeting_id)
     with WRITE_LOCK:
         _write_json(folder, "chat.json", _read_json(folder, "chat.json") + list(messages))
+
+
+def clear_chat(meeting_id: str) -> None:
+    folder = meeting_dir(meeting_id)
+    with WRITE_LOCK:
+        _write_json(folder, "chat.json", [])
+
+
+def set_pinned(meeting_id: str, pinned: bool) -> None:
+    folder = meeting_dir(meeting_id)
+    with WRITE_LOCK:
+        meta = _meta(folder)
+        meta["pinned"] = pinned
+        _write_meta(folder, meta)
 
 
 def format_segment(seg: dict) -> str:
