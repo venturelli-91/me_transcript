@@ -20,7 +20,7 @@
   --dark: #2B2B2B;
   --rec: #C8412F;
   --font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --drawer: 380px;
+  --drawer: clamp(380px, 26vw, 520px);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -95,7 +95,7 @@ body.recording #strip { display: flex; }
 #strip .pill { background: transparent; color: #fff; border-color: rgba(255,255,255,.35); }
 
 /* page */
-main { padding: 32px 32px 64px; max-width: 1280px; margin: 0 auto; }
+main { padding: 32px clamp(16px, 3vw, 56px) 64px; max-width: 1680px; margin: 0 auto; }
 .head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 20px; }
 
@@ -125,7 +125,7 @@ input.rename { display: block; width: 100%; margin: 6px 0 12px; font: inherit; f
 .meta { display: flex; gap: 6px 18px; flex-wrap: wrap; color: var(--gray); margin-bottom: 28px; }
 .sec { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 24px; padding: 24px 0; border-top: 1px solid var(--line); }
 .sec > .lbl { padding-top: 4px; }
-.reading { font-size: 16px; line-height: 1.6; max-width: 72ch; }
+.reading { font-size: 16px; line-height: 1.6; max-width: 80ch; }
 .reading h1, .reading h2, .reading h3 { font-weight: 400; font-size: 20px; letter-spacing: -0.02em; line-height: 1.25; margin: 24px 0 8px; }
 .reading > :first-child { margin-top: 0; }
 .reading ul { padding-left: 1.2em; margin: 8px 0; }
@@ -144,7 +144,7 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); 
 .handle { align-self: stretch; cursor: col-resize; display: grid; place-items: center; touch-action: none; }
 .handle::after { content: ""; width: 2px; height: 48px; border-radius: 2px; background: var(--line); }
 .handle:hover::after, .handle:focus-visible::after { background: var(--gray); }
-.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: 21px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; max-height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
+.drawer { position: sticky; top: 88px; background: var(--surface); border: 1px solid var(--line); border-radius: 21px; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; height: calc(100vh - 120px); min-height: 420px; overflow: hidden; }
 .drawer header { padding: 18px 20px 4px; }
 .drawer .privacy { padding: 0 20px 10px; font-size: 12px; color: var(--gray); }
 .chat-log { overflow-y: auto; padding: 4px 20px 16px; display: grid; align-content: start; gap: 10px; }
@@ -173,7 +173,7 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
 .sheet { padding: 28px 28px 24px; display: grid; gap: 18px; }
 .sheet h2 { margin: 0; font-weight: 400; }
 .field { display: grid; gap: 6px; }
-.cfg-fields { display: grid; gap: 22px; max-width: 520px; }
+.cfg-fields { display: grid; gap: 22px; max-width: 640px; }
 .cfg-row { display: flex; gap: 16px; align-items: baseline; font-size: 14px; }
 .help { margin: 0; font-size: 12px; }
 .field input:disabled { background: var(--bg); color: var(--gray); }
@@ -207,7 +207,7 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
   .article { grid-template-columns: 1fr; }
   .handle { display: none; }
   .body { padding-right: 0; }
-  .drawer { position: static; max-height: none; margin-top: 24px; }
+  .drawer { position: static; height: auto; max-height: none; margin-top: 24px; }
   .sec { grid-template-columns: 1fr; gap: 8px; }
   .live { grid-template-columns: 1fr; }
   #upcoming-panel li { grid-template-columns: 52px 1fr; }
@@ -608,7 +608,8 @@ async function docAction(action, label, done) {
 }
 
 /* ---------- resizable drawer ---------- */
-const DRAWER_KEY = "metranscript.drawerWidth", DRAWER_DEFAULT = 380, DRAWER_MIN = 320;
+const DRAWER_KEY = "metranscript.drawerWidth", DRAWER_MIN = 320;
+const drawerDefault = () => Math.round(Math.min(520, Math.max(380, innerWidth * 0.26)));
 const drawerMax = () => Math.min(innerWidth * 0.5, 640);
 function setDrawer(px, save = true) {
   const w = Math.round(Math.min(drawerMax(), Math.max(DRAWER_MIN, px)));
@@ -627,7 +628,7 @@ function bindHandle() {
     h.addEventListener("pointermove", move);
     h.addEventListener("pointerup", () => h.removeEventListener("pointermove", move), { once: true });
   });
-  h.addEventListener("dblclick", () => setDrawer(DRAWER_DEFAULT));
+  h.addEventListener("dblclick", () => setDrawer(drawerDefault()));
   h.addEventListener("keydown", e => {
     const step = { ArrowLeft: 16, ArrowRight: -16 }[e.key];
     if (step) { e.preventDefault(); setDrawer(parseInt(h.getAttribute("aria-valuenow")) + step); }
