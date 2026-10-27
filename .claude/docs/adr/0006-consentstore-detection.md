@@ -20,6 +20,9 @@ have the mic open; if the executable is Zoom, Teams or a browser, the page shows
 - **Pros**: identifies Meet by the tab title.
 - **Cons**: an open process isn't a meeting; titles vary.
 - **Why not**: microphone usage is the most faithful "meeting started" signal.
+- **Update (DEV-0040, DEV-0042)**: titles are now a filter on top of the microphone signal, for browsers only: the
+  alert needs one of that browser's own visible windows to have a meeting word in the title (`MEETING_KEYWORDS`).
+  Zoom and Teams are still unconditional.
 
 ### UI Automation (like another note-taking app)
 - **Pros**: high accuracy.

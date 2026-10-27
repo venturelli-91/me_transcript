@@ -36,7 +36,7 @@ mid-meeting) and level meters. Take notes while the live transcript fills in.
 
 ## Requirements
 
-- Windows 10/11, always wearing headphones in meetings (the app doesn't remove echo).
+- Windows 10/11. Headphones are best; with speakers, the echo in your microphone is filtered out of "Me" by comparing words (not true echo cancellation).
 - Python 3.13 and ffmpeg on the `PATH` (`winget install Gyan.FFmpeg`).
 - A [DeepSeek](https://platform.deepseek.com/) API key.
 - For an AMD/Intel/NVIDIA GPU via Vulkan: CMake, Vulkan SDK and VS 2022 Build Tools (C++).
@@ -91,8 +91,21 @@ GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
 ```
 
 Reminders only fire while MeTranscript is running: turn on **Run in background and start with
-Windows** in Settings → **(05) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
+Windows** in Settings → **(06) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
 password; if it leaks, reset it in the same Google Calendar screen.
+
+### Meeting alert (browser words)
+
+Zoom and Teams raise the alert as soon as they use the microphone. A browser also uses the microphone for
+other things (a voice message, a dictation tool), so it only raises the alert when one of its own windows has a
+meeting word in the title (whole word, any case). The default is `Meet, Zoom, Teams`; change it in Settings →
+**(04) Meeting alert** (comma-separated) or in `.env`:
+
+```
+MEETING_KEYWORDS=Meet,Zoom,Teams,Whereby
+```
+
+Only the active tab's title is visible, so a meeting in a background tab is not detected.
 
 ### Protecting sensitive data
 
@@ -100,7 +113,7 @@ Everything that goes to DeepSeek (summary and chat) is cleaned first, always, wi
 
 - Emails, links, phone and ID numbers (CPF, CNPJ, cards), money amounts and API keys are replaced by codes
   like `[EMAIL_1]` or `[AMOUNT_1]` automatically.
-- Names of clients, people and projects are replaced when you list them in Settings → **(04) Protected
+- Names of clients, people and projects are replaced when you list them in Settings → **(05) Protected
   terms** (one per line, 3+ characters, a line starting with `# ` is a comment; the list lives in
   `sensitive-terms.txt`, which is not in git). Matching ignores case, accents and invisible characters, finds a
   name split by a line break, and catches a single word that Whisper misspells ("Falkon" for "Falcon").
@@ -178,6 +191,7 @@ original WAV stays in the folder.
 | `ATA_THREADS` | `4` |
 | `ATA_PORT` | `8765` |
 | `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | — (enables sending the summary by email) |
+| `MEETING_KEYWORDS` | `Meet,Zoom,Teams` (title words that make a browser's microphone use count as a meeting) |
 
 ## Development
 

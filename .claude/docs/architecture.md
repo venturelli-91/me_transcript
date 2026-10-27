@@ -25,9 +25,9 @@ others; the rest don't import each other (except `transcribe` reading the WAVs t
 |---|---|---|
 | `store.py` | Create/list/read/save a meeting; `transcript.md` format | stdlib |
 | `capture.py` | Open mic and loopback, record native WAV, expose audio level | PyAudioWPatch |
-| `transcribe.py` | Read new chunks from the WAVs, convert, transcribe, interleave Me/Others | ffmpeg, whisper-cli |
+| `transcribe.py` | Read new chunks from the WAVs, convert, transcribe, interleave Me/Others, drop speaker echo | ffmpeg, whisper-cli |
 | `enhance.py` | Build messages with `prompt.md` and call DeepSeek | stdlib (`urllib`) |
-| `detect.py` | Read the registry and report which meeting app has the mic open | stdlib (`winreg`) |
+| `detect.py` | Read the registry and report which meeting app has the mic open; for browsers, check their window titles | stdlib (`winreg`, `ctypes`) |
 | `server.py` | HTTP, recording session state, orchestration | all of the above |
 
 ## Session state
@@ -95,6 +95,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 | `ATA_VAD` | `models/ggml-silero-v5.1.2.bin` |
 | `ATA_PORT` | `8765` |
 | `GMAIL_ADDRESS`, `GMAIL_APP_PASSWORD` | — (optional; enable sending the summary by email) |
+| `MEETING_KEYWORDS` | `Meet,Zoom,Teams` (words a browser window title needs for its mic use to raise the alert) |
 
 `metranscript/settings.py` (`env()`) reads variables from the environment and, if missing, from `.env`.
 
@@ -157,6 +158,17 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
   replaces the transcript (`transcript.previous.md` keeps the old one) and rewrites the summary; `409` if busy
   or there is no audio.
 
+## Local fonts, browser detection and echo (DEV-0039 to DEV-0043)
+- Fonts: `GET /fonts/<name>.woff2` serves the two Hanken Grotesk subsets in `metranscript/web/fonts/` (with `OFL.txt`);
+  only direct children of that folder with a `.woff2` suffix are served, the query string is ignored, and the page's
+  CSP is `font-src 'self'`, so the page makes no request outside `127.0.0.1`.
+- Detection: for a browser executable, `detect.meeting_window(exe)` lists the visible top-level windows owned by that
+  process (`EnumWindows` + `QueryFullProcessImageNameW`) and matches `MEETING_KEYWORDS` as whole words, any case.
+  Only the active tab's title is visible, so a meeting in a background tab is missed.
+- Echo: `transcribe.merge` drops a "Me" segment of 4+ words when 70%+ of its words are found, in order, in the
+  "Others" segments within 5 s (`ECHO_SHARE`, `ECHO_GAP`, `ECHO_MIN_WORDS`). It sees one window at a time, so an echo
+  whose original is in the previous window is not caught.
+
 ## Sensitive data protection (DEV-0029)
 - `privacy.Mask` is created per DeepSeek request. `apply()` swaps text for codes (`[TERM_n]`, `[EMAIL_n]`,
   `[LINK_n]`, `[AMOUNT_n]`, `[ID_n]`, `[SECRET_n]`) and `restore()` puts the originals back in the reply and
@@ -171,7 +183,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - The email to the user's own Gmail is not masked on purpose.
 
 ## Settings page (DEV-0026)
-- `settings.py`: `FIELDS` (the four editable keys and whether each is secret), `validate()` (single line,
+- `settings.py`: `FIELDS` (the five editable keys and whether each is secret), `validate()` (single line,
   no spaces in the DeepSeek key, a full email address, `https://` calendar addresses; error messages never
   contain the value), `status()` (`set` / `locked` / `value` only for the non-secret Gmail address) and
   `write_env()` (replaces the file atomically through `.env.tmp`, keeps unrelated lines, drops duplicates).

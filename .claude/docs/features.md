@@ -34,6 +34,8 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
       of every 30 s sharp, so words aren't cut.
 - [ ] (DEV-0031) Whisper gets a sentence with the protected terms and the end of the previous window
       of the same speaker, so names are spelled consistently.
+- [ ] (DEV-0041, DEV-0043) A "Me" line of 4+ words whose words are 70%+ found in the "Others" lines within 5 s is
+      dropped as speaker echo, also when the echo is split into fragments; short lines are kept.
 - [ ] (DEV-0032) **Re-transcribe** on a meeting with saved audio redoes the transcript (the old one is
       kept as `transcript.previous.md`) and rewrites the summary.
 
@@ -62,6 +64,9 @@ it to ask, quote or rephrase — instead of meeting notes with fixed sections.
       a banner appears (plus a system notification, if allowed) with **Record**.
 - [ ] Never starts recording on its own.
 - [ ] Doesn't repeat the alert for the same microphone session.
+- [ ] (DEV-0040, DEV-0042) A browser only raises the alert when one of its own windows has a meeting word
+      (whole word) in the title; the words come from `MEETING_KEYWORDS` (default Meet, Zoom, Teams), editable in Settings.
+      Zoom and Teams don't need a title.
 
 ## F8 — Summary by email (Gmail)
 CEO decision (2026-10-26): receive the summary in their own personal Gmail, automatically.
@@ -135,4 +140,6 @@ Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand
 - [ ] **Remove** deletes a key; invalid values are rejected with a clear message (single line, https://
       calendar addresses, a full email address) and nothing is written.
 - [ ] A key set as a Windows environment variable is shown as locked.
+- [ ] (DEV-0040) The browser window words (`MEETING_KEYWORDS`) are a fifth, non-secret field; an empty or
+      separators-only value falls back to the defaults.
 - [ ] **Send a test email** sends one message to the configured address.

@@ -4,8 +4,8 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
 (+ `ponytail:ponytail-review`) → `qa-automation` → commit. At most 5 active.
 
 ## DEV-0001 — Foundation and documentation · `gestor-conhecimento` / `tech-lead`
-- [ ] `git init`, `.gitignore`, `CLAUDE.md` and the softhouse `.claude/` at the root
-- [ ] Complete `.claude/docs/` (this index)
+- [x] `git init`, `.gitignore`, `CLAUDE.md` and the softhouse `.claude/` at the root
+- [x] Complete `.claude/docs/` (this index)
 - **Acceptance:** docs reviewable; `git status` clean after commit.
 
 ## DEV-0002 — Meetings as folders (F1) · `dev-backend`
@@ -148,6 +148,32 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   `store.expire_audio` (30 days), `POST /api/meetings/<id>/retranscribe`, Re-transcribe button. `store.delete_audio`
   (DEV-0009) is replaced by compression. Checked with real whisper.cpp: `-d` cuts the window, Opus is 23x smaller
   and transcribes the same text. Not measured on real meeting audio yet.
+
+## DEV-0033 to DEV-0035 — Harden the privacy mask · `dev-fullstack` · review `seguranca`
+- Matching on a folded copy (accents, invisible characters), bounded patterns and a byte map for overlaps so large
+  transcripts stay fast; long links and keys are hidden whole; overlapping matches are merged instead of dropped.
+  Tests in `tests/test_privacy.py`.
+
+## DEV-0036 to DEV-0038 — Wide layout and dark mode · `dev-frontend`
+- Full-height chat and a wider page on big screens; dark theme with a toggle (remembered in the browser); the
+  toggle also lives in the recording strip.
+
+## DEV-0039 — Serve the font locally · `dev-frontend`
+- Hanken Grotesk woff2 subsets in `metranscript/web/fonts/`, `GET /fonts/<name>.woff2`, CSP `font-src 'self'`; no
+  request leaves `127.0.0.1`. Tests in `tests/test_routes.py`.
+
+## DEV-0040 / DEV-0042 — Browser alert by window title · `dev-backend`
+- `detect.meeting_window(exe)`: a browser's mic use only alerts when one of its own windows has a meeting word (whole
+  word); `MEETING_KEYWORDS` in Settings (04). Tests in `tests/test_detect.py`.
+- **Risk:** a meeting in a background tab is not detected (only the active tab title is visible).
+
+## DEV-0041 / DEV-0043 — Speaker echo filter · `dev-backend`
+- `transcribe.is_echo` / `merge`: drops "Me" lines of 4+ words found (70%+ of the words) in "Others" within 5 s, also
+  when split into fragments. Tests in `tests/test_transcribe.py`.
+- **Risk:** a real "Me" line repeating Others almost verbatim is lost; an echo across two windows is not caught (accepted).
+
+## DEV-0044 / DEV-0045 — Review follow-ups · `dev-fullstack`
+- Font license (`OFL.txt`), query string ignored on font requests, unique Settings section numbers, trade-offs and docs refreshed.
 
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the

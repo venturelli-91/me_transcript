@@ -6,7 +6,7 @@ email addresses, and the block is enforced on their server — there is no way a
 a tool of our own: personal, no account, and no third-party dependency other than the LLM.
 
 ## User
-One person: the CEO, on their own Windows desktop, always wearing headphones, in Google Meet,
+One person: the CEO, on their own Windows desktop, usually wearing headphones (speakers also work), in Google Meet,
 Zoom and Microsoft Teams meetings, in Portuguese or English.
 
 ## What it is
