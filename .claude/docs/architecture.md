@@ -189,6 +189,9 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
   is bounded and overlap uses a byte map so a 300k-character transcript stays fast, text that already looks like a
   code is hidden too, terms need 3+ characters.
 - Terms live in `sensitive-terms.txt` (git-ignored); `GET/PUT /api/privacy` with `{terms}`.
+- The glossary (DEV-0060) lives next to them in `glossary.txt` (`privacy.glossary()/save_glossary()`, `GET/PUT /api/glossary`): short names and
+  acronyms to spell right. `transcribe.vocabulary()` puts it first in the Whisper prompt and `enhance.meeting_context` adds a `<glossary>`
+  block inside the text that goes through `Mask.apply`, so a protected term listed there is still hidden.
 - `store.set_protected()` keeps the biggest count in `meta.protected`; the article shows it.
 - The email to the user's own Gmail is not masked on purpose.
 

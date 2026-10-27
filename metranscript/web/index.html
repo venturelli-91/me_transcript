@@ -546,12 +546,18 @@ const PT = {
   "Keys are stored only in the .env file on this computer. This page never shows them back.": "As chaves ficam apenas no arquivo .env deste computador. Esta página nunca as mostra de volta.",
   "Send a test email": "Enviar um e-mail de teste",
   "Save settings": "Salvar configurações",
-  "(06) Protected terms": "(06) Termos protegidos",
+  "(06) Glossary": "(06) Glossário",
+  "Names and acronyms to spell right": "Nomes e siglas para escrever certo",
+  "One per line, for example GCP or Control-M": "Um por linha, por exemplo GCP ou Control-M",
+  "These are not hidden: they are sent as written to Whisper, so it hears them right, and to DeepSeek, so the summary spells them right. Put anything private in Protected terms instead.": "Estes não são ocultados: vão como estão para o Whisper, que assim os ouve certo, e para o DeepSeek, que assim os escreve certo no resumo. O que for privado vai em Termos protegidos.",
+  "Save glossary": "Salvar glossário",
+  "Glossary saved.": "Glossário salvo.",
+  "(07) Protected terms": "(07) Termos protegidos",
   "Names, clients and projects to hide": "Nomes, clientes e projetos a ocultar",
   "One per line, for example a client or project name": "Um por linha, por exemplo o nome de um cliente ou projeto",
   "Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.": "Cada um é trocado por um código antes de qualquer coisa ir ao DeepSeek e devolvido na resposta. E-mails, links, telefones, documentos, valores e chaves são sempre ocultados, sem precisar listá-los. Uma palavra que o Whisper escreve errado também é pega. A lista fica em sensitive-terms.txt neste computador.",
   "Save terms": "Salvar termos",
-  "(07) App": "(07) App",
+  "(08) App": "(08) App",
   "Run in background and start with Windows": "Rodar em segundo plano e iniciar com o Windows",
   "Quit MeTranscript": "Fechar o MeTranscript",
   "MeTranscript is closed": "O MeTranscript foi fechado",
@@ -1236,8 +1242,8 @@ const SETTINGS = [
 const stateText = f => t(f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set");
 
 async function renderSettings() {
-  let cfg, terms;
-  try { [cfg, { terms }] = await Promise.all([api("/api/config"), api("/api/privacy")]); } catch (err) { return showError(err.message); }
+  let cfg, terms, glossary;
+  try { [cfg, { terms }, { terms: glossary }] = await Promise.all([api("/api/config"), api("/api/privacy"), api("/api/glossary")]); } catch (err) { return showError(err.message); }
   const field = d => {
     const f = cfg[d.name];
     return `<div class="field">
@@ -1258,13 +1264,19 @@ async function renderSettings() {
         ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>${t("Send a test email")}</button></div>` : ""}</div></section>`).join("")}
       <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">${t("Save settings")}</button></div>
     </form>
-    <section class="sec"><span class="lbl">${t("(06) Protected terms")}</span><div class="cfg-fields">
+    <section class="sec"><span class="lbl">${t("(06) Glossary")}</span><div class="cfg-fields">
+      <form id="glossary-form"><div class="field">
+        <label class="lbl" for="glossary">${t("Names and acronyms to spell right")}</label>
+        <textarea id="glossary" rows="6" spellcheck="false" placeholder="${t("One per line, for example GCP or Control-M")}">${esc(glossary.join("\n"))}</textarea>
+        <p class="muted help">${t("These are not hidden: they are sent as written to Whisper, so it hears them right, and to DeepSeek, so the summary spells them right. Put anything private in Protected terms instead.")}</p></div>
+        <div class="actions"><button class="pill dark" id="glossary-save">${t("Save glossary")}</button></div></form></div></section>
+    <section class="sec"><span class="lbl">${t("(07) Protected terms")}</span><div class="cfg-fields">
       <form id="terms-form"><div class="field">
         <label class="lbl" for="terms">${t("Names, clients and projects to hide")}</label>
         <textarea id="terms" rows="8" spellcheck="false" placeholder="${t("One per line, for example a client or project name")}">${esc(terms.join("\n"))}</textarea>
         <p class="muted help">${t("Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.")}</p></div>
         <div class="actions"><button class="pill dark" id="terms-save">${t("Save terms")}</button></div></form></div></section>
-    <section class="sec"><span class="lbl">${t("(07) App")}</span><div class="settings">
+    <section class="sec"><span class="lbl">${t("(08) App")}</span><div class="settings">
       <label><input type="checkbox" id="autostart"> ${t("Run in background and start with Windows")}</label>
       <button class="link" id="quit">${t("Quit MeTranscript")}</button></div></section>`;
   $("#cfg-form").addEventListener("submit", async e => {
@@ -1276,6 +1288,11 @@ async function renderSettings() {
     }
     if (!Object.keys(updates).length) return showInfo(t("Nothing to save."));
     try { await api("/api/config", { method: "PUT", body: JSON.stringify(updates) }); await renderSettings(); showInfo(t("Settings saved.")); }
+    catch (err) { showError(err.message); }
+  });
+  $("#glossary-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await api("/api/glossary", { method: "PUT", body: JSON.stringify({ terms: $("#glossary").value }) }); await renderSettings(); showInfo(t("Glossary saved.")); }
     catch (err) { showError(err.message); }
   });
   $("#terms-form").addEventListener("submit", async e => {

@@ -159,9 +159,9 @@ def pick_cut(spans: list[tuple[float, float]], duration: float) -> float:
 
 
 def vocabulary() -> str:
-    """The user's protected terms, so Whisper spells them right."""
+    """The user's glossary and protected terms, so Whisper spells them right."""
     out = ""
-    for term in privacy.terms():
+    for term in dict.fromkeys([*privacy.glossary(), *privacy.terms()]):
         if len(out) + len(term) + 2 > VOCAB_MAX:
             break
         out += (", " if out else "") + term

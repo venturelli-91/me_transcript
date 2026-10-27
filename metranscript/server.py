@@ -366,6 +366,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, settings.status())
         if self.path == "/api/privacy":
             return self._send(200, {"terms": privacy.terms()})
+        if self.path == "/api/glossary":
+            return self._send(200, {"terms": privacy.glossary()})
         if self.path == "/api/status":
             return self._send(200, session.snapshot())
         if self.path == "/api/meetings":
@@ -473,6 +475,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(text, str):
                     raise ValueError("terms must be text, one term per line.")
                 self._send(200, {"terms": privacy.save_terms(text)})
+            return self._guard(run)
+        if self.path == "/api/glossary":
+            def run():
+                text = self._body().get("terms")
+                if not isinstance(text, str):
+                    raise ValueError("terms must be text, one term per line.")
+                self._send(200, {"terms": privacy.save_glossary(text)})
             return self._guard(run)
         m = MEETING_RE.fullmatch(self.path)
         if m and m.group(2) == "/title":

@@ -189,6 +189,11 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   buttons; `AUDIO_KEEP_DAYS` / `MEETING_KEEP_DAYS` with the retention loop and a Settings section; `PRIVACY.md`.
 - **Risk:** deletion is permanent; a bad `MEETING_KEEP_DAYS` removes meetings (validated to 1-3650, empty = off).
 
+## DEV-0058 to DEV-0061 — Whisper crash, batch transcription, glossary and a fuller summary · `dev-backend` + `engenheiro-prompt`
+- DEV-0058: whisper output decoded leniently, decoding loops collapsed, a window that fails is skipped (the 22-min "a real meeting" meeting died on a
+  `0xed` byte and lost 7 min). DEV-0059: no live transcription; transcribe once after the stop with progress; transcript behind a button.
+  DEV-0060: glossary (`glossary.txt`). DEV-0061: new summary prompt (see below once done).
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the

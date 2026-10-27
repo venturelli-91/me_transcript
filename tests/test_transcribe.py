@@ -94,6 +94,11 @@ class TranscribeTest(unittest.TestCase):
         with mock.patch.object(transcribe.privacy, "terms", return_value=[]):
             self.assertEqual(transcribe.vocabulary(), "")
 
+    def test_vocabulary_puts_the_glossary_first_without_repeating_a_term(self):
+        with mock.patch.object(transcribe.privacy, "glossary", return_value=["GCP", "Control-M"]), \
+                mock.patch.object(transcribe.privacy, "terms", return_value=["Acme", "GCP"]):
+            self.assertEqual(transcribe.vocabulary(), "GCP, Control-M, Acme")
+
     def test_window_prompt_has_the_vocabulary_and_the_tail_of_the_previous_window(self):
         calls = []
 

@@ -143,6 +143,11 @@ direction "E · Index" chosen among five mockups. Full design:
       meeting older than that is removed at start and every 6 hours; a meeting being recorded is never removed.
 - [ ] `PRIVACY.md` explains what is stored, what is sent, how long it is kept and that consent is the user's responsibility.
 
+## F16 — Glossary (DEV-0060)
+- [ ] Settings → Glossary keeps a list of names and acronyms (2-100 characters each, up to 300) in `glossary.txt`; `GET/PUT /api/glossary`.
+- [ ] The glossary goes first in Whisper's `--prompt` and, unmasked, in a `<glossary>` block of every summary and chat request.
+      A term that is also a protected term is still masked.
+
 ## F12 — Rename and delete a meeting
 From the ponytail audit (2026-10-26): the only way to remove a meeting was deleting its folder by hand.
 

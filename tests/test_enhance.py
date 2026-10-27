@@ -38,6 +38,11 @@ class EnhanceTest(unittest.TestCase):
         self.assertIn("<notes>\n- deadline\n</notes>", user["content"])
         self.assertIn("Deadline is Friday.", user["content"])
 
+    def test_the_glossary_goes_to_the_model_but_a_protected_term_in_it_is_still_masked(self):
+        with mock.patch.object(enhance, "glossary", return_value=["GCP", "Control-M", "Acme"]),                 mock.patch.object(privacy, "terms", return_value=["Acme"]):
+            sent = enhance.summary_messages(MEETING, Mask())[1]["content"]
+        self.assertIn("<glossary>\nGCP\nControl-M\n[TERM_1]\n</glossary>", sent)
+
     def test_empty_parts_are_explicit(self):
         _, user = enhance.summary_messages({**MEETING, "title": "", "notes": " ", "transcript": ""}, Mask())
         self.assertIn("Title: untitled", user["content"])
