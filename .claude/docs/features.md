@@ -130,8 +130,9 @@ direction "E · Index" chosen among five mockups. Full design:
 - [ ] Timecodes, dates and meeting numbers use JetBrains Mono (served locally); the meeting page opens with its number as a large numeral.
 - [ ] (DEV-0050) While recording: red top edge, a pulsing dot (still under reduced motion), a 40 px clock, tick-style level meters
       per track and the tab title `● mm:ss MeTranscript`.
-- [ ] (DEV-0057) A footer on every page shows the MIT license line with a link to `LICENSE`, and icon links to LinkedIn, WhatsApp,
-      email and the portfolio (inline SVG, no external request until clicked; labels follow the language switch).
+- [ ] (DEV-0057) A footer on every page shows the MIT license line with a link to `LICENSE`, and the LinkedIn, WhatsApp and
+      Gmail logos in their brand colors (Simple Icons, CC0) plus a globe for the portfolio, as inline SVG with no external request until clicked;
+      labels follow the language switch.
 - [ ] (DEV-0059, DEV-0065) While recording, the page shows the notes and a quiet note that the transcript is made after you stop; the
       meeting page does not show the transcript at all (it stays in `transcript.md` for the summary, the chat and the email attachment).
 - [ ] An **EN | PT-BR** switch in the top bar and the recording strip changes every page text without a reload; the choice

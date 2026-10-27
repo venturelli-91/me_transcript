@@ -242,4 +242,5 @@ Project documentation, decisions (ADRs), backlog and standards in [`.claude/docs
 ## License
 
 [MIT](LICENSE). The bundled fonts, Hanken Grotesk and JetBrains Mono, are under the SIL Open Font License
-(see the `OFL-*.txt` files in `metranscript/web/fonts/`).
+(see the `OFL-*.txt` files in `metranscript/web/fonts/`). The LinkedIn, WhatsApp and Gmail logos in the page footer come from
+[Simple Icons](https://simpleicons.org) (CC0) and are trademarks of their owners.
