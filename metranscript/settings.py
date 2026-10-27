@@ -9,6 +9,7 @@ FIELDS = {
     "GMAIL_ADDRESS": False,
     "GMAIL_APP_PASSWORD": True,
     "GOOGLE_CALENDAR_ICS": True,
+    "MEETING_KEYWORDS": False,
 }
 MAX_VALUE = 2000
 _WRITE_LOCK = threading.Lock()

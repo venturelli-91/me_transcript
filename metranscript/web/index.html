@@ -933,6 +933,9 @@ const SETTINGS = [
   { num: "(03) Calendar", fields: [
     { name: "GOOGLE_CALENDAR_ICS", label: "Secret address in iCal format", secret: true,
       help: "Google Calendar → Settings → your calendar → Integrate calendar. Treat this address like a password." }] },
+  { num: "(04) Meeting alert", fields: [
+    { name: "MEETING_KEYWORDS", label: "Browser window words", secret: false,
+      help: "A browser using the microphone only raises the alert when a window title has one of these comma-separated words. Default: Meet, Zoom, Teams." }] },
 ];
 const stateText = f => f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set";
 
@@ -959,7 +962,7 @@ async function renderSettings() {
         ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>Send a test email</button></div>` : ""}</div></section>`).join("")}
       <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">Save settings</button></div>
     </form>
-    <section class="sec"><span class="lbl">(04) Protected terms</span><div class="cfg-fields">
+    <section class="sec"><span class="lbl">(05) Protected terms</span><div class="cfg-fields">
       <form id="terms-form"><div class="field">
         <label class="lbl" for="terms">Names, clients and projects to hide</label>
         <textarea id="terms" rows="8" spellcheck="false" placeholder="One per line, for example a client or project name">${esc(terms.join("\n"))}</textarea>
