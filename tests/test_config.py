@@ -9,7 +9,7 @@ from metranscript import settings
 
 SECRETS = {
     "DEEPSEEK_API_KEY": "sk-secret-deepseek-1234",
-    "GOOGLE_CLIENT_SECRET": "GOCSPX-secret-client-1234",
+    "GOOGLE_CLIENT_SECRET": "fake-client-secret-1234",
 }
 
 
@@ -73,7 +73,7 @@ class WriteEnvSafetyTest(ConfigTestCase):
 class ValidateTest(ConfigTestCase):
     def test_accepts_and_trims_good_values(self):
         self.assertEqual(settings.validate("GOOGLE_CLIENT_ID", "  1.apps.googleusercontent.com "), "1.apps.googleusercontent.com")
-        self.assertEqual(settings.validate("GOOGLE_CLIENT_SECRET", "GOCSPX-abc_DEF"), "GOCSPX-abc_DEF")
+        self.assertEqual(settings.validate("GOOGLE_CLIENT_SECRET", "fake-secret-abc_DEF"), "fake-secret-abc_DEF")
         self.assertEqual(settings.validate("DEEPSEEK_API_KEY", "sk-abc"), "sk-abc")
         self.assertEqual(settings.validate("AUDIO_KEEP_DAYS", " 0 "), "0")
         self.assertEqual(settings.validate("MEETING_KEEP_DAYS", "90"), "90")

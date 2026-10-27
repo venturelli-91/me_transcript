@@ -5,7 +5,7 @@
 **Deciders**: CEO, Claude
 
 ## Context
-another note-taking app captures the microphone and system audio separately, which tells apart what was
+Capturing the microphone and the system audio separately tells apart what was
 said by the user and what was said by others. The CEO always wears headphones, so there is no
 system echo in the microphone.
 

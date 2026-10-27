@@ -5,8 +5,8 @@
 **Deciders**: Claude
 
 ## Context
-another note-taking app uses a native Rust module (`MicActivityTrackerV2`) and a UI Automation
-executable to detect meetings. Windows already records which apps are using the
+Detecting that a meeting started needs a signal. A native module or a UI Automation
+executable would do it, but Windows already records which apps are using the
 microphone in
 `HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone`.
 
@@ -24,7 +24,7 @@ have the mic open; if the executable is Zoom, Teams or a browser, the page shows
   alert needs one of that browser's own visible windows to have a meeting word in the title (`MEETING_KEYWORDS`).
   Zoom and Teams are still unconditional.
 
-### UI Automation (like another note-taking app)
+### UI Automation
 - **Pros**: high accuracy.
 - **Cons**: fragile, per-platform native code.
 - **Why not**: disproportionate complexity.

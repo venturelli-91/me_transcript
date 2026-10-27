@@ -5,9 +5,8 @@
 **Deciders**: Claude
 
 ## Context
-another note-taking app uses encrypted SQLite with FTS5, document/panel tables and cloud
-sync. For a single user, with dozens of meetings a month, what matters is being able to open,
-read and copy the summaries.
+A database with full-text search and sync would be the usual choice. For a single user, with dozens of meetings a month,
+what matters is being able to open, read and copy the summaries.
 
 ## Decision
 `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md`, `transcript.md`, `summary.md` and the

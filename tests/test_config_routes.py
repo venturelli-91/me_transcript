@@ -7,7 +7,7 @@ from metranscript import google, mail, server, settings
 from tests.http_case import ServerCase
 
 KEY = "sk-very-secret-key-9876"
-SECRET = "GOCSPX-secret-client-9876"
+SECRET = "fake-client-secret-9876"
 CID = "1.apps.googleusercontent.com"
 
 

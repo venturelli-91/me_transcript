@@ -1,9 +1,8 @@
 # Project
 
 ## Why
-The CEO uses another note-taking app daily to take meeting notes. another note-taking app only accepts corporate
-email addresses, and the block is enforced on their server — there is no way around it. The solution is
-a tool of our own: personal, no account, and no third-party dependency other than the LLM.
+The CEO takes meeting notes every day and wanted a tool of their own: personal, no account, no bot in the call, and no
+third-party dependency other than the LLM.
 
 ## User
 One person: the CEO, on their own Windows desktop, usually wearing headphones (speakers also work), in Google Meet,
@@ -22,7 +21,7 @@ A local program (Python) with a single browser page (`127.0.0.1:8765`):
    understand, point out risks, suggest solutions and give its opinion on the processes.
 
 ## Goals
-- Replace another note-taking app in the CEO's daily use for Meet, Zoom and Teams.
+- Be the CEO's daily tool for meeting notes in Meet, Zoom and Teams.
 - Recurring cost: only the DeepSeek API.
 - Everything stored locally, in Markdown readable outside the app.
 
@@ -35,5 +34,5 @@ installer.
 - Paying for any service other than DeepSeek.
 - Becoming a heavy project (Electron, web framework, database).
 - Joining the meeting as a bot.
-- Being a another note-taking app clone — name, design and flow are our own.
+- Copying another product — name, design and flow are our own.
 - Recording without the user telling it to.

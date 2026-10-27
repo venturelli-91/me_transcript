@@ -5,7 +5,7 @@
 **Deciders**: CEO, Claude
 
 ## Context
-another note-taking app is an Electron app (~250 MB) with native modules in Rust and C++. The CEO asked for
+Desktop apps are usually built on Electron (~250 MB) with native modules in Rust and C++. The CEO asked for
 something simple, without overengineering, that they can maintain themselves. Windows audio and
 Whisper have the best support in Python.
 
@@ -16,7 +16,7 @@ One Python process using the stdlib (`http.server`, `winreg`, `urllib`, `wave`,
 ## Alternatives Considered
 
 ### Electron
-- **Pros**: same base as another note-taking app; `getDisplayMedia` gives loopback for free.
+- **Pros**: the usual base for desktop apps; `getDisplayMedia` gives loopback for free.
 - **Cons**: heavy, complex build and packaging.
 - **Why not**: the CEO explicitly vetoed it.
 

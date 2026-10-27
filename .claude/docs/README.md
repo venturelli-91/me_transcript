@@ -13,7 +13,5 @@ next steps and open questions.
 | [code-standards.md](code-standards.md) | Code, testing and commit standards |
 | [backlog.md](backlog.md) | Tickets and execution checklist |
 | [trade-offs.md](trade-offs.md) | Deliberate trade-offs and risks |
-| [another note-taking app-reverse-engineering.md](another note-taking app-reverse-engineering.md) | What we learned from another note-taking app and what we did differently |
-| [linkedin.md](linkedin.md) | Draft post about the project |
 
 Documentation is English-only. Work process: the softhouse in `CLAUDE.md` (root) and `.claude/agents/`.

@@ -5,13 +5,13 @@
 **Deciders**: CEO, Claude
 
 ## Context
-another note-taking app transcribes in the cloud (Deepgram nova-3 via WebSocket). The CEO will only pay for
+Cloud transcription services are paid per minute. The CEO will only pay for
 DeepSeek, which doesn't do speech-to-text. The machine has an AMD RX 5700 (no CUDA),
 an i7-8700 and 16 GB of RAM.
 
 ## Decision
 whisper.cpp (`whisper-cli`) called as a subprocess, Vulkan backend on the AMD GPU, model
-`ggml-large-v3-turbo`, fixed language per meeting (`-l pt|en`), in ~30 s chunks.
+`ggml-large-v3-turbo`, fixed language per meeting (`-l pt|en`). The audio is transcribed once, after the call, in windows of about 30 s.
 
 ## Alternatives Considered
 

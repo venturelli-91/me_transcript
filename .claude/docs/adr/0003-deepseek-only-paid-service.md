@@ -5,8 +5,7 @@
 **Deciders**: CEO
 
 ## Context
-another note-taking app generates enhanced notes on its own server, with prompts that aren't in the
-app. We need an LLM to turn notes + transcript into a meeting summary. The CEO can only
+We need an LLM to turn notes + transcript into a meeting summary, with a prompt we control. The CEO can only
 pay for DeepSeek.
 
 ## Decision
