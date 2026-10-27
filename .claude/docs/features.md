@@ -129,6 +129,15 @@ direction "E · Index" chosen among five mockups. Full design:
 - [ ] An **EN | PT-BR** switch in the top bar and the recording strip changes every page text without a reload; the choice
       is kept in the browser (first visit follows the browser language); dates follow the chosen language.
 
+## F15 — Consent reminder and retention (DEV-0055 to DEV-0058)
+- [ ] The record sheet has an unchecked **I told the participants that this meeting is being recorded** box that must be checked to
+      start; the server refuses `/api/start` without `consent: true`; the time is kept as `consent_at` in `meta.json`.
+- [ ] **Copy a recording notice** (sheet) and **Copy notice** (recording strip) copy a short English + Portuguese message.
+- [ ] A calendar reminder's Record button opens the record sheet (with the consent box) instead of starting at once.
+- [ ] Settings → Retention: audio days (0-3650, `0` keeps no audio) and, optionally, delete whole meetings after N days; a finished
+      meeting older than that is removed at start and every 6 hours; a meeting being recorded is never removed.
+- [ ] `PRIVACY.md` explains what is stored, what is sent, how long it is kept and that consent is the user's responsibility.
+
 ## F12 — Rename and delete a meeting
 From the ponytail audit (2026-10-26): the only way to remove a meeting was deleting its folder by hand.
 

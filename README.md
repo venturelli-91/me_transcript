@@ -20,11 +20,16 @@ What leaves your computer, and what does not:
 
 | Data | Where it goes |
 |---|---|
-| Audio | Never leaves your computer. It is transcribed locally by whisper.cpp and compressed audio is deleted after 30 days. |
+| Audio | Never leaves your computer. It is transcribed locally by whisper.cpp; the compressed copy is deleted after 30 days (you can shorten that, or delete it right away, in Settings → **(05) Retention**). |
 | Transcript, your notes and the chat | Sent to DeepSeek, only when you generate a summary or use the chat, after the [protection mask](#protecting-sensitive-data) swaps contacts, amounts, IDs, keys and your listed terms for codes. The mask has limits (see below). |
 | The summary and transcript by email | Sent to your own Gmail, only if you configure it. This copy uses the real names. |
 | Your calendar | Read from Google through your secret iCal address, only if you configure it. |
 | Analytics or telemetry | None. The page makes no request outside `127.0.0.1`. |
+
+To help you remember, MeTranscript asks you to confirm **"I told the participants that this meeting is being recorded"**
+before every recording (and keeps when you confirmed it in the meeting's `meta.json`), and has a **Copy a recording
+notice** button with a short English and Portuguese message to paste into the meeting chat. This is a reminder, not
+legal protection. See [PRIVACY.md](PRIVACY.md) for the details.
 
 Everything else is stored in plain files on your computer: `meetings/` (audio, transcripts, summaries, chats),
 `.env` (your keys) and `sensitive-terms.txt`. Protect them like any other private file, and do not commit them
@@ -113,7 +118,7 @@ in your Google Account.
 ### Calendar reminders (optional)
 
 MeTranscript can remind you 30 and 2 minutes before every meeting in your Google Calendar that has a
-Meet, Zoom or Teams link; the 2-minute reminder has a **Record** button.
+Meet, Zoom or Teams link; the 2-minute reminder has a **Record** button that opens the record sheet.
 
 1. In Google Calendar, open **Settings → your calendar → Integrate calendar**.
 2. Copy **Secret address in iCal format** and paste it in Settings → **(03) Calendar**, or add it to `.env` (comma-separate several calendars):
@@ -123,7 +128,7 @@ GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
 ```
 
 Reminders only fire while MeTranscript is running: turn on **Run in background and start with
-Windows** in Settings → **(06) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
+Windows** in Settings → **(07) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
 password; if it leaks, reset it in the same Google Calendar screen.
 
 ### Meeting alert (browser words)
@@ -145,7 +150,7 @@ Everything that goes to DeepSeek (summary and chat) is cleaned first, always, wi
 
 - Emails, links, phone and ID numbers (CPF, CNPJ, cards), money amounts and API keys are replaced by codes
   like `[EMAIL_1]` or `[AMOUNT_1]` automatically.
-- Names of clients, people and projects are replaced when you list them in Settings → **(05) Protected
+- Names of clients, people and projects are replaced when you list them in Settings → **(06) Protected
   terms** (one per line, 3+ characters, a line starting with `# ` is a comment; the list lives in
   `sensitive-terms.txt`, which is not in git). Matching ignores case, accents and invisible characters, finds a
   name split by a line break, and catches a single word that Whisper misspells ("Falkon" for "Falcon").
@@ -209,7 +214,7 @@ Each meeting lives in `meetings/YYYY-MM-DD_HHMM/` (`notes.md`, `transcript.md`, 
 `chat.json`). When transcription finishes, the audio is compressed to `mic.opus` and `system.opus`
 (about 11 MB per hour each) so you can press **Re-transcribe** later, for example after adding a name to
 your protected terms; the old transcript is kept as `transcript.previous.md` and the summary is rewritten
-(Undo brings the old one back). The compressed audio is deleted after 30 days. If transcription fails, the
+(Undo brings the old one back). The compressed audio is deleted after 30 days by default (Settings → **(05) Retention**: set it to 0 to delete it at once, or have whole meetings deleted after N days). If transcription fails, the
 original WAV stays in the folder.
 
 ## Configuration
@@ -224,6 +229,8 @@ original WAV stays in the folder.
 | `ATA_PORT` | `8765` |
 | `GMAIL_ADDRESS` / `GMAIL_APP_PASSWORD` | — (enables sending the summary by email) |
 | `MEETING_KEYWORDS` | `Meet,Zoom,Teams` (title words that make a browser's microphone use count as a meeting) |
+| `AUDIO_KEEP_DAYS` | `30` (days to keep the compressed audio; `0` deletes it as soon as the transcript is ready) |
+| `MEETING_KEEP_DAYS` | — (empty keeps meetings until you delete them; a number deletes each meeting that many days after it ends) |
 
 ## Development
 

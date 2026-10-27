@@ -75,7 +75,7 @@ POSTs from other sites).
 Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds since the start).
 
 ## On-disk formats
-- `meta.json`: `{"title", "lang", "private", "started_at", "ended_at", "emailed_at"?, "email_error"?}`
+- `meta.json`: `{"title", "lang", "private", "started_at", "ended_at", "consent_at", "emailed_at"?, "email_error"?}`
   (local ISO 8601). The meeting `GET` adds `email_configured`.
 - `chat.json`: `[{"role": "user"|"assistant", "content", "changed_summary"?}]`.
 - `summary-history.json`: previous summary versions (stack for "Undo").
@@ -154,7 +154,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - `--prompt` = "This meeting mentions <terms>." (language of the meeting) + the last 200 characters of that
   speaker's previous window.
 - After a successful transcription the WAVs become Opus (`transcribe.to_opus`) and `store.expire_audio()` removes
-  Opus files older than 30 days at start. `POST /api/meetings/<id>/retranscribe` decodes the saved audio,
+  Opus files older than `AUDIO_KEEP_DAYS` (default 30) at start and every 6 hours (`server._retention_loop`). `POST /api/meetings/<id>/retranscribe` decodes the saved audio,
   replaces the transcript (`transcript.previous.md` keeps the old one) and rewrites the summary; `409` if busy
   or there is no audio.
 
@@ -168,6 +168,16 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - Echo: `transcribe.merge` drops a "Me" segment of 4+ words when 70%+ of its words are found, in order, in the
   "Others" segments within 5 s (`ECHO_SHARE`, `ECHO_GAP`, `ECHO_MIN_WORDS`). It sees one window at a time, so an echo
   whose original is in the previous window is not caught.
+
+## Consent and retention (DEV-0055 to DEV-0058)
+- `POST /api/start` requires `consent: true` (`400` otherwise, checked after the other validations); `start(..., consented=True)` stamps
+  `consent_at` in `meta.json`. A calendar reminder link no longer starts a recording by itself: it opens the record sheet with the
+  token, so the confirmation is asked there too.
+- The page's **Copy a recording notice** (sheet) and **Copy notice** (strip) write a fixed bilingual message to the clipboard.
+- `AUDIO_KEEP_DAYS` (default 30, `0` = no audio kept: `_archive_audio` deletes the WAVs instead of compressing them) and
+  `MEETING_KEEP_DAYS` (unset = keep) are read with `settings.days()`. `server._retention_loop` runs `store.expire_audio` and
+  `store.expire_meetings` at start and every 6 hours; `expire_meetings` only touches meetings that have an `ended_at` and skips the
+  one in the session.
 
 ## Sensitive data protection (DEV-0029)
 - `privacy.Mask` is created per DeepSeek request. `apply()` swaps text for codes (`[TERM_n]`, `[EMAIL_n]`,
@@ -183,7 +193,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 - The email to the user's own Gmail is not masked on purpose.
 
 ## Settings page (DEV-0026)
-- `settings.py`: `FIELDS` (the five editable keys and whether each is secret), `validate()` (single line,
+- `settings.py`: `FIELDS` (the seven editable keys and whether each is secret), `validate()` (single line,
   no spaces in the DeepSeek key, a full email address, `https://` calendar addresses; error messages never
   contain the value), `status()` (`set` / `locked` / `value` only for the non-secret Gmail address) and
   `write_env()` (replaces the file atomically through `.env.tmp`, keeps unrelated lines, drops duplicates).

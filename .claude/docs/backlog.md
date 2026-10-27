@@ -184,6 +184,11 @@ One ticket = one atomic commit (`DEV-XXXX: ...`). Flow per ticket: dev → `code
   a 40 px mono clock and the `● mm:ss` tab title. Review found and fixed: a `body.live` class collision with the existing `.live`
   grid, and out-of-order timestamps in the timeline math.
 
+## DEV-0055 to DEV-0058 — Consent reminder, notice and retention · `dev-fullstack` · review `seguranca`
+- Consent checkbox in the record sheet (server-enforced, `consent_at` in `meta.json`), reminder links open the sheet; copy-notice
+  buttons; `AUDIO_KEEP_DAYS` / `MEETING_KEEP_DAYS` with the retention loop and a Settings section; `PRIVACY.md`.
+- **Risk:** deletion is permanent; a bad `MEETING_KEEP_DAYS` removes meetings (validated to 1-3650, empty = off).
+
 ## Known issues (low severity)
 - UI review minors (DEV-0016, deferred): the "email not configured" hint is no longer shown in the
   article; the recording strip shows a placeholder title for recordings started in another tab until the
