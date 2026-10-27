@@ -25,10 +25,11 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
 - [ ] Works with Meet (browser), Zoom and Teams with no per-app configuration.
 
 ## F4 — Local transcription
-- [ ] Every ~30 s, each track's new audio is transcribed by whisper.cpp in the chosen language.
-- [ ] Segments labeled **Me** / **Others**, interleaved by time, appear on the page
-      during the meeting.
-- [ ] On stop, the remaining chunks are transcribed before the summary.
+- [ ] (DEV-0059) Nothing is transcribed while recording. On stop, each track is transcribed once by whisper.cpp in the chosen
+      language, with a progress percentage in the strip and on the meeting page, before the summary.
+- [ ] Segments labeled **Me** / **Others**, interleaved by time, are saved to `transcript.md` as each window finishes.
+- [ ] (DEV-0058) A window whisper cannot do (a crash, unreadable output) is skipped and logged; the others still finish.
+      Decoding loops ("e aí e aí e aí") are collapsed to one occurrence.
 - [ ] Silent stretches don't produce made-up text ("Subtitles by the community…").
 - [ ] (DEV-0031) A window ends in the latest pause of both speakers (at least 0.5 s, after 12 s) instead
       of every 30 s sharp, so words aren't cut.
@@ -128,6 +129,8 @@ direction "E · Index" chosen among five mockups. Full design:
       per track and the tab title `● mm:ss MeTranscript`.
 - [ ] (DEV-0057) A footer on every page shows the MIT license line with a link to `LICENSE`, and icon links to LinkedIn, WhatsApp,
       email and the portfolio (inline SVG, no external request until clicked; labels follow the language switch).
+- [ ] (DEV-0059) While recording, the page shows the notes and a quiet note that the transcript is made after you stop; the transcript
+      on the meeting page is hidden behind a **Show transcript** button (the Me / Others bar and timestamp links stay).
 - [ ] An **EN | PT-BR** switch in the top bar and the recording strip changes every page text without a reload; the choice
       is kept in the browser (first visit follows the browser language); dates follow the chosen language.
 

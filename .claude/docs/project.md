@@ -14,9 +14,9 @@ A local program (Python) with a single browser page (`127.0.0.1:8765`):
 
 1. It alerts you when a meeting app starts using the microphone — or you start it with the button.
 2. It records two tracks: **Me** (microphone) and **Others** (system audio).
-3. It transcribes in chunks during the meeting, locally, with whisper.cpp.
+3. When you stop, it transcribes the audio locally, once, with whisper.cpp (nothing runs during the call).
 4. You write short notes while you talk.
-5. When you stop, DeepSeek summarizes the **ideas by topic** and the next steps.
+5. Then DeepSeek writes a complete summary of the **ideas by topic**, the decisions and the next steps.
 6. You chat with the meeting: ask something specific (the answer cites the timestamp of the passage),
    ask it to add something to the summary or to rephrase it — and you can undo.
 

@@ -37,8 +37,7 @@ class Session:
         self.phase = "idle"
         self.meeting_id: str | None = None
         self.recorder: Recorder | None = None
-        self.transcriber: Transcriber | None = None
-        self.segments: list[dict] = []
+        self.progress: float | None = None  # share of the audio transcribed so far, while transcribing
         self.error: str | None = None
 
     def snapshot(self) -> dict:
@@ -48,11 +47,9 @@ class Session:
                 "meeting_id": self.meeting_id,
                 "elapsed": self.recorder.elapsed() if self.recorder else 0,
                 "levels": self.recorder.levels() if self.recorder else {"mic": 0.0, "system": 0.0},
-                # ponytail: full segment list every poll, fine for a few hours of meeting
-                "segments": list(self.segments),
+                "progress": self.progress,
                 "detected": None,
-                "error": self.error or (self.recorder.warning if self.recorder else None)
-                or (self.transcriber.error if self.transcriber else None),
+                "error": self.error or (self.recorder.warning if self.recorder else None),
                 "devices": dict(self.recorder.devices) if self.recorder else None,
             }
         # Also reported while recording, so the page can mark that mic session as already handled.
@@ -112,34 +109,34 @@ def start(title: str, lang: str, private: bool, mic: str | None = None, speakers
             log.exception("Could not open audio")
             raise RuntimeError(f"Could not open the microphone or system audio: {e}") from None
         session.phase, session.meeting_id = "recording", meeting_id
-        session.recorder, session.segments, session.error = recorder, [], None
-        # 1 s margin: the newest audio may still be in the WAV writer's buffer
-        session.transcriber = Transcriber(store.meeting_dir(meeting_id), lang, lambda: recorder.elapsed() - 1.0,
-                                          lambda segs: _add_segments(meeting_id, segs))
+        session.recorder, session.error = recorder, None
     return meeting_id
-
-
-def _add_segments(meeting_id: str, segments: list[dict]) -> None:
-    store.append_segments(meeting_id, segments)
-    with session.lock:
-        session.segments.extend(segments)
 
 
 def stop() -> None:
     with session.lock:
         if session.phase != "recording":
             raise RuntimeError("No recording in progress.")
-        session.phase = "transcribing"
-        meeting_id, recorder, transcriber = session.meeting_id, session.recorder, session.transcriber
-        session.recorder = session.transcriber = None
-    threading.Thread(target=_finalize, args=(meeting_id, recorder, transcriber), daemon=True).start()
+        session.phase, session.progress = "transcribing", 0.0
+        meeting_id, recorder = session.meeting_id, session.recorder
+        session.recorder = None
+    threading.Thread(target=_finalize, args=(meeting_id, recorder), daemon=True).start()
 
 
-def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> None:
+def _set_progress(share: float) -> None:
+    with session.lock:
+        session.progress = share
+
+
+def _finalize(meeting_id: str, recorder: Recorder) -> None:
     try:
         end = recorder.stop()
         store.finish(meeting_id)
+        transcriber = Transcriber(store.meeting_dir(meeting_id), store.load(meeting_id)["lang"],
+                                  lambda segs: store.append_segments(meeting_id, segs), _set_progress)
         transcriber.finish(end)
+        if transcriber.skipped:
+            log.warning("%s: %d window(s) could not be transcribed", meeting_id, transcriber.skipped)
     except Exception as e:
         log.exception("Could not finish %s", meeting_id)
         return _set_phase("error", f"Transcription did not finish ({e}). Audio and notes are saved in the meeting folder.")
@@ -186,13 +183,13 @@ def retranscribe(meeting_id: str) -> None:
         if not meeting["has_audio"]:
             raise RuntimeError("This meeting has no saved audio.")
         check_ready()
-        session.phase, session.meeting_id, session.error = "transcribing", meeting_id, None
+        session.phase, session.meeting_id, session.error, session.progress = "transcribing", meeting_id, None, 0.0
     threading.Thread(target=_retranscribe, args=(meeting_id, meeting["lang"]), daemon=True).start()
 
 
 def _retranscribe(meeting_id: str, lang: str) -> None:
     try:
-        store.replace_transcript(meeting_id, transcribe.retranscribe(store.meeting_dir(meeting_id), lang))
+        store.replace_transcript(meeting_id, transcribe.retranscribe(store.meeting_dir(meeting_id), lang, _set_progress))
     except Exception as e:
         log.exception("Could not re-transcribe %s", meeting_id)
         return _set_phase("error", f"Re-transcription failed ({e}). The previous transcript is untouched.")
@@ -213,7 +210,7 @@ def _auto_email(meeting_id: str) -> None:
 
 def _set_phase(phase: str, error: str | None = None) -> None:
     with session.lock:
-        session.phase, session.error = phase, error
+        session.phase, session.error, session.progress = phase, error, None
 
 
 def _sendable(meeting_id: str) -> dict:

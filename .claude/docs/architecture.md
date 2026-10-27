@@ -9,7 +9,7 @@
  server.py ──── store.py ──── meetings/<id>/  (files)
       │
       ├── capture.py    PyAudioWPatch: mic + loopback  → mic.wav, system.wav
-      ├── transcribe.py thread: 30 s chunks → ffmpeg → whisper-cli → segments
+      ├── transcribe.py after the stop: 30 s windows → ffmpeg → whisper-cli → segments
       ├── enhance.py    urllib → DeepSeek → summary (summary.md) and chat (chat.json)
       ├── detect.py     winreg ConsentStore → meeting app using the mic?
       └── mail.py       smtplib (Gmail, app password) → summary to your own email
@@ -38,13 +38,13 @@ A single `Session` object in `server.py`, guarded by a `threading.Lock`:
 ponytail: one global session — the app is for one person, one meeting at a time.
 
 ## Meeting flow
-1. `POST /api/start` → `store.create()` → `capture.start()` → `transcribe` starts its thread.
-2. Every 30 s, the transcription thread takes the new stretch of each WAV
-   (`ffmpeg -ss/-t` → 16 kHz mono) and runs it through Silero VAD (`whisper-vad-speech-segments`); with ≥ 0.5 s of speech, it runs
-   `whisper-cli -l <lang> -ot <speech start> -oj` on the window (GPU via Vulkan), at Windows
-   low priority. Segments with
-   absolute timestamps go to `Session.segments` and to `transcript.md`.
-3. `POST /api/stop` → `capture.stop()` → transcribe the rest → `phase = enhancing` →
+1. `POST /api/start` → `store.create()` → `capture.start()`. Nothing is transcribed during the call (DEV-0059).
+2. `POST /api/stop` → `capture.stop()` → `_finalize` builds a `Transcriber` and walks the whole audio in windows: each one takes the stretch of
+   each WAV (`ffmpeg -ss/-t` → 16 kHz mono) and runs it through Silero VAD (`whisper-vad-speech-segments`); with ≥ 0.5 s of speech, it runs
+   `whisper-cli -l <lang> -ot <speech start> -oj` on the window (GPU via Vulkan), at Windows low priority. Output is read as lenient UTF-8,
+   decoding loops are collapsed (`collapse_repeats`), a window that fails is skipped (`Transcriber.skipped`). Segments with absolute
+   timestamps are appended to `transcript.md` per window, and `Session.progress` (0-1) is exposed in `/api/status`.
+3. Then `phase = enhancing` →
    `enhance.summarize()` → `summary.md` → `phase = done`. A transcription or summary failure →
    `phase = error` with a message; nothing saved is deleted. A private meeting skips the summary.
 4. In an open meeting, each chat message calls `enhance.chat()` (JSON mode): the answer goes

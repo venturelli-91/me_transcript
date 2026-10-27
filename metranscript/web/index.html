@@ -243,9 +243,8 @@ p.others .who::before { background: var(--others); }
 
 /* live view */
 .live { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.feed { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; min-height: 240px; max-height: 60vh; overflow-y: auto; font-size: 14px; }
-.feed p { margin: 0 0 8px; }
-.feed time { color: var(--gray); font: 400 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; margin-right: 8px; }
+.live-note { margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 22px; }
+.live-note p { margin: 0 0 6px; }
 
 /* record sheet */
 dialog { border: 0; border-radius: var(--r-lg); padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
@@ -460,12 +459,10 @@ const PT = {
   "Email not sent: {e}": "E-mail não enviado: {e}",
   "Sent to Gmail {d}": "Enviado ao Gmail em {d}",
   "No transcript.": "Sem transcrição.",
-  "Show all {n} lines": "Mostrar as {n} linhas",
   "← Index": "← Índice",
   "Rename": "Renomear",
   "Delete": "Excluir",
   "Meeting ": "Reunião ",
-  "Finishing the transcript…": "Finalizando a transcrição…",
   "Writing the summary…": "Escrevendo o resumo…",
   "Private meeting: no summary is generated.": "Reunião privada: nenhum resumo é gerado.",
   "No summary yet.": "Ainda sem resumo.",
@@ -506,8 +503,13 @@ const PT = {
   "Not saved ({e}). Retrying…": "Não salvo ({e}). Tentando de novo…",
   "(Your notes)": "(Suas notas)",
   "Jot down what matters to you. The summary gives these points more weight.": "Anote o que importa para você. O resumo dá mais peso a esses pontos.",
-  "(Live transcript – updates every ~30 s)": "(Transcrição ao vivo – atualiza a cada ~30 s)",
-  "The first part shows up in about 30 seconds.": "A primeira parte aparece em cerca de 30 segundos.",
+  "(While you record)": "(Enquanto você grava)",
+  "Recording in progress.": "Gravação em andamento.",
+  "The audio stays on this computer. When you stop, it is transcribed here and the summary is written.": "O áudio fica neste computador. Quando você parar, ele é transcrito aqui e o resumo é escrito.",
+  "(Transcribing – {n}%)": "(Transcrevendo – {n}%)",
+  "Transcribing the audio… {n}%": "Transcrevendo o áudio… {n}%",
+  "Hide transcript": "Ocultar a transcrição",
+  "Show transcript ({n} lines)": "Mostrar a transcrição ({n} linhas)",
   "{d} (default)": "{d} (padrão)",
   "Could not list audio devices: {e}": "Não foi possível listar os dispositivos de áudio: {e}",
   "Now recording your voice from {d}.": "Agora gravando sua voz de {d}.",
@@ -516,7 +518,6 @@ const PT = {
   "Cannot reach MeTranscript. Is the program running?": "Não foi possível falar com o MeTranscript. O programa está rodando?",
   "(Recording – {t})": "(Gravando – {t})",
   "meeting": "reunião",
-  "(Finishing the transcript…)": "(Finalizando a transcrição…)",
   "(Writing the summary…)": "(Escrevendo o resumo…)",
   "{app} is using the microphone. Did a meeting start?": "{app} está usando o microfone. Uma reunião começou?",
   "{app} is using the microphone. Record this meeting?": "{app} está usando o microfone. Gravar esta reunião?",
@@ -723,9 +724,8 @@ function timeline(lines) {
 function renderTranscript() {
   const lines = transcriptLines(openMeeting.transcript);
   if (!lines.length) return `<p class="muted">${t("No transcript.")}</p>`;
-  const visible = showAllTranscript ? lines : lines.slice(0, 20);
-  return `${timeline(lines)}<div class="transcript t14">${visible.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}${l.who === "Others" ? ' class="others"' : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>
-    ${lines.length > 20 && !showAllTranscript ? `<button class="link" id="show-all">${t("Show all {n} lines", { n: lines.length })}</button>` : ""}`;
+  return `${timeline(lines)}${showAllTranscript ? `<div class="transcript t14">${lines.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}${l.who === "Others" ? ' class="others"' : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>` : ""}
+    <button class="link" id="show-all">${showAllTranscript ? t("Hide transcript") : t("Show transcript ({n} lines)", { n: lines.length })}</button>`;
 }
 
 function renderMeeting() {
@@ -746,7 +746,7 @@ function renderMeeting() {
         <div class="meta">${meta.map(x => `<span>${x}</span>`).join("")}</div>
         <section class="sec" aria-labelledby="s1"><span class="lbl" id="s1">${t("(01) Summary")}</span><div>
           <div class="reading">${summary ? markdown(summary)
-            : `<p class="muted">${processing ? (status.phase === "transcribing" ? t("Finishing the transcript…") : t("Writing the summary…"))
+            : `<p class="muted" id="proc-msg">${processing ? (status.phase === "transcribing" ? t("Transcribing the audio… {n}%", { n: Math.round((status.progress || 0) * 100) }) : t("Writing the summary…"))
               : m.private ? t("Private meeting: no summary is generated.") : t("No summary yet.")}</p>`}</div>
           ${m.private ? "" : `<div class="actions">
             <button class="pill dark" id="regen" ${off}>${m.summary ? t("Regenerate") : t("Generate summary")}</button>
@@ -797,7 +797,7 @@ function renderMeeting() {
 }
 function bindTranscript() {
   $(".tl-bar")?.addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (b) jumpTo(b.dataset.t); });
-  $("#show-all")?.addEventListener("click", () => { showAllTranscript = true; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); });
+  $("#show-all")?.addEventListener("click", () => { showAllTranscript = !showAllTranscript; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); });
 }
 function jumpTo(t) {
   if (!showAllTranscript) { showAllTranscript = true; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); }
@@ -1006,19 +1006,11 @@ function renderLive() {
   view.innerHTML = `
     <div class="live">
       <section><label class="lbl" for="notes">${t("(Your notes)")}</label><textarea class="notes" id="notes" style="margin-top:8px; min-height:320px" placeholder="${t("Jot down what matters to you. The summary gives these points more weight.")}"></textarea><span class="saved" aria-live="polite"></span></section>
-      <section><span class="lbl">${t("(Live transcript – updates every ~30 s)")}</span><div class="feed" id="feed" style="margin-top:8px"><p class="muted">${t("The first part shows up in about 30 seconds.")}</p></div></section>
+      <section id="live-note"><span class="lbl">${t("(While you record)")}</span><div class="live-note"><p class="t20">${t("Recording in progress.")}</p><p class="muted">${t("The audio stays on this computer. When you stop, it is transcribed here and the summary is written.")}</p></div></section>
     </div>`;
   const ta = $("#notes");
   ta.value = openMeeting.notes;
   bindNotes(ta, openMeeting.id);
-  renderFeed();
-}
-function renderFeed() {
-  const feed = $("#feed");
-  if (!feed || !status.segments?.length) return;
-  const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
-  feed.innerHTML = status.segments.map(s => `<p${s.who === "Others" ? ' class="others"' : ""}><time>${clock(s.t)}</time><span class="who">${esc(s.who)}</span>${esc(s.text)}</p>`).join("");
-  if (atBottom) feed.scrollTop = feed.scrollHeight;
 }
 
 /* ---------- devices ---------- */
@@ -1116,7 +1108,7 @@ async function refresh() {
     recordingId = status.meeting_id;
     const m = meetings.find(x => x.id === status.meeting_id) || (openMeeting?.id === status.meeting_id ? openMeeting : null);
     $("#strip-label").textContent = rec ? t("(Recording – {t})", { t: m ? titleOf(m) : t("meeting") })
-      : p === "transcribing" ? t("(Finishing the transcript…)") : t("(Writing the summary…)");
+      : p === "transcribing" ? t("(Transcribing – {n}%)", { n: Math.round((status.progress || 0) * 100) }) : t("(Writing the summary…)");
     $("#strip-clock").textContent = clock(status.elapsed || 0);
     $("#stop").disabled = !rec;
     $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
@@ -1136,11 +1128,11 @@ async function refresh() {
       }
     }
   }
+  if (p === "transcribing" && $("#proc-msg")) $("#proc-msg").textContent = t("Transcribing the audio… {n}%", { n: Math.round((status.progress || 0) * 100) });
   if (prevPhase !== p) notice = null;
   statusEl.innerHTML = notice ?? (status.error ? `<span class="error">${esc(status.error)}</span>` : "");
   if (rec && openId === status.meeting_id) {
-    if (!$("#feed")) renderLive();
-    renderFeed();
+    if (!$("#live-note")) renderLive();
   }
   const finished = BUSY.includes(prevPhase) && !busy;
   if (prevPhase !== p && openId === status.meeting_id && openId && !finished) {

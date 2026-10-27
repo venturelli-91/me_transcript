@@ -5,7 +5,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-import threading
 import wave
 from collections.abc import Callable
 from difflib import SequenceMatcher
@@ -120,7 +119,7 @@ def to_opus(wav: Path) -> Path:
     return out
 
 
-def retranscribe(folder: Path, lang: str) -> list[dict]:
+def retranscribe(folder: Path, lang: str, on_progress: Callable[[float], None] | None = None) -> list[dict]:
     """Transcribe a finished meeting again from its saved audio (WAV or Opus)."""
     sources = {track: next((f for ext in (".wav", ".opus") if (f := folder / f"{track}{ext}").exists()), None)
                for track in TRACKS}
@@ -134,7 +133,7 @@ def retranscribe(folder: Path, lang: str) -> list[dict]:
             with wave.open(str(wav)) as w:
                 length = max(length, w.getnframes() / w.getframerate())
         segments: list[dict] = []
-        Transcriber(Path(tmp), lang, recorded=lambda: 0.0, on_segments=segments.extend).finish(length)
+        Transcriber(Path(tmp), lang, on_segments=segments.extend, on_progress=on_progress).finish(length)
         return sorted(segments, key=lambda s: s["t"])
 
 
@@ -200,15 +199,14 @@ def transcribe_clip(clip: Path, spans: list[tuple[float, float]], cut: float, la
 
 
 class Transcriber:
-    def __init__(self, folder: Path, lang: str, recorded: Callable[[], float],
-                 on_segments: Callable[[list[dict]], None]) -> None:
-        self.folder, self.lang, self.recorded, self.on_segments = folder, lang, recorded, on_segments
+    """Transcribes the two finished tracks in windows, once, after the recording stopped."""
+
+    def __init__(self, folder: Path, lang: str, on_segments: Callable[[list[dict]], None],
+                 on_progress: Callable[[float], None] | None = None) -> None:
+        self.folder, self.lang, self.on_segments, self.on_progress = folder, lang, on_segments, on_progress
         self.done = 0.0
+        self.skipped = 0
         self.tail = dict.fromkeys(TRACKS.values(), "")
-        self.error: str | None = None
-        self.stopping = threading.Event()
-        self.thread = threading.Thread(target=self._loop, daemon=True)
-        self.thread.start()
 
     def _window(self, end: float, final: bool = False) -> None:
         duration = end - self.done
@@ -221,7 +219,13 @@ class Transcriber:
                 # The vocabulary and the end of what this person just said keep names and sentences consistent.
                 names = vocabulary()
                 prompt = " ".join(filter(None, [INTRO[self.lang].format(names) if names else "", self.tail[who]]))
-                tracks.append(transcribe_clip(clip, spans, cut, self.lang, who, self.done, prompt))
+                try:
+                    tracks.append(transcribe_clip(clip, spans, cut, self.lang, who, self.done, prompt))
+                except RuntimeError as e:
+                    # One window whisper cannot do must not lose the rest of the meeting.
+                    log.warning("Skipping %s at %.0f s: %s", who, self.done, e)
+                    self.skipped += 1
+                    tracks.append([])
         for segs in tracks:
             if segs:
                 self.tail[segs[-1]["who"]] = " ".join(s["text"] for s in segs)[-TAIL:].strip()
@@ -229,19 +233,9 @@ class Transcriber:
         if segments := merge(*tracks):
             self.on_segments(segments)
 
-    def _loop(self) -> None:
-        while not self.stopping.wait(1.0):
-            if self.recorded() - self.done >= CHUNK:
-                try:
-                    self._window(self.done + CHUNK)
-                except Exception as e:
-                    log.exception("Live transcription failed")
-                    self.error = f"Live transcription stopped ({e}). Audio is still being recorded."
-                    return
-
     def finish(self, end: float) -> None:
-        self.stopping.set()
-        self.thread.join()
         while end - self.done > 0.5:
             window_end = min(end, self.done + CHUNK)
             self._window(window_end, final=window_end == end)
+            if self.on_progress:
+                self.on_progress(min(1.0, self.done / end))

@@ -29,7 +29,7 @@ class TranscribeTest(unittest.TestCase):
         self.assertEqual([s["text"] for s in transcribe.parse_whisper(data, 0, "Me")], ["aí", "Ok então"])
 
     def test_a_clip_with_broken_utf8_or_json_is_read_leniently_or_skipped(self):
-        for raw, expected in ((b'{"transcription": [{"offsets": {"from": 0}, "text": " Ol\xed mundo"}]}', ["Ol\ufffd mundo".replace("\ufffd", "")]),
+        for raw, expected in ((b'{"transcription": [{"offsets": {"from": 0}, "text": " Ol\xed mundo"}]}', ["Ol mundo"]),
                               (b"not json at all \xed", []), (b'{"transcription": [{"text": "no offsets"}]}', [])):
             with self.subTest(raw=raw[:20]), tempfile.TemporaryDirectory() as tmp:
                 clip = Path(tmp) / "mic.wav"
@@ -102,7 +102,7 @@ class TranscribeTest(unittest.TestCase):
             return [{"t": offset + 1, "who": who, "text": f"{who} said something about Falcon " * 10}]
 
         with mock.patch.object(transcribe, "analyze", lambda wav, start, dur, tmp: (tmp / "c.wav", [(0, 10), (10.2, 15), (16, 29.9)])),                 mock.patch.object(transcribe, "transcribe_clip", fake_clip),                 mock.patch.object(transcribe.privacy, "terms", return_value=["Falcon"]):
-            t = transcribe.Transcriber(Path("x"), "en", recorded=lambda: 0.0, on_segments=lambda s: None)
+            t = transcribe.Transcriber(Path("x"), "en", on_segments=lambda s: None)
             t.finish(55.0)
         me = [c for c in calls if c[0] == "Me"]
         self.assertEqual([c[1:3] for c in me], [(0.0, 15.5), (15.5, 15.5), (31.0, 24.0)])
@@ -111,29 +111,29 @@ class TranscribeTest(unittest.TestCase):
         self.assertTrue(me[1][3].startswith(intro + " ") and me[1][3].endswith("Falcon"))
         self.assertLessEqual(len(me[1][3]), len(intro) + 1 + transcribe.TAIL)
 
-    def test_live_failure_resumes_on_finish(self):
-        calls, fail = [], [True]
+    def test_a_window_whisper_cannot_do_is_skipped_and_the_rest_continues(self):
+        failing = [True]
 
         def fake_clip(clip, spans, cut, lang, who, offset, prompt):
-            calls.append((who, offset))
-            if fail[0]:
+            if failing[0] and who == "Me" and offset == 0.0:
                 raise RuntimeError("whisper-cli.exe failed")
             return [{"t": offset + 1, "who": who, "text": "x"}]
 
-        got = []
-        with mock.patch.object(transcribe, "analyze", lambda wav, start, dur, tmp: (tmp / "c.wav", [(0, 29.9)])),                 mock.patch.object(transcribe, "transcribe_clip", fake_clip):
-            t = transcribe.Transcriber(Path("x"), "pt", recorded=lambda: 40.0, on_segments=got.extend)
-            t.thread.join(timeout=5)
-            self.assertIn("stopped", t.error)
-            fail[0] = False
-            t.finish(40.0)
-        self.assertEqual([s["t"] for s in got if s["who"] == "Me"], [1.0, 31.0])
+        got, progress = [], []
+        with mock.patch.object(transcribe, "analyze", lambda wav, start, dur, tmp: (tmp / "c.wav", [(0, 29.9)])), \
+                mock.patch.object(transcribe, "transcribe_clip", fake_clip):
+            t = transcribe.Transcriber(Path("x"), "pt", on_segments=got.extend, on_progress=progress.append)
+            t.finish(70.0)
+        self.assertEqual(t.skipped, 1)
+        self.assertEqual([s["t"] for s in got if s["who"] == "Me"], [31.0, 61.0])
+        self.assertEqual([s["t"] for s in got if s["who"] == "Others"], [1.0, 31.0, 61.0])
+        self.assertEqual(progress, [30 / 70, 60 / 70, 1.0])
 
     def test_finish_transcribes_remaining_windows(self):
         calls = []
         with mock.patch.object(transcribe, "analyze", lambda wav, start, dur, tmp: (tmp / "c.wav", [(0, dur)])),                 mock.patch.object(transcribe, "transcribe_clip",
                                   lambda clip, spans, cut, lang, who, offset, prompt: calls.append((who, offset, cut)) or []):
-            t = transcribe.Transcriber(Path("x"), "pt", recorded=lambda: 0.0, on_segments=lambda s: None)
+            t = transcribe.Transcriber(Path("x"), "pt", on_segments=lambda s: None)
             t.finish(70.0)
         self.assertEqual([c for c in calls if c[0] == "Me"], [("Me", 0.0, 30.0), ("Me", 30.0, 30.0), ("Me", 60.0, 10.0)])
 

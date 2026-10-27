@@ -59,9 +59,9 @@ when, with the share of each. Click the bar to jump to that line.
 
 **Recording**: a strip stays on top of every page with the clock, the devices in use (switch them
 mid-meeting) and a level meter per track, and the browser tab title shows the elapsed time. Take notes while
-the live transcript fills in.
+you record; nothing is transcribed until you stop.
 
-![Recording: the pinned strip, notes and live transcript](docs/screenshots/recording.png)
+![Recording: the pinned strip and your notes](docs/screenshots/recording.png)
 
 **Dark mode**: the **Dark** / **Light** button in the top bar switches the theme and remembers your choice in this browser. The recording strip stays dark in both and has the same button, so it is always within reach.
 
@@ -201,9 +201,10 @@ Open http://127.0.0.1:8765 and keep the tab open.
    microphone, or "Record" on an upcoming calendar meeting). Pick title, language, microphone and
    speakers (Windows defaults are preselected).
 3. While recording, a dark strip stays on top of every page: clock, stop button, the devices in use
-   (switch them there mid-meeting) and level meters. Take notes next to the live transcript; you can
+   (switch them there mid-meeting) and level meters. Take notes while you record; you can
    browse other meetings and come back with **Back to recording**.
-4. Click the square to stop. The meeting opens as an article: (01) Summary, (02) Next steps,
+4. Click the square to stop. The audio is transcribed on your computer (with a progress percentage), then the
+   summary is written. The meeting opens as an article: (01) Summary, (02) Next steps,
    (03) Notes and (04) Transcript; if Gmail is configured, the summary also arrives in your inbox.
 5. Use **Ask this meeting** on the right (drag its edge to make it wider): questions with clickable
    timestamps, "Add to summary", tweaks and **Undo**.

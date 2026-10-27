@@ -2,7 +2,7 @@
 
 | Choice | Gain | Cost | When to revisit |
 |---|---|---|---|
-| Local Whisper in 30 s chunks | Free, private, offline | Text appears with a ~30 s delay; not word by word | If the delay gets in the way: smaller chunks (more CPU/GPU) |
+| Local Whisper once, after the call | Free, private, offline; nothing heavy runs during the call; the GPU is free for the batch | Wait after you stop (a progress bar shows it); no text during the meeting | If the delay gets in the way: smaller chunks (more CPU/GPU) |
 | whisper.cpp Vulkan on AMD (local build) | ~4× faster than CPU, video call stays smooth | Local build with cmake + Vulkan SDK + Build Tools; updating requires a rebuild | If the driver/GPU fails: official CPU binary via `ATA_WHISPER` |
 | DeepSeek for summary and chat | Cheap, good in pt/en | Title, notes, transcript and chat leave the machine | Sensitive meeting: check "Private meeting" before recording and don't use summary/chat |
 | Summary to Gmail via app password | Automatic, zero dependencies, on/off in `.env` | An app password grants broad account access; summary and transcript also live at Google | If Google blocks app passwords or minimal scope is wanted: Gmail API (OAuth) |
