@@ -510,6 +510,11 @@ const PT = {
   "Download": "Baixar",
   "Preparing the PDF…": "Preparando o PDF…",
   "Download failed.": "Não foi possível baixar.",
+  "Archive": "Arquivar",
+  "Unarchive": "Desarquivar",
+  "In the archive": "No arquivo",
+  "Archived": "Arquivadas",
+  "No archived meetings.": "Nenhuma reunião arquivada.",
   "Pin to top": "Fixar no topo",
   "Unpin": "Desafixar",
   "Pinned": "Fixada",
@@ -791,19 +796,20 @@ async function loadMeetings() {
   numbers = new Map(byAge.map((m, i) => [m.id, String(i + 1).padStart(2, "0")]));
 }
 const FILTERS = {
-  all: () => true,
-  week: m => Date.now() - new Date(m.started_at) < 7 * 864e5,
-  next: m => m.has_next_steps,
+  all: m => !m.archived,
+  week: m => !m.archived && Date.now() - new Date(m.started_at) < 7 * 864e5,
+  next: m => !m.archived && m.has_next_steps,
+  archived: m => m.archived,
 };
 async function renderIndex() {
   try { await loadMeetings(); } catch (err) { return showError(err.message); }
-  const shown = meetings.filter(FILTERS[filter]);
+  const shown = meetings.filter(FILTERS[filter]), active = meetings.filter(FILTERS.all).length;
   const pill = (key, label) => `<button class="pill ghost" data-filter="${key}" aria-pressed="${filter === key}">${label}</button>`;
   view.innerHTML = `
-    <div class="head"><span class="lbl">${meetings.length === 1 ? t("(Index – 1 meeting)") : t("(Index – {n} meetings)", { n: meetings.length })}</span></div>
-    <div class="filters" role="group" aria-label="${t("Filter meetings")}">${pill("all", t("All"))}${pill("week", t("This week"))}${pill("next", t("With next steps"))}</div>
+    <div class="head"><span class="lbl">${active === 1 ? t("(Index – 1 meeting)") : t("(Index – {n} meetings)", { n: active })}</span></div>
+    <div class="filters" role="group" aria-label="${t("Filter meetings")}">${pill("all", t("All"))}${pill("week", t("This week"))}${pill("next", t("With next steps"))}${pill("archived", t("Archived"))}</div>
     ${!meetings.length ? `<div class="empty-state"><p class="t20">${t("No meetings yet.")}</p><p class="muted">${t("Press Record to start your first one.")}</p><p><a href="#/about">${t("New here? See how it works.")}</a></p></div>`
-      : !shown.length ? `<div class="empty-state"><p class="muted">${t("No meetings match this filter.")}</p></div>`
+      : !shown.length ? `<div class="empty-state"><p class="muted">${filter === "archived" ? t("No archived meetings.") : t("No meetings match this filter.")}</p></div>`
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
           <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}${m.pinned ? `<span class="pinmark">${t("Pinned")}</span>` : ""}</span>
           <span class="app">${esc(m.app || "")}</span><span class="date">${dateOnly(m.started_at)}</span></a></li>`).join("")}</ol>`}
@@ -825,12 +831,13 @@ function renderMeeting() {
   if (status.phase === "recording" && status.meeting_id === m.id) return renderLive();
   const summary = m.summary_body, nextSteps = m.next_steps;
   const off = processing || waiting === m.id || m.private ? "disabled" : "";
-  const meta = [when(m.started_at), duration(m), m.app, t(LANG[m.lang] || ""), mailStatus(m)].filter(Boolean);
+  const meta = [when(m.started_at), duration(m), m.app, t(LANG[m.lang] || ""), m.archived ? t("In the archive") : "", mailStatus(m)].filter(Boolean);
   view.innerHTML = `
     <div class="article">
       <div class="body">
         <div class="toolrow"><a href="#/" class="lbl">${t("← Index")}</a>
           <span class="tools"><button class="link" id="pin">${m.pinned ? t("Unpin") : t("Pin to top")}</button>
+            <button class="link" id="archive">${m.archived ? t("Unarchive") : t("Archive")}</button>
             <button class="link" id="rename">${t("Rename")}</button>
             <button class="link danger" id="delete" ${processing ? "disabled" : ""}>${t("Delete")}</button></span></div>
         <div class="masthead"><span class="big-num"><span class="sr">${t("Meeting ")}</span>${numbers.get(m.id) || "–"}</span>
@@ -884,10 +891,10 @@ function renderMeeting() {
   $("#mail")?.addEventListener("click", () => docAction("email", t("Sending…"), t("Sent to your email.")));
   $("#dl")?.addEventListener("click", e => { const b = e.target.closest("[data-dl]"); if (b) downloadReport(b.dataset.dl); });
   $("#rename").addEventListener("click", startRename);
-  $("#pin").addEventListener("click", async () => {
-    const id = openId;
+  for (const flag of ["pin", "archive"]) $(`#${flag}`).addEventListener("click", async () => {
+    const id = openId, key = flag === "pin" ? "pinned" : "archived";
     try {
-      const updated = await api(`/api/meetings/${id}/pin`, { method: "PUT", body: JSON.stringify({ pinned: !openMeeting.pinned }) });
+      const updated = await api(`/api/meetings/${id}/${flag}`, { method: "PUT", body: JSON.stringify({ [key]: !openMeeting[key] }) });
       if (openId === id) { openMeeting = updated; renderMeeting(); }
     } catch (err) { showError(err.message); }
   });

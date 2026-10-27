@@ -155,6 +155,18 @@ class RoutesTest(ServerCase):
         self.assertEqual(self.call("PUT", f"/api/meetings/{old}/pin", {"pinned": "yes"})[1]["error"], "pinned must be true or false.")
         self.assertEqual(self.call("PUT", "/api/meetings/2026-01-01_0000/pin", {"pinned": True})[0], 404)
 
+    def test_archive_route_flags_a_meeting_without_touching_its_files(self):
+        mid = store.create("Done", "pt", now=datetime(2026, 1, 3, 9, 0))
+        store.save_summary(mid, "## Overview\nx")
+        listed = lambda: next(m for m in self.call("GET", "/api/meetings")[1] if m["id"] == mid)
+        self.assertFalse(listed()["archived"])
+        self.assertEqual(self.call("PUT", f"/api/meetings/{mid}/archive", {"archived": True})[1]["archived"], True)
+        self.assertTrue(listed()["archived"])
+        self.assertEqual(self.call("GET", f"/api/meetings/{mid}")[1]["summary"], "## Overview\nx")
+        self.assertEqual(self.call("PUT", f"/api/meetings/{mid}/archive", {"archived": False})[1]["archived"], False)
+        self.assertEqual(self.call("PUT", f"/api/meetings/{mid}/archive", {"archived": 1})[1]["error"], "archived must be true or false.")
+        self.assertEqual(self.call("PUT", "/api/meetings/2026-01-01_0000/archive", {"archived": True})[0], 404)
+
     def test_clear_chat_route_empties_only_the_chat(self):
         mid = store.create("Talk", "pt")
         store.save_notes(mid, "my notes")

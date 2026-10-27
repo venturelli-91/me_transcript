@@ -93,6 +93,7 @@ def list_meetings() -> list[dict]:
                 "ended_at": meta.get("ended_at"),
                 "private": bool(meta.get("private")),
                 "pinned": bool(meta.get("pinned")),
+                "archived": bool(meta.get("archived")),
                 "app": meta.get("app"),
                 "has_summary": bool(summary),
                 "has_next_steps": has_next_steps(summary),
@@ -162,11 +163,11 @@ def clear_chat(meeting_id: str) -> None:
         _write_json(folder, "chat.json", [])
 
 
-def set_pinned(meeting_id: str, pinned: bool) -> None:
+def set_flag(meeting_id: str, flag: str, value: bool) -> None:
     folder = meeting_dir(meeting_id)
     with WRITE_LOCK:
         meta = _meta(folder)
-        meta["pinned"] = pinned
+        meta[flag] = value
         _write_meta(folder, meta)
 
 

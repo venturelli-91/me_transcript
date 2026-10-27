@@ -205,3 +205,6 @@ Follow-up from the ponytail audit (2026-10-26): pasting keys into a file by hand
 ## F21 — Download the report (DEV-0084)
 - [ ] **Download** (meeting page, next to the summary actions) offers **PDF** or **Markdown (.md)**: title, date, duration, app and the summary (with its next steps). The transcript and the chat are not included.
 - [ ] The PDF is printed by the Microsoft Edge or Google Chrome already on Windows (`GET /api/meetings/<id>/report.pdf`); without one, the page says to download the Markdown (`report.md`) instead. A meeting without a summary has the button disabled.
+
+## F22 — Archive and reopen meetings (DEV-0085)
+- [ ] **Archive** (meeting page) takes a meeting out of All, This week and With next steps and counts it out of the Index total; the **Archived** filter lists archived meetings and **Unarchive** brings one back. Nothing is deleted and the numbers do not change.

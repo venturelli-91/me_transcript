@@ -319,7 +319,7 @@ def undo(meeting_id: str) -> dict:
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/undo|/email|/retranscribe|/report\.md|/report\.pdf)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/archive|/undo|/email|/retranscribe|/report\.md|/report\.pdf)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -556,12 +556,13 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Title must be text.")
                 self._send(200, rename_meeting(m.group(1), title))
             return self._guard(run)
-        if m and m.group(2) == "/pin":
+        if m and m.group(2) in ("/pin", "/archive"):
             def run():
-                pinned = self._body().get("pinned")
-                if not isinstance(pinned, bool):
-                    raise ValueError("pinned must be true or false.")
-                store.set_pinned(m.group(1), pinned)
+                flag = {"/pin": "pinned", "/archive": "archived"}[m.group(2)]
+                value = self._body().get(flag)
+                if not isinstance(value, bool):
+                    raise ValueError(f"{flag} must be true or false.")
+                store.set_flag(m.group(1), flag, value)
                 self._send(200, load(m.group(1)))
             return self._guard(run)
         if m and m.group(2) == "/notes":
