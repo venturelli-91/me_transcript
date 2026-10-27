@@ -28,7 +28,7 @@ mid-meeting) and level meters. Take notes while the live transcript fills in.
 
 ![Recording: the pinned strip, notes and live transcript](docs/screenshots/recording.png)
 
-**Dark mode**: the **Dark** / **Light** button in the top bar switches the theme and remembers your choice in this browser. The recording strip stays dark in both.
+**Dark mode**: the **Dark** / **Light** button in the top bar switches the theme and remembers your choice in this browser. The recording strip stays dark in both and has the same button, so it is always within reach.
 
 **Settings**: paste the keys once. They are saved to `.env` and never shown back.
 

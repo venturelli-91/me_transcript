@@ -249,7 +249,7 @@ dialog::backdrop { background: var(--scrim); }
     <div class="dev"><span class="lbl">Me</span><label class="sr" for="strip-mic">Microphone</label><select id="strip-mic"></select><i><b id="lv-mic"></b></i></div>
     <div class="dev"><span class="lbl">Others</span><label class="sr" for="strip-system">Speakers or headphones</label><select id="strip-system"></select><i><b id="lv-system"></b></i></div>
   </div>
-  <div class="nav"><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
+  <div class="nav"><button class="pill theme-btn">Dark</button><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
 </div>
 
 <header class="top">
@@ -259,7 +259,7 @@ dialog::backdrop { background: var(--scrim); }
     <a href="#/settings" id="nav-settings">Settings</a>
   </nav>
   <a class="wordmark" href="#/">MeTranscript</a>
-  <div class="right"><button class="pill ghost" id="theme-btn">Dark</button><button class="pill rec" id="record-btn">● Record</button></div>
+  <div class="right"><button class="pill ghost theme-btn">Dark</button><button class="pill rec" id="record-btn">● Record</button></div>
 </header>
 
 <section id="upcoming-panel" aria-labelledby="up-title">
@@ -632,13 +632,14 @@ async function docAction(action, label, done) {
 /* ---------- theme ---------- */
 function applyTheme(dark, save = true) {
   document.documentElement.dataset.theme = dark ? "dark" : "light";
-  const b = $("#theme-btn");
-  b.textContent = dark ? "Light" : "Dark";
-  b.setAttribute("aria-label", dark ? "Switch to the light theme" : "Switch to the dark theme");
+  for (const b of document.querySelectorAll(".theme-btn")) {
+    b.textContent = dark ? "Light" : "Dark";
+    b.setAttribute("aria-label", dark ? "Switch to the light theme" : "Switch to the dark theme");
+  }
   if (save) { try { localStorage.setItem("metranscript.theme", dark ? "dark" : "light"); } catch { /* storage may be blocked */ } }
 }
 applyTheme(document.documentElement.dataset.theme === "dark", false);
-$("#theme-btn").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme !== "dark"));
+document.querySelectorAll(".theme-btn").forEach(b => b.addEventListener("click", () => applyTheme(document.documentElement.dataset.theme !== "dark")));
 
 /* ---------- resizable drawer ---------- */
 const DRAWER_KEY = "metranscript.drawerWidth", DRAWER_MIN = 320;

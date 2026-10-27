@@ -100,7 +100,7 @@ the default when the headset connection dropped), the user can pick devices. Not
 - [ ] If a device stops delivering audio mid-recording, the status line asks to pick another one.
 
 ## F11 — Index / Meeting / Recording UI
-- [ ] (DEV-0037) Dark theme via a **Dark / Light** button in the top bar, saved in `localStorage`, applied before first paint. Tokens live in `:root[data-theme="dark"]`; `--btn`/`--on-btn` invert for buttons and the user chat bubble, while `--dark` (record strip, detected banner) stays a dark surface. Not available while a recording is open (the top bar is hidden then).
+- [ ] (DEV-0037) Dark theme via a **Dark / Light** button in the top bar, saved in `localStorage`, applied before first paint. Tokens live in `:root[data-theme="dark"]`; `--btn`/`--on-btn` invert for buttons and the user chat bubble, while `--dark` (record strip, detected banner) stays a dark surface. While recording, the same button sits in the recording strip, so it never disappears.
 CEO decision (2026-10-26): ArchiPro-inspired navigation and palette with a proportional type scale;
 direction "E · Index" chosen among five mockups. Full design:
 [specs/2026-10-26-ui-redesign-design.md](specs/2026-10-26-ui-redesign-design.md).
