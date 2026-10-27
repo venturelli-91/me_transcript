@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src data:">
 <title>MeTranscript</title>
+<script>try { if (localStorage.getItem('metranscript.theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch { /* storage may be blocked */ }</script>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,9 +19,30 @@
   --line: #E7E2DA;
   --pill: #E5E5E5;
   --dark: #2B2B2B;
+  --btn: #2B2B2B;
+  --on-btn: #FFFFFF;
   --rec: #C8412F;
+  --rec-bg: #C8412F;
+  --hit: #F3E7D6;
+  --scrim: rgba(24, 24, 24, .35);
   --font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --drawer: clamp(380px, 26vw, 520px);
+}
+/* --dark stays a dark surface (record strip, detected banner); --btn is what buttons and the user bubble use, so it inverts. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141311;
+  --surface: #1D1B18;
+  --ink: #EFEBE4;
+  --gray: #A39E95;
+  --line: #34312C;
+  --pill: #2A2723;
+  --dark: #26231F;
+  --btn: #EFEBE4;
+  --on-btn: #181818;
+  --rec: #EC6B55;
+  --hit: #3A3226;
+  --scrim: rgba(0, 0, 0, .6);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -41,10 +63,10 @@ a { color: inherit; }
 /* pills */
 .pill { border: 1px solid transparent; border-radius: 999px; padding: 7px 16px; background: var(--pill); font-weight: 500; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .pill:hover { filter: brightness(.96); }
-.pill.dark { background: var(--dark); color: #fff; }
-.pill.rec { background: var(--rec); color: #fff; }
+.pill.dark { background: var(--btn); color: var(--on-btn); }
+.pill.rec { background: var(--rec-bg); color: #fff; }
 .pill.ghost { background: transparent; border-color: var(--line); }
-.pill[aria-pressed="true"] { background: var(--dark); color: #fff; border-color: var(--dark); }
+.pill[aria-pressed="true"] { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
 .pill:disabled { opacity: .45; cursor: default; filter: none; }
 .link { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; }
 
@@ -54,7 +76,7 @@ a { color: inherit; }
 .top nav a, .top nav button { background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; font-size: 14px; }
 .top nav [aria-current="page"], .top nav [aria-expanded="true"] { text-decoration: underline; text-underline-offset: 5px; }
 .wordmark { font-weight: 500; font-size: 20px; letter-spacing: -0.02em; text-decoration: none; }
-.top .right { display: flex; justify-content: flex-end; }
+.top .right { display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
 body.recording .top { display: none; }
 
 /* status line */
@@ -65,7 +87,7 @@ body.recording .top { display: none; }
 #detected { display: none; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 32px; background: var(--dark); color: #fff; }
 #detected.show { display: flex; }
 #detected p { margin: 0; flex: 1 1 260px; }
-#detected .pill { background: #fff; color: var(--ink); }
+#detected .pill { background: #fff; color: #181818; }
 #detected .pill.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.4); }
 
 /* upcoming panel */
@@ -76,7 +98,7 @@ body.recording .top { display: none; }
 #upcoming-panel .time { font-variant-numeric: tabular-nums; }
 
 /* recording strip */
-#strip { display: none; position: sticky; top: 0; z-index: 6; background: var(--dark); color: #fff; padding: 14px 32px; gap: 20px; align-items: center; flex-wrap: wrap; }
+#strip { display: none; position: sticky; top: 0; z-index: 6; background: var(--dark); color: #fff; border-bottom: 1px solid rgba(255,255,255,.1); padding: 14px 32px; gap: 20px; align-items: center; flex-wrap: wrap; }
 body.recording #strip { display: flex; }
 #strip .lbl { color: #C9C9C9; }
 #stop { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #fff; background: transparent; display: grid; place-items: center; cursor: pointer; flex: none; }
@@ -138,7 +160,7 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); 
 .transcript p { margin: 0 0 8px; }
 .transcript time { color: var(--gray); font-size: 12px; font-variant-numeric: tabular-nums; margin-right: 8px; }
 .transcript .who { font-weight: 500; margin-right: 6px; }
-.transcript p.hit { background: #F3E7D6; border-radius: 6px; box-shadow: 0 0 0 6px #F3E7D6; }
+.transcript p.hit { background: var(--hit); border-radius: 6px; box-shadow: 0 0 0 6px var(--hit); }
 
 /* resizable drawer */
 .handle { align-self: stretch; cursor: col-resize; display: grid; place-items: center; touch-action: none; }
@@ -151,7 +173,7 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); 
 .msg { border-radius: 16px; padding: 10px 14px; max-width: 92%; overflow-wrap: anywhere; font-size: 14px; }
 .msg p { margin: 0 0 6px; } .msg p:last-child { margin: 0; }
 .msg ul { margin: 4px 0; padding-left: 1.1em; }
-.msg.me { justify-self: end; background: var(--dark); color: #fff; }
+.msg.me { justify-self: end; background: var(--btn); color: var(--on-btn); }
 .msg.bot { justify-self: start; background: var(--bg); }
 .msg small { display: block; margin-top: 6px; color: var(--gray); font-size: 12px; }
 .msg a[data-t] { font-variant-numeric: tabular-nums; }
@@ -169,7 +191,7 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--line); 
 
 /* record sheet */
 dialog { border: 0; border-radius: 21px; padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
-dialog::backdrop { background: rgba(24, 24, 24, .35); }
+dialog::backdrop { background: var(--scrim); }
 .sheet { padding: 28px 28px 24px; display: grid; gap: 18px; }
 .sheet h2 { margin: 0; font-weight: 400; }
 .field { display: grid; gap: 6px; }
@@ -183,10 +205,10 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
 .seg label { border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
 .seg input:checked + span { font-weight: 500; }
-.seg label:has(input:checked) { background: var(--dark); color: #fff; border-color: var(--dark); }
+.seg label:has(input:checked) { background: var(--btn); color: var(--on-btn); border-color: var(--btn); }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
 .check { display: flex; gap: 8px; align-items: center; cursor: pointer; }
-.check input { accent-color: var(--dark); }
+.check input { accent-color: var(--btn); }
 .sheet .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 .closed { min-height: 100vh; display: grid; place-content: center; padding: 32px; max-width: 60ch; margin: 0 auto; }
@@ -237,7 +259,7 @@ dialog::backdrop { background: rgba(24, 24, 24, .35); }
     <a href="#/settings" id="nav-settings">Settings</a>
   </nav>
   <a class="wordmark" href="#/">MeTranscript</a>
-  <div class="right"><button class="pill rec" id="record-btn">● Record</button></div>
+  <div class="right"><button class="pill ghost" id="theme-btn">Dark</button><button class="pill rec" id="record-btn">● Record</button></div>
 </header>
 
 <section id="upcoming-panel" aria-labelledby="up-title">
@@ -606,6 +628,17 @@ async function docAction(action, label, done) {
     $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`;
   }
 }
+
+/* ---------- theme ---------- */
+function applyTheme(dark, save = true) {
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  const b = $("#theme-btn");
+  b.textContent = dark ? "Light" : "Dark";
+  b.setAttribute("aria-label", dark ? "Switch to the light theme" : "Switch to the dark theme");
+  if (save) { try { localStorage.setItem("metranscript.theme", dark ? "dark" : "light"); } catch { /* storage may be blocked */ } }
+}
+applyTheme(document.documentElement.dataset.theme === "dark", false);
+$("#theme-btn").addEventListener("click", () => applyTheme(document.documentElement.dataset.theme !== "dark"));
 
 /* ---------- resizable drawer ---------- */
 const DRAWER_KEY = "metranscript.drawerWidth", DRAWER_MIN = 320;
