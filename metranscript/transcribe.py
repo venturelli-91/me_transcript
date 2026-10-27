@@ -8,6 +8,7 @@ import tempfile
 import threading
 import wave
 from collections.abc import Callable
+from difflib import SequenceMatcher
 from pathlib import Path
 
 from metranscript import privacy
@@ -67,8 +68,25 @@ def speech_spans(vad_output: str) -> list[tuple[float, float]]:
     return [(float(a) / 100, float(b) / 100) for a, b in SEGMENT_RE.findall(vad_output)]
 
 
+ECHO_GAP = 5.0
+ECHO_RATIO = 0.7
+ECHO_MIN_WORDS = 4
+
+
+def is_echo(seg: dict, others: list[dict]) -> bool:
+    """Speakers playing the call get picked up by the mic, so the same sentence lands in "Me" a moment later."""
+    if len(seg["text"].split()) < ECHO_MIN_WORDS:
+        return False
+    text = seg["text"].lower()
+    return any(abs(seg["t"] - o["t"]) <= ECHO_GAP and SequenceMatcher(None, text, o["text"].lower()).ratio() >= ECHO_RATIO
+               for o in others)
+
+
 def merge(*tracks: list[dict]) -> list[dict]:
-    return sorted((s for t in tracks for s in t), key=lambda s: s["t"])
+    segments = [s for t in tracks for s in t]
+    others = [s for s in segments if s["who"] == "Others"]
+    # ponytail: text similarity, no real echo cancellation; a real "Me" line that repeats Others almost verbatim is lost
+    return sorted((s for s in segments if s["who"] != "Me" or not is_echo(s, others)), key=lambda s: s["t"])
 
 
 def _run(args: list[str], timeout: int) -> str:
