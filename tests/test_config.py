@@ -76,6 +76,9 @@ class ValidateTest(ConfigTestCase):
         self.assertEqual(settings.validate("GMAIL_ADDRESS", "  me@gmail.com "), "me@gmail.com")
         self.assertEqual(settings.validate("GMAIL_APP_PASSWORD", "abcd efgh ijkl mnop"), "abcd efgh ijkl mnop")
         self.assertEqual(settings.validate("DEEPSEEK_API_KEY", "sk-abc"), "sk-abc")
+        self.assertEqual(settings.validate("AUDIO_KEEP_DAYS", " 0 "), "0")
+        self.assertEqual(settings.validate("MEETING_KEEP_DAYS", "90"), "90")
+        self.assertEqual(settings.validate("AUDIO_KEEP_DAYS", "007"), "7")
         ics = "https://a/x.ics, https://b/y.ics"
         self.assertEqual(settings.validate("GOOGLE_CALENDAR_ICS", ics), ics)
 
@@ -98,6 +101,18 @@ class ValidateTest(ConfigTestCase):
                 settings.validate(name, value)
             if value.strip():
                 self.assertNotIn(value.strip(), str(ctx.exception))
+
+    def test_retention_days_reject_non_ascii_digits_without_echoing_them(self):
+        for value in ("²", "١٢", "٣"):
+            with self.assertRaises(ValueError, msg=value) as ctx:
+                settings.validate("AUDIO_KEEP_DAYS", value)
+            self.assertNotIn(value, str(ctx.exception))
+
+    def test_retention_days_are_whole_numbers_in_range(self):
+        for name, value in [("AUDIO_KEEP_DAYS", "-1"), ("AUDIO_KEEP_DAYS", "3651"), ("MEETING_KEEP_DAYS", "0"),
+                            ("MEETING_KEEP_DAYS", "ten"), ("MEETING_KEEP_DAYS", "1.5")]:
+            with self.assertRaises(ValueError, msg=f"{name}={value}"):
+                settings.validate(name, value)
 
 
 class StatusTest(ConfigTestCase):

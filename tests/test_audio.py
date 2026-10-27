@@ -21,6 +21,49 @@ class AudioStoreTest(ServerCase):
     def meeting(self) -> str:
         return store.create("Kickoff", "en")
 
+    def test_archive_audio_compresses_by_default_and_keeps_nothing_when_days_is_zero(self):
+        for days, compressed in ((None, True), ("30", True), ("0", False), ("²", True)):
+            mid = self.meeting()
+            wav = store.meeting_dir(mid) / "mic.wav"
+            write_wav(wav)
+            env = {"AUDIO_KEEP_DAYS": days} if days is not None else {}
+            with mock.patch.dict(os.environ, env), mock.patch.object(transcribe, "to_opus") as to_opus:
+                if days is None:
+                    os.environ.pop("AUDIO_KEEP_DAYS", None)
+                server._archive_audio(mid)
+            self.assertEqual(to_opus.called, compressed, days)
+            self.assertFalse(wav.exists(), days)
+
+    def test_archive_audio_keeps_the_wav_when_compression_fails(self):
+        mid = self.meeting()
+        wav = store.meeting_dir(mid) / "mic.wav"
+        write_wav(wav)
+        with mock.patch.object(transcribe, "to_opus", side_effect=RuntimeError("ffmpeg failed")):
+            server._archive_audio(mid)
+        self.assertTrue(wav.exists())
+
+    def test_retention_pass_skips_only_a_meeting_that_is_being_processed(self):
+        with mock.patch.object(store, "expire_audio") as audio, mock.patch.object(store, "expire_meetings") as meetings, \
+                mock.patch.dict(os.environ, {"AUDIO_KEEP_DAYS": "7", "MEETING_KEEP_DAYS": "90"}), \
+                mock.patch.object(server.session, "meeting_id", "m1"):
+            with mock.patch.object(server.session, "phase", "done"):
+                server._retention_pass()
+            meetings.assert_called_with(90, skip=None)
+            audio.assert_called_with(7)
+            with mock.patch.object(server.session, "phase", "transcribing"):
+                server._retention_pass()
+            meetings.assert_called_with(90, skip="m1")
+
+    def test_retention_pass_survives_a_failing_step_and_does_nothing_without_a_meeting_limit(self):
+        with mock.patch.object(store, "expire_audio", side_effect=OSError("disk")), \
+                mock.patch.object(store, "expire_meetings") as meetings, mock.patch.dict(os.environ, {"MEETING_KEEP_DAYS": "30"}):
+            server._retention_pass()
+            meetings.assert_called_once()
+        with mock.patch.object(store, "expire_audio"), mock.patch.object(store, "expire_meetings") as meetings:
+            os.environ.pop("MEETING_KEEP_DAYS", None)
+            server._retention_pass()
+            meetings.assert_not_called()
+
     def test_load_reports_whether_audio_is_saved(self):
         mid = self.meeting()
         self.assertFalse(store.load(mid)["has_audio"])

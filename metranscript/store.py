@@ -4,7 +4,7 @@ import re
 import shutil
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent / "meetings"
@@ -28,7 +28,7 @@ def _write(path: Path, text: str) -> None:
 
 
 def create(title: str, lang: str, private: bool = False, now: datetime | None = None,
-           app: str | None = None) -> str:
+           app: str | None = None, consented: bool = False) -> str:
     now = now or datetime.now()
     base = now.strftime("%Y-%m-%d_%H%M")
     # ponytail: exists()/mkdir() race ignored, one user records one meeting at a time
@@ -39,7 +39,8 @@ def create(title: str, lang: str, private: bool = False, now: datetime | None = 
     folder = ROOT / meeting_id
     folder.mkdir(parents=True)
     _write_meta(folder, {"title": title, "lang": lang, "private": private, "app": app,
-                         "started_at": now.isoformat(timespec="seconds"), "ended_at": None})
+                         "started_at": now.isoformat(timespec="seconds"), "ended_at": None,
+                         "consent_at": now.isoformat(timespec="seconds") if consented else None})
     return meeting_id
 
 
@@ -211,6 +212,18 @@ def replace_transcript(meeting_id: str, segments: list[dict]) -> None:
         if (folder / "transcript.md").exists():
             os.replace(folder / "transcript.md", folder / "transcript.previous.md")
         _write(folder / "transcript.md", "".join(format_segment(s) + "\n" for s in segments))
+
+
+def expire_meetings(days: int, skip: str | None = None) -> None:
+    """Delete finished meetings that ended more than `days` ago; one still being recorded or processed is never touched."""
+    cutoff = datetime.now() - timedelta(days=days)
+    for folder in ROOT.glob("*/") if ROOT.exists() else []:
+        try:
+            ended = _meta(folder).get("ended_at")
+            if folder.name != skip and ended and datetime.fromisoformat(ended) < cutoff:
+                delete(folder.name)
+        except Exception:
+            pass  # a folder that is not a meeting, a hand-edited meta.json or one in use must not stop the others; the next pass tries again
 
 
 def expire_audio(days: int = AUDIO_KEEP_DAYS) -> None:

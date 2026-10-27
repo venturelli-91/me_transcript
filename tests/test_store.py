@@ -1,7 +1,9 @@
+import json
 import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest import mock
 
 from metranscript import store
 
@@ -22,6 +24,36 @@ class StoreTest(unittest.TestCase):
         m = store.load(mid)
         self.assertEqual((m["title"], m["lang"], m["private"], m["notes"], m["summary"]), ("Kickoff", "pt", False, "", ""))
         self.assertIsNone(m["ended_at"])
+
+    def test_consent_is_stamped_only_when_confirmed(self):
+        when = datetime(2026, 10, 26, 14, 30)
+        self.assertEqual(store.load(store.create("a", "pt", now=when, consented=True))["consent_at"], "2026-10-26T14:30:00")
+        self.assertIsNone(store.load(store.create("b", "pt", now=when))["consent_at"])
+
+    def test_old_finished_meetings_expire_but_never_a_live_or_skipped_one(self):
+        old, recent, live, skipped = (store.create(n, "en", now=datetime(2026, 10, d, 9, 0)) for n, d in
+                                      (("old", 1), ("recent", 20), ("live", 2), ("skipped", 3)))
+        for mid, ended in ((old, datetime(2026, 10, 1, 10, 0)), (recent, datetime(2026, 10, 20, 10, 0)),
+                           (skipped, datetime(2026, 10, 3, 10, 0))):
+            store.finish(mid, now=ended)
+        (store.ROOT / "reminders-sent.json").write_text("{}", encoding="utf-8")
+        with mock.patch.object(store, "datetime", wraps=datetime) as clock:
+            clock.now.return_value = datetime(2026, 10, 26, 12, 0)
+            store.expire_meetings(10, skip=skipped)
+        self.assertEqual(sorted(p.name for p in store.ROOT.iterdir()), sorted([recent, live, skipped, "reminders-sent.json"]))
+
+    def test_a_broken_meta_file_does_not_stop_the_other_meetings_from_expiring(self):
+        old = store.create("old", "en", now=datetime(2026, 10, 1, 9, 0))
+        store.finish(old, now=datetime(2026, 10, 1, 10, 0))
+        for name, ended in (("2026-09-01_0900", 5), ("2026-09-02_0900", "2020-01-01T00:00:00+00:00"), ("2026-09-03_0900", [1])):
+            (store.ROOT / name).mkdir()
+            (store.ROOT / name / "meta.json").write_text(json.dumps({"ended_at": ended}), encoding="utf-8")
+        (store.ROOT / "2026-09-04_0900").mkdir()
+        (store.ROOT / "2026-09-04_0900" / "meta.json").write_text("[1]", encoding="utf-8")
+        with mock.patch.object(store, "datetime", wraps=datetime) as clock:
+            clock.now.return_value = datetime(2026, 10, 26, 12, 0)
+            store.expire_meetings(10)
+        self.assertFalse((store.ROOT / old).exists())
 
     def test_same_minute_does_not_collide(self):
         when = datetime(2026, 10, 26, 14, 30)

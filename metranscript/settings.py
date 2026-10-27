@@ -10,7 +10,10 @@ FIELDS = {
     "GMAIL_APP_PASSWORD": True,
     "GOOGLE_CALENDAR_ICS": True,
     "MEETING_KEYWORDS": False,
+    "AUDIO_KEEP_DAYS": False,
+    "MEETING_KEEP_DAYS": False,
 }
+DAY_LIMITS = {"AUDIO_KEEP_DAYS": (0, 3650), "MEETING_KEEP_DAYS": (1, 3650)}
 MAX_VALUE = 2000
 _WRITE_LOCK = threading.Lock()
 
@@ -27,6 +30,16 @@ def env(name: str) -> str | None:
     return None
 
 
+def whole_days(value: str) -> bool:
+    return value.isascii() and value.isdigit()  # str.isdigit() alone accepts digits such as "²" that int() rejects
+
+
+def days(name: str, default: int) -> int:
+    """A retention setting in days; a missing or unreadable value means the default."""
+    raw = env(name)
+    return min(int(raw), 3650) if raw and whole_days(raw) else default
+
+
 def validate(name: str, value: str) -> str:
     """Return the cleaned value or raise ValueError with a message that never contains the value."""
     if name not in FIELDS:
@@ -40,6 +53,11 @@ def validate(name: str, value: str) -> str:
         raise ValueError("The value must be a single line.")
     if value[0] in "\"'" or value[-1] in "\"'":
         raise ValueError("The value can't start or end with a quote.")  # env() strips surrounding quotes
+    if name in DAY_LIMITS:
+        low, high = DAY_LIMITS[name]
+        if not whole_days(value) or not low <= int(value) <= high:
+            raise ValueError(f"Enter a whole number of days from {low} to {high}.")
+        return str(int(value))
     if name == "DEEPSEEK_API_KEY" and " " in value:
         raise ValueError("The DeepSeek key has no spaces.")
     if name == "GMAIL_ADDRESS" and ("@" not in value or " " in value):

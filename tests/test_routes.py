@@ -1,4 +1,5 @@
 import http.client
+import time
 import unittest
 from unittest import mock
 
@@ -51,6 +52,29 @@ class RoutesTest(ServerCase):
         status, body = self.call("POST", "/api/start", raw=b"{nope")
         self.assertEqual((status, body["error"]), (400, "Invalid JSON."))
         self.assertEqual(self.call("POST", "/api/start", raw=b"[]")[1]["error"], "JSON must be an object.")
+
+    def test_start_needs_the_consent_confirmation(self):
+        with mock.patch.object(server, "start", return_value="2026-01-01_0900") as start:
+            ask = "Confirm that you told the participants this meeting is being recorded."
+            self.assertEqual(self.call("POST", "/api/start", {"lang": "en"}), (400, {"error": ask}))
+            for wrong in ("yes", "true", 1, False, None):
+                self.assertEqual(self.call("POST", "/api/start", {"lang": "en", "consent": wrong})[0], 400, wrong)
+            start.assert_not_called()
+            self.assertEqual(self.call("POST", "/api/start", {"lang": "en", "consent": True}), (200, {"id": "2026-01-01_0900"}))
+        self.assertIs(start.call_args.args[-1], True)
+
+    def test_a_reminder_token_survives_a_refused_start_and_the_typed_title_wins(self):
+        server.reminder_tokens["tok"] = ("Standup", "Zoom", time.time() + 60)
+        self.addCleanup(server.reminder_tokens.clear)
+        with mock.patch.object(server, "start", return_value="2026-01-01_0900") as start:
+            self.assertEqual(self.call("POST", "/api/start", {"reminder": "tok"})[0], 400)
+            self.assertIn("tok", server.reminder_tokens)
+            self.assertEqual(self.call("POST", "/api/start", {"reminder": "tok", "consent": True})[0], 200)
+            self.assertEqual(start.call_args.args[:1], ("Standup",))
+            self.assertNotIn("tok", server.reminder_tokens)
+            server.reminder_tokens["tok2"] = ("Standup", "Zoom", time.time() + 60)
+            self.call("POST", "/api/start", {"reminder": "tok2", "title": "My title", "consent": True})
+            self.assertEqual(start.call_args.args[:1], ("My title",))
 
     def test_validation_errors(self):
         self.assertEqual(self.call("POST", "/api/start", {"lang": "fr"})[1]["error"], "Language must be pt or en.")

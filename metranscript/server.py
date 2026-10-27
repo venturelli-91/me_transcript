@@ -97,14 +97,14 @@ MEETING_APPS = {*detect.EXES.values(), *agenda.APPS.values()}
 
 
 def start(title: str, lang: str, private: bool, mic: str | None = None, speakers: str | None = None,
-          app: str | None = None) -> str:
+          app: str | None = None, consented: bool = False) -> str:
     with session.lock:
         if session.phase == "recording":
             raise RuntimeError("A meeting is already being recorded.")
         if session.phase in BUSY:
             raise RuntimeError("The previous meeting is still being processed. Wait for its summary to be ready.")
         check_ready()
-        meeting_id = store.create(title, lang, private, app=app)
+        meeting_id = store.create(title, lang, private, app=app, consented=consented)
         try:
             recorder = Recorder(store.meeting_dir(meeting_id), mic, speakers)
         except Exception as e:
@@ -148,13 +148,16 @@ def _finalize(meeting_id: str, recorder: Recorder, transcriber: Transcriber) -> 
 
 
 def _archive_audio(meeting_id: str) -> None:
-    """Keep the audio as small Opus files (they expire, see store.expire_audio); a failed encode keeps the WAV."""
+    """Keep the audio as small Opus files (they expire, see store.expire_audio); a failed encode keeps the WAV.
+    AUDIO_KEEP_DAYS=0 keeps no audio at all once the transcript is done."""
     folder = store.meeting_dir(meeting_id)
+    keep = settings.days("AUDIO_KEEP_DAYS", store.AUDIO_KEEP_DAYS) > 0
     for track in store.TRACKS:
         wav = folder / f"{track}.wav"
         try:
             if wav.exists():
-                transcribe.to_opus(wav)
+                if keep:
+                    transcribe.to_opus(wav)
                 wav.unlink()
         except (RuntimeError, OSError) as e:
             log.warning("Could not compress the audio of %s (%s); the WAV stays", meeting_id, e)
@@ -387,10 +390,12 @@ class Handler(BaseHTTPRequestHandler):
                 app = body.get("app")
                 reminder = body.get("reminder")
                 if reminder is not None:
-                    title, reminder_app, expires = reminder_tokens.pop(reminder, ("", None, 0))
-                    app = app or reminder_app
+                    token_title, reminder_app, expires = reminder_tokens.get(reminder, ("", None, 0))
                     if expires < time.time():
                         raise ValueError("This reminder link has expired.")
+                    app = app or reminder_app
+                    if not (isinstance(title, str) and title.strip()):
+                        title = token_title
                 if lang not in LANGS:
                     raise ValueError("Language must be pt or en.")
                 if not isinstance(title, str):
@@ -402,7 +407,11 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Unknown meeting app.")
                 if not all(d is None or isinstance(d, str) for d in (mic, speakers)):
                     raise ValueError("Device names must be text.")
-                self._send(200, {"id": start(title.strip()[:200], lang, private, mic or None, speakers or None, app)})
+                if body.get("consent") is not True:
+                    raise ValueError("Confirm that you told the participants this meeting is being recorded.")
+                meeting_id = start(title.strip()[:200], lang, private, mic or None, speakers or None, app, True)
+                reminder_tokens.pop(reminder, None)  # only a recording that really started uses up the one-time token
+                self._send(200, {"id": meeting_id})
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))
@@ -497,6 +506,28 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": str(e)})
 
 
+def _retention_pass() -> None:
+    """Expire old audio and, if set, old meetings; a meeting being recorded or processed is left alone."""
+    with session.lock:
+        live = session.meeting_id if session.phase in BUSY else None
+    try:
+        store.expire_audio(settings.days("AUDIO_KEEP_DAYS", store.AUDIO_KEEP_DAYS))
+    except Exception:
+        log.exception("Audio retention failed")
+    try:
+        if keep := settings.days("MEETING_KEEP_DAYS", 0):
+            store.expire_meetings(keep, skip=live)
+    except Exception:
+        log.exception("Meeting retention failed")
+
+
+def _retention_loop() -> None:
+    """At start and every few hours, for an app left running."""
+    while True:
+        _retention_pass()
+        time.sleep(6 * 3600)
+
+
 def main() -> None:
     global server, watcher
     # pythonw (start with Windows) has no console, so log to a file there.
@@ -508,7 +539,7 @@ def main() -> None:
         log.info("MeTranscript is already running at %s", URL)
         return
     store.ROOT.mkdir(exist_ok=True)
-    store.expire_audio()
+    threading.Thread(target=_retention_loop, daemon=True).start()
     watcher = agenda.Watcher(store.ROOT / "reminders-sent.json", on_reminder)
     log.info("MeTranscript running at %s", URL)
     server.serve_forever()

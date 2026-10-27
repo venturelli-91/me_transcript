@@ -303,7 +303,7 @@ dialog::backdrop { background: var(--scrim); }
     <div class="dev"><span class="lbl">Me</span><label class="sr" for="strip-mic">Microphone</label><select id="strip-mic"></select><i aria-hidden="true"><b id="lv-mic"></b></i></div>
     <div class="dev"><span class="lbl">Others</span><label class="sr" for="strip-system">Speakers or headphones</label><select id="strip-system"></select><i aria-hidden="true"><b id="lv-system"></b></i></div>
   </div>
-  <div class="nav"><div class="langsw" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false">PT-BR</button></div><button class="pill theme-btn">Dark</button><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
+  <div class="nav"><div class="langsw" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false">PT-BR</button></div><button class="pill theme-btn">Dark</button><button class="pill" id="strip-notice" type="button">Copy notice</button><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
 </div>
 
 <header class="top">
@@ -362,6 +362,11 @@ dialog::backdrop { background: var(--scrim); }
       <select id="dev-system"></select>
       <button type="button" class="link" id="dev-refresh" style="justify-self:start">Refresh devices</button>
     </div>
+    <div class="field consent">
+      <label class="check"><input type="checkbox" id="consent" required><span id="consent-text">I told the participants that this meeting is being recorded</span></label>
+      <button type="button" class="link" id="copy-notice" style="justify-self:start">Copy a recording notice</button>
+      <span id="notice-msg" class="muted help" aria-live="polite"></span>
+    </div>
     <div class="row"><span id="sheet-msg" class="error" aria-live="polite"></span><button class="pill dark" value="start" id="sheet-start">Start recording</button></div>
   </form>
 </dialog>
@@ -403,6 +408,16 @@ const PT = {
   "Speakers / headphones": "Alto-falantes / fones",
   "Refresh devices": "Atualizar dispositivos",
   "Start recording": "Iniciar gravação",
+  "I told the participants that this meeting is being recorded": "Avisei os participantes de que esta reunião está sendo gravada",
+  "Copy a recording notice": "Copiar um aviso de gravação",
+  "Copy notice": "Copiar aviso",
+  "Notice copied. Paste it in the meeting chat.": "Aviso copiado. Cole no chat da reunião.",
+  "Could not copy the notice.": "Não foi possível copiar o aviso.",
+  "(05) Retention": "(05) Retenção",
+  "Keep audio for (days)": "Manter o áudio por (dias)",
+  "Compressed audio is kept only so you can re-transcribe. 0 deletes it as soon as the transcript is ready. Default: 30.": "O áudio comprimido só é mantido para você transcrever de novo. 0 apaga assim que a transcrição fica pronta. Padrão: 30.",
+  "Delete whole meetings after (days)": "Excluir reuniões inteiras após (dias)",
+  "Leave empty to keep meetings until you delete them. Otherwise each meeting, with its notes, transcript and summary, is deleted this many days after it ends.": "Deixe vazio para manter as reuniões até você excluí-las. Senão, cada reunião, com notas, transcrição e resumo, é excluída tantos dias depois de terminar.",
   "Dark": "Escuro",
   "Light": "Claro",
   "Switch to the light theme": "Mudar para o tema claro",
@@ -508,12 +523,12 @@ const PT = {
   "Keys are stored only in the .env file on this computer. This page never shows them back.": "As chaves ficam apenas no arquivo .env deste computador. Esta página nunca as mostra de volta.",
   "Send a test email": "Enviar um e-mail de teste",
   "Save settings": "Salvar configurações",
-  "(05) Protected terms": "(05) Termos protegidos",
+  "(06) Protected terms": "(06) Termos protegidos",
   "Names, clients and projects to hide": "Nomes, clientes e projetos a ocultar",
   "One per line, for example a client or project name": "Um por linha, por exemplo o nome de um cliente ou projeto",
   "Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.": "Cada um é trocado por um código antes de qualquer coisa ir ao DeepSeek e devolvido na resposta. E-mails, links, telefones, documentos, valores e chaves são sempre ocultados, sem precisar listá-los. Uma palavra que o Whisper escreve errado também é pega. A lista fica em sensitive-terms.txt neste computador.",
   "Save terms": "Salvar termos",
-  "(06) App": "(06) App",
+  "(07) App": "(07) App",
   "Run in background and start with Windows": "Rodar em segundo plano e iniciar com o Windows",
   "Quit MeTranscript": "Fechar o MeTranscript",
   "MeTranscript is closed": "O MeTranscript foi fechado",
@@ -547,6 +562,8 @@ const STATIC = [
   ["#lang-label", null, "Language"], [".seg label:nth-child(1) span", null, "Portuguese"], [".seg label:nth-child(2) span", null, "English"],
   ["label[for=dev-mic]", null, "Microphone"], ["label[for=dev-system]", null, "Speakers / headphones"],
   ["#dev-refresh", null, "Refresh devices"], ["#sheet-start", null, "Start recording"],
+  ["#consent-text", null, "I told the participants that this meeting is being recorded"], ["#copy-notice", null, "Copy a recording notice"],
+  ["#strip-notice", null, "Copy notice"],
 ];
 function applyLang(save = true) {
   document.documentElement.lang = uiLang === "pt" ? "pt-BR" : "en";
@@ -1016,11 +1033,20 @@ for (const track of ["mic", "system"]) {
 /* ---------- record sheet ---------- */
 const sheet = $("#sheet");
 let sheetPrefill = {};
+const NOTICE = "This meeting is being recorded and transcribed for personal notes. / Esta reunião está sendo gravada e transcrita para anotações pessoais.";
+async function copyNotice(show) {
+  try { await navigator.clipboard.writeText(NOTICE); show(t("Notice copied. Paste it in the meeting chat.")); }
+  catch { show(t("Could not copy the notice.")); }
+}
+$("#copy-notice").addEventListener("click", () => copyNotice(msg => { $("#notice-msg").textContent = msg; }));
+$("#strip-notice").addEventListener("click", () => copyNotice(showInfo));
 async function openRecordSheet(prefill = {}) {
   if (BUSY.includes(status.phase)) return showError(t("A recording is already in progress."));
   sheetPrefill = prefill;
   $("#title").value = prefill.title || "";
   $("#sheet-msg").textContent = "";
+  $("#notice-msg").textContent = "";
+  $("#consent").checked = false;
   sheet.showModal();
   $("#title").focus();
   await loadDevices();
@@ -1028,7 +1054,7 @@ async function openRecordSheet(prefill = {}) {
 $("#sheet-cancel").addEventListener("click", () => sheet.close());
 $("#sheet-form").addEventListener("submit", async e => {
   e.preventDefault();
-  const ok = await startRec({ title: $("#title").value, app: sheetPrefill.app,
+  const ok = await startRec({ title: $("#title").value, app: sheetPrefill.app, reminder: sheetPrefill.reminder, consent: $("#consent").checked,
     lang: document.querySelector('input[name="lang"]:checked').value,
     mic: $("#dev-mic").value, speakers: $("#dev-system").value });
   if (ok) sheet.close();
@@ -1186,6 +1212,11 @@ const SETTINGS = [
   { num: "(04) Meeting alert", fields: [
     { name: "MEETING_KEYWORDS", label: "Browser window words", secret: false,
       help: "A browser using the microphone only raises the alert when one of its window titles has one of these comma-separated words. Default: Meet, Zoom, Teams." }] },
+  { num: "(05) Retention", fields: [
+    { name: "AUDIO_KEEP_DAYS", label: "Keep audio for (days)", secret: false,
+      help: "Compressed audio is kept only so you can re-transcribe. 0 deletes it as soon as the transcript is ready. Default: 30." },
+    { name: "MEETING_KEEP_DAYS", label: "Delete whole meetings after (days)", secret: false,
+      help: "Leave empty to keep meetings until you delete them. Otherwise each meeting, with its notes, transcript and summary, is deleted this many days after it ends." }] },
 ];
 const stateText = f => t(f.locked ? "Set by a Windows environment variable" : f.set ? (f.value === null ? "Saved" : "Set") : "Not set");
 
@@ -1212,13 +1243,13 @@ async function renderSettings() {
         ${s.testEmail ? `<div class="actions"><button type="button" class="pill ghost" id="test-email" ${cfg.GMAIL_ADDRESS.set && cfg.GMAIL_APP_PASSWORD.set ? "" : "disabled"}>${t("Send a test email")}</button></div>` : ""}</div></section>`).join("")}
       <div class="actions" style="margin: 8px 0 32px"><button class="pill dark" id="cfg-save">${t("Save settings")}</button></div>
     </form>
-    <section class="sec"><span class="lbl">${t("(05) Protected terms")}</span><div class="cfg-fields">
+    <section class="sec"><span class="lbl">${t("(06) Protected terms")}</span><div class="cfg-fields">
       <form id="terms-form"><div class="field">
         <label class="lbl" for="terms">${t("Names, clients and projects to hide")}</label>
         <textarea id="terms" rows="8" spellcheck="false" placeholder="${t("One per line, for example a client or project name")}">${esc(terms.join("\n"))}</textarea>
         <p class="muted help">${t("Each one is replaced by a code before anything goes to DeepSeek and put back in the answer. Emails, links, phone and ID numbers, money amounts and keys are always hidden, with no need to list them. A single word that Whisper misspells is caught too. The list stays in sensitive-terms.txt on this computer.")}</p></div>
         <div class="actions"><button class="pill dark" id="terms-save">${t("Save terms")}</button></div></form></div></section>
-    <section class="sec"><span class="lbl">${t("(06) App")}</span><div class="settings">
+    <section class="sec"><span class="lbl">${t("(07) App")}</span><div class="settings">
       <label><input type="checkbox" id="autostart"> ${t("Run in background and start with Windows")}</label>
       <button class="link" id="quit">${t("Quit MeTranscript")}</button></div></section>`;
   $("#cfg-form").addEventListener("submit", async e => {
@@ -1271,7 +1302,7 @@ document.querySelectorAll(".langsw button").forEach(b => b.addEventListener("cli
   const reminderToken = new URLSearchParams(location.search).get("record");
   if (reminderToken) {
     history.replaceState(null, "", "/" + location.hash);
-    startRec({ reminder: reminderToken, lang: "pt" });
+    openRecordSheet({ reminder: reminderToken });
   }
 })();
 </script>
