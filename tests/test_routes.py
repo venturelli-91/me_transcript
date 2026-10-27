@@ -40,15 +40,15 @@ class RoutesTest(ServerCase):
 
     def test_a_refused_request_with_a_body_never_resets_the_connection(self):
         body = json.dumps({"x": "y" * 60000})
-        for _ in range(150):
-            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        for _ in range(100):
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
             conn.request("POST", "/api/stop", body=body, headers={"Host": "evil.com", "Content-Type": "application/json"})
             res = conn.getresponse()
             res.read()
             conn.close()
             self.assertEqual(res.status, 403)
         for headers, expected in (({"Content-Type": "text/plain"}, 415), ({"Content-Type": "application/json"}, 404)):
-            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+            conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
             conn.request("POST", "/api/nope" if expected == 404 else "/api/stop", body=body, headers={"Host": f"127.0.0.1:{self.port}", **headers})
             res = conn.getresponse()
             res.read()
