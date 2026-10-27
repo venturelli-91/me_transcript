@@ -11,12 +11,6 @@ def item(start_ms: int, text: str) -> dict:
 
 
 class TranscribeTest(unittest.TestCase):
-    def setUp(self):
-        # vocabulary() reads the real glossary.txt otherwise
-        patcher = mock.patch.object(transcribe.privacy, "glossary", return_value=[])
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
     def test_parse_offsets_and_cleans_text(self):
         data = {"transcription": [item(0, " Good morning,\n everyone. "), item(4500, " Let's start.")]}
         self.assertEqual(transcribe.parse_whisper(data, 60.0, "Me"), [
@@ -104,14 +98,6 @@ class TranscribeTest(unittest.TestCase):
             self.assertEqual(transcribe.vocabulary(), "Acme Corp, Falcon")
         with mock.patch.object(transcribe.privacy, "terms", return_value=[]):
             self.assertEqual(transcribe.vocabulary(), "")
-
-    def test_vocabulary_puts_the_glossary_first_without_repeating_a_term(self):
-        with mock.patch.object(transcribe.privacy, "glossary", return_value=["GCP", "Control-M"]), \
-                mock.patch.object(transcribe.privacy, "terms", return_value=["Acme", "GCP"]):
-            self.assertEqual(transcribe.vocabulary(), "GCP, Control-M, Acme")
-        with mock.patch.object(transcribe.privacy, "glossary", return_value=["acme"]), \
-                mock.patch.object(transcribe.privacy, "terms", return_value=["Acme"]):
-            self.assertEqual(transcribe.vocabulary(), "acme")
 
     def test_window_prompt_has_the_vocabulary_and_the_tail_of_the_previous_window(self):
         calls = []

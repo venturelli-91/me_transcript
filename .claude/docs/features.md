@@ -144,15 +144,10 @@ direction "E · Index" chosen among five mockups. Full design:
       meeting older than that is removed at start and every 6 hours; a meeting being recorded is never removed.
 - [ ] `PRIVACY.md` explains what is stored, what is sent, how long it is kept and that consent is the user's responsibility.
 
-## F16 — Glossary (DEV-0060)
-- [ ] Settings → Glossary keeps a list of names and acronyms (2-100 characters each, up to 300) in `glossary.txt`; `GET/PUT /api/glossary`.
-- [ ] The glossary goes first in Whisper's `--prompt` and, unmasked, in a `<glossary>` block of every summary and chat request.
-      A term that is also a protected term is still masked.
-
 ## F17 — A fuller, more accurate summary (DEV-0061)
 - [ ] The summary has an Overview, one section per topic (3-8 full-sentence bullets with context, positions, numbers and outcome), Open questions,
       Decisions and, always last, Next steps (the page splits on that heading).
-- [ ] Names and acronyms are spelled as in the glossary or notes; nothing is expanded or guessed unless the speakers said it; a doubtful word is
+- [ ] Names and acronyms follow the notes and the form the context makes most plausible ("GCP" for "IGCP"); nothing is expanded or guessed unless the speakers said it; a doubtful word is
       kept and marked "(?)"; repeated or garbled fragments are ignored.
 - [ ] The summary request uses temperature 0.2 and up to 8000 output tokens; the chat prompt has the same accuracy rules.
 

@@ -39,14 +39,9 @@ class EnhanceTest(unittest.TestCase):
         self.assertIn("<notes>\n- deadline\n</notes>", user["content"])
         self.assertIn("Deadline is Friday.", user["content"])
 
-    def test_the_glossary_goes_to_the_model_but_a_protected_term_in_it_is_still_masked(self):
-        with mock.patch.object(enhance, "glossary", return_value=["GCP", "Control-M", "Acme"]),                 mock.patch.object(privacy, "terms", return_value=["Acme"]):
-            sent = enhance.summary_messages(MEETING, Mask())[1]["content"]
-        self.assertIn("<glossary>\nGCP\nControl-M\n[TERM_1]\n</glossary>", sent)
-
     def test_the_summary_prompt_asks_for_accuracy_and_keeps_next_steps_last(self):
         system = enhance.summary_messages(MEETING, Mask())[0]["content"]
-        for rule in ("Never invent", "<glossary>", "Do not expand an acronym", '"(?)"', "always the very last section"):
+        for rule in ("Never invent", "most plausible", "Do not expand an acronym", '"(?)"', "always the very last section"):
             self.assertIn(rule, system)
         summary = "## Overview\n- x\n\n## Open questions\n- y\n\n## Decisions\n- z\n\n## Próximos passos\n- Eu: enviar (sexta)"
         self.assertEqual(store.split_summary(summary)[1], "- Eu: enviar (sexta)")

@@ -162,12 +162,9 @@ def pick_cut(spans: list[tuple[float, float]], duration: float) -> float:
 
 
 def vocabulary() -> str:
-    """The user's glossary and protected terms, so Whisper spells them right."""
+    """The user's protected terms, so Whisper spells them right."""
     out = ""
-    unique = {}
-    for term in [*privacy.glossary(), *privacy.terms()]:
-        unique.setdefault(term.casefold(), term)  # "acme" and "Acme" are one term
-    for term in unique.values():
+    for term in privacy.terms():
         if len(out) + len(term) + 2 > VOCAB_MAX:
             break
         out += (", " if out else "") + term

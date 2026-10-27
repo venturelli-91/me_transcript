@@ -8,7 +8,6 @@ ROOT = Path(__file__).resolve().parent.parent
 MAX_TERMS = 500
 MIN_TERM = 3
 MAX_TERM = 100
-MAX_GLOSSARY = 300
 PLACEHOLDER_RE = re.compile(r"\[[A-Z]+_\d+\]")
 LOOKS_LIKE_CODE_RE = re.compile(r"\[[a-z]+_\d+\]")  # the same, on folded (lowercase) text
 _UNITS = "k|mil|milhões|milhão|bilhões|bilhão|million|billion|reais|dólares|dollars|euros"
@@ -56,39 +55,22 @@ def _parse(text: str) -> list[str]:
     return out
 
 
-def _load(name: str) -> list[str]:
-    path = ROOT / name
+def terms() -> list[str]:
+    path = ROOT / "sensitive-terms.txt"
     return _parse(path.read_text(encoding="utf-8-sig")) if path.exists() else []
 
 
-def _store(name: str, text: str, limit: int, shortest: int) -> list[str]:
+def save_terms(text: str) -> list[str]:
     cleaned = _parse(text.lstrip("\ufeff"))
-    if len(cleaned) > limit:
-        raise ValueError(f"Add at most {limit} terms.")
-    if any(not shortest <= len(t) <= MAX_TERM for t in cleaned):
-        raise ValueError(f"Each term must have between {shortest} and {MAX_TERM} characters.")
-    path = ROOT / name
+    if len(cleaned) > MAX_TERMS:
+        raise ValueError(f"Add at most {MAX_TERMS} terms.")
+    if any(not MIN_TERM <= len(t) <= MAX_TERM for t in cleaned):
+        raise ValueError(f"Each term must have between {MIN_TERM} and {MAX_TERM} characters.")
+    path = ROOT / "sensitive-terms.txt"
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text("".join(t + "\n" for t in cleaned), encoding="utf-8")
     os.replace(tmp, path)
     return cleaned
-
-
-def terms() -> list[str]:
-    return _load("sensitive-terms.txt")
-
-
-def save_terms(text: str) -> list[str]:
-    return _store("sensitive-terms.txt", text, MAX_TERMS, MIN_TERM)
-
-
-def glossary() -> list[str]:
-    """Names and acronyms to spell right (GCP, Control-M). Not hidden from the AI, unlike the protected terms."""
-    return _load("glossary.txt")
-
-
-def save_glossary(text: str) -> list[str]:
-    return _store("glossary.txt", text, MAX_GLOSSARY, 2)
 
 
 class Mask:

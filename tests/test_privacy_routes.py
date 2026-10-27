@@ -21,16 +21,6 @@ class PrivacyRoutesTest(ServerCase):
         self.assertEqual((status, body), (200, {"terms": ["Acme", "Falcon"]}))
         self.assertEqual(self.call("GET", "/api/privacy")[1], {"terms": ["Acme", "Falcon"]})
 
-    def test_glossary_can_be_read_and_saved_and_accepts_short_acronyms(self):
-        self.addCleanup(lambda: (privacy.ROOT / "glossary.txt").unlink(missing_ok=True))
-        self.assertEqual(self.call("GET", "/api/glossary"), (200, {"terms": []}))
-        status, body = self.call("PUT", "/api/glossary", {"terms": "GCP\nControl-M\nPH\ngcp"})
-        self.assertEqual((status, body), (200, {"terms": ["GCP", "Control-M", "PH"]}))
-        self.assertEqual(privacy.glossary(), ["GCP", "Control-M", "PH"])
-        self.assertEqual(self.call("PUT", "/api/glossary", {"terms": 5})[0], 400)
-        self.assertEqual(self.call("PUT", "/api/glossary", {"terms": "x"})[0], 400)
-        self.assertEqual(self.call("GET", "/api/privacy")[1], {"terms": []})  # a separate list
-
     def test_bad_terms_are_rejected(self):
         self.assertEqual(self.call("PUT", "/api/privacy", {"terms": 5})[0], 400)
         self.assertEqual(self.call("PUT", "/api/privacy", {"terms": "x" * 101})[0], 400)

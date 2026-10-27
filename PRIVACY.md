@@ -12,7 +12,6 @@ Everything lives in plain files in the project folder, on your computer:
 | `meetings/<date>/` | The audio (compressed, see below), the transcript, your notes, the summary, the chat and `meta.json` (title, language, times, and when you confirmed you had told the participants) |
 | `.env` | Your keys (DeepSeek, Gmail app password, calendar address) in plain text |
 | `sensitive-terms.txt` | The names you asked it to hide |
-| `glossary.txt` | The names and acronyms you want spelled right; they are **not** hidden |
 
 Nothing is uploaded anywhere automatically, and the app has no analytics or telemetry. The page it shows only talks
 to `127.0.0.1`.
@@ -21,7 +20,7 @@ to `127.0.0.1`.
 
 | To | What | When |
 |---|---|---|
-| DeepSeek | The transcript, your notes, your glossary and the chat, after contacts, amounts, IDs, keys and your protected terms are swapped for codes | Only when a summary is generated or you use the chat |
+| DeepSeek | The transcript, your notes and the chat, after contacts, amounts, IDs, keys and your protected terms are swapped for codes | Only when a summary is generated or you use the chat |
 | Your own Gmail | The summary and the transcript, with real names | Only if you configured Gmail |
 | Google Calendar | Your calendar is read through your secret iCal address | Only if you configured it |
 

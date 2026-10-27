@@ -128,7 +128,7 @@ GOOGLE_CALENDAR_ICS=https://calendar.google.com/calendar/ical/.../basic.ics
 ```
 
 Reminders only fire while MeTranscript is running: turn on **Run in background and start with
-Windows** in Settings → **(08) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
+Windows** in Settings → **(07) App** (and use **Quit MeTranscript** to stop it). Treat the secret address like a
 password; if it leaks, reset it in the same Google Calendar screen.
 
 ### Meeting alert (browser words)
@@ -144,21 +144,13 @@ MEETING_KEYWORDS=Meet,Zoom,Teams,Whereby
 
 Only the active tab's title is visible, so a meeting in a background tab is not detected.
 
-### Glossary: names and acronyms
-
-Whisper mishears acronyms ("GCP" became "IGCP") and the summary can misspell them. List the ones you use in
-Settings → **(06) Glossary**, one per line (for example `GCP`, `Control-M`, `CRQ`). They are given to Whisper, so it hears them
-right, and to DeepSeek, so the summary writes them exactly like that and never expands one the speakers did not expand.
-The glossary is **not hidden**: it goes to DeepSeek as written. Anything private belongs in Protected terms (below).
-The list is kept in `glossary.txt`, which is not in git. After changing it, use **Re-transcribe** on an old meeting.
-
 ### Protecting sensitive data
 
 Everything that goes to DeepSeek (summary and chat) is cleaned first, always, with no switch to turn it off:
 
 - Emails, links, phone and ID numbers (CPF, CNPJ, cards), money amounts and API keys are replaced by codes
   like `[EMAIL_1]` or `[AMOUNT_1]` automatically.
-- Names of clients, people and projects are replaced when you list them in Settings → **(07) Protected
+- Names of clients, people and projects are replaced when you list them in Settings → **(06) Protected
   terms** (one per line, 3+ characters, a line starting with `# ` is a comment; the list lives in
   `sensitive-terms.txt`, which is not in git). Matching ignores case, accents and invisible characters, finds a
   name split by a line break, and catches a single word that Whisper misspells ("Falkon" for "Falcon").
