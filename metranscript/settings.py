@@ -9,6 +9,8 @@ FIELDS = {
     "GMAIL_ADDRESS": False,
     "GMAIL_APP_PASSWORD": True,
     "GOOGLE_CALENDAR_ICS": True,
+    "GOOGLE_CLIENT_ID": False,
+    "GOOGLE_CLIENT_SECRET": True,
     "MEETING_KEYWORDS": False,
     "AUDIO_KEEP_DAYS": False,
     "MEETING_KEEP_DAYS": False,
@@ -58,6 +60,10 @@ def validate(name: str, value: str) -> str:
         if not whole_days(value) or not low <= int(value) <= high:
             raise ValueError(f"Enter a whole number of days from {low} to {high}.")
         return str(int(value))
+    if name == "GOOGLE_CLIENT_ID" and not value.endswith(".apps.googleusercontent.com"):
+        raise ValueError("The client ID ends with .apps.googleusercontent.com.")
+    if name == "GOOGLE_CLIENT_SECRET" and " " in value:
+        raise ValueError("The client secret has no spaces.")
     if name == "DEEPSEEK_API_KEY" and " " in value:
         raise ValueError("The DeepSeek key has no spaces.")
     if name == "GMAIL_ADDRESS" and ("@" not in value or " " in value):

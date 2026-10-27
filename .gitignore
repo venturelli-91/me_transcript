@@ -16,3 +16,5 @@ metranscript.log
 .superpowers/
 sensitive-terms.txt
 sensitive-terms.txt.tmp
+google-accounts.json
+google-accounts.json.tmp

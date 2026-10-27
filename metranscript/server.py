@@ -7,11 +7,12 @@ import shutil
 import sys
 import threading
 import time
+import urllib.parse
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from metranscript import agenda, desktop, detect, enhance, mail, privacy, settings, store, transcribe
+from metranscript import agenda, desktop, detect, enhance, google, mail, privacy, settings, store, transcribe
 from metranscript.capture import Recorder, list_devices
 from metranscript.transcribe import Transcriber, check_ready
 
@@ -323,6 +324,13 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _redirect(self, location: str) -> None:
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
     def _body(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
         if not 0 <= length <= MAX_BODY:
@@ -351,6 +359,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.split("?", 1)[0] == "/":
             return self._send(200, INDEX.read_bytes(), "text/html")
         path = self.path.split("?", 1)[0]
+        if self.path.split("?", 1)[0] == "/oauth/google":
+            return self._redirect(f"/?google={_google_outcome(urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query))}#/settings")
         font = FONTS / path.removeprefix("/fonts/") if path.startswith("/fonts/") else None
         if font and font.parent == FONTS and font.suffix == ".woff2" and font.is_file():
             return self._send(200, font.read_bytes(), "font/woff2")
@@ -366,6 +376,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, settings.status())
         if self.path == "/api/privacy":
             return self._send(200, {"terms": privacy.terms()})
+        if self.path == "/api/google":
+            return self._send(200, {"configured": google.configured(), "accounts": google.accounts()})
         if self.path == "/api/status":
             return self._send(200, session.snapshot())
         if self.path == "/api/meetings":
@@ -412,6 +424,19 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))
+        if self.path == "/api/google/login":
+            return self._guard(lambda: self._send(200, {"url": google.start_login(PORT)}))
+        if self.path in ("/api/google/sender", "/api/google/disconnect"):
+            def run():
+                email = self._body().get("email")
+                if not isinstance(email, str):
+                    raise ValueError("email must be text.")
+                if self.path.endswith("sender"):
+                    google.set_sender(email)
+                else:
+                    google.disconnect(email)
+                self._send(200, {"accounts": google.accounts()})
+            return self._guard(run)
         if self.path == "/api/devices":
             def run():
                 body = self._body()
@@ -501,6 +526,19 @@ class Handler(BaseHTTPRequestHandler):
             self._send(409, {"error": str(e)})
         except ValueError as e:
             self._send(400, {"error": str(e)})
+
+
+def _google_outcome(query: dict) -> str:
+    """What the page should tell the user after Google sent them back here; the details go to the log, never to the URL."""
+    one = lambda key: query.get(key, [""])[0]
+    if one("error"):
+        return "denied" if one("error") == "access_denied" else "error"
+    try:
+        google.finish_login(PORT, one("code"), one("state"))
+    except RuntimeError as e:
+        log.warning("Google sign-in failed: %s", e)
+        return "error"
+    return "connected"
 
 
 def _retention_pass() -> None:
