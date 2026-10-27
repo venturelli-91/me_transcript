@@ -35,6 +35,7 @@
   --btn: #1F1A16;
   --on-btn: #FBF8F3;
   --rec: #C8412F;
+  --others: #A66A1F;
   --rec-bg: #C8412F;
   --hit: #F3E7D6;
   --scrim: rgba(24, 24, 24, .35);
@@ -58,6 +59,7 @@
   --btn: #EFEBE4;
   --on-btn: #1A1613;
   --rec: #EC6B55;
+  --others: #D39A52;
   --hit: #3A3226;
   --scrim: rgba(0, 0, 0, .6);
 }
@@ -126,7 +128,7 @@ body.recording .top { display: none; }
 #upcoming-panel .time { font: 400 13px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
 
 /* recording strip */
-#strip { display: none; position: sticky; top: 0; z-index: 6; background: var(--dark); color: #fff; border-bottom: 1px solid rgba(255,255,255,.1); padding: 14px 32px; gap: 20px; align-items: center; flex-wrap: wrap; }
+#strip { display: none; position: sticky; top: 0; z-index: 6; background: var(--dark); color: #fff; border-top: 2px solid var(--rec); border-bottom: 1px solid rgba(255,255,255,.1); padding: 12px 32px; gap: 20px; align-items: center; flex-wrap: wrap; }
 body.recording #strip { display: flex; }
 #strip .lbl { color: #C9C9C9; }
 #stop { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #fff; background: transparent; display: grid; place-items: center; cursor: pointer; flex: none; }
@@ -134,13 +136,18 @@ body.recording #strip { display: flex; }
 #stop:disabled { opacity: .4; cursor: default; }
 #strip .now { min-width: 0; flex: 1 1 220px; }
 #strip .now .lbl { display: block; overflow-wrap: anywhere; }
-#strip-clock { font: 400 28px/1.1 var(--mono); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+#strip-clock { font: 400 40px/1.05 var(--mono); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 #strip .devs { display: grid; gap: 6px; font-size: 12px; min-width: 0; flex: 0 1 360px; }
-#strip .dev { display: grid; grid-template-columns: 50px minmax(0, 1fr) 60px; gap: 8px; align-items: center; }
+#strip .dev { display: grid; grid-template-columns: 64px minmax(0, 1fr) 96px; gap: 8px; align-items: center; }
+#strip .dev .lbl::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--meter); }
+#strip .dev:nth-child(1) { --meter: #EFEBE4; }
+#strip .dev:nth-child(2) { --meter: #D39A52; }
+body.on-air #strip-label::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--rec); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 #strip select { min-width: 0; width: 100%; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: var(--r); padding: 3px 8px; font-size: 12px; }
 #strip select option { color: var(--ink); background: var(--surface); }
-#strip i { height: 4px; border-radius: 2px; background: rgba(255,255,255,.2); overflow: hidden; display: block; }
-#strip i b { display: block; height: 100%; width: 0; background: #fff; transition: width .12s linear; }
+#strip i { height: 14px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 3px, transparent 3px 6px); overflow: hidden; display: block; }
+#strip i b { display: block; height: 100%; width: 0; background: var(--meter); transition: width .12s linear; -webkit-mask: repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 6px); mask: repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 6px); }
 #strip .nav { display: flex; gap: 8px; }
 #strip .pill { background: transparent; color: #fff; border-color: rgba(255,255,255,.35); }
 
@@ -195,7 +202,16 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); 
 .saved { color: var(--gray); font-size: 12px; }
 .transcript p { margin: 0 0 8px; }
 .transcript time { color: var(--gray); font: 400 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; margin-right: 8px; }
-.transcript .who { font-weight: 500; margin-right: 6px; }
+.who { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .04em; margin-right: 8px; }
+.who::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--ink); }
+p.others { margin-left: 28px; }
+p.others .who::before { background: var(--others); }
+.tl { margin: 0 0 18px; }
+.tl-bar { position: relative; height: 16px; background: var(--line); cursor: pointer; }
+.tl-bar span { position: absolute; top: 0; bottom: 0; background: var(--ink); }
+.tl-bar span.others { background: var(--others); top: 40%; }
+.tl-bar span.me { bottom: 40%; }
+.tl-share { margin-top: 6px; font: 400 12px/1.5 var(--mono); color: var(--gray); }
 .transcript p.hit { background: var(--hit); border-radius: 6px; box-shadow: 0 0 0 6px var(--hit); }
 
 /* resizable drawer */
@@ -223,7 +239,6 @@ textarea.notes { width: 100%; min-height: 160px; border: 1px solid var(--edge); 
 .feed { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; min-height: 240px; max-height: 60vh; overflow-y: auto; font-size: 14px; }
 .feed p { margin: 0 0 8px; }
 .feed time { color: var(--gray); font: 400 12px/1.5 var(--mono); font-variant-numeric: tabular-nums; margin-right: 8px; }
-.feed .who { font-weight: 500; margin-right: 6px; }
 
 /* record sheet */
 dialog { border: 0; border-radius: var(--r-lg); padding: 0; width: min(560px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
@@ -274,7 +289,7 @@ dialog::backdrop { background: var(--scrim); }
   #upcoming-panel li { grid-template-columns: 52px 1fr; }
   #upcoming-panel li .pill { grid-column: 2; justify-self: start; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
 <body>
@@ -285,8 +300,8 @@ dialog::backdrop { background: var(--scrim); }
     <div id="strip-clock">00:00</div>
   </div>
   <div class="devs">
-    <div class="dev"><span class="lbl">Me</span><label class="sr" for="strip-mic">Microphone</label><select id="strip-mic"></select><i><b id="lv-mic"></b></i></div>
-    <div class="dev"><span class="lbl">Others</span><label class="sr" for="strip-system">Speakers or headphones</label><select id="strip-system"></select><i><b id="lv-system"></b></i></div>
+    <div class="dev"><span class="lbl">Me</span><label class="sr" for="strip-mic">Microphone</label><select id="strip-mic"></select><i aria-hidden="true"><b id="lv-mic"></b></i></div>
+    <div class="dev"><span class="lbl">Others</span><label class="sr" for="strip-system">Speakers or headphones</label><select id="strip-system"></select><i aria-hidden="true"><b id="lv-system"></b></i></div>
   </div>
   <div class="nav"><div class="langsw" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="pt" aria-pressed="false">PT-BR</button></div><button class="pill theme-btn">Dark</button><a class="pill" href="#/" id="strip-index">Index</a><a class="pill" id="strip-back" hidden>Back to recording</a></div>
 </div>
@@ -433,6 +448,7 @@ const PT = {
   "Private meeting: chat is off and nothing is sent to the AI or by email.": "Reunião privada: o chat está desligado e nada é enviado à IA nem por e-mail.",
   "Before anything goes to DeepSeek, names, contacts and values are swapped for codes and put back in the answer.": "Antes de qualquer coisa ir ao DeepSeek, nomes, contatos e valores são trocados por códigos e devolvidos na resposta.",
   " Hidden so far: {n}.": " Ocultados até agora: {n}.",
+  "Who spoke when: Me {a}%, Others {b}%": "Quem falou e quando: Me {a}%, Others {b}%",
   "Message": "Mensagem",
   "Ask or request a change…": "Pergunte ou peça uma mudança…",
   "Send": "Enviar",
@@ -649,11 +665,26 @@ function transcriptLines(text) {
     return m ? { t: `${m[1]}${m[2]}${m[3]}`, label: `${m[1]}:${m[2]}:${m[3]}`, who: m[4], text: m[5] } : { t: "", label: "", who: "", text: line };
   });
 }
+const seconds = t => +t.slice(0, 2) * 3600 + +t.slice(2, 4) * 60 + +t.slice(4, 6);
+// Each line lasts until the next one starts, capped so a long silence does not read as speech.
+function timeline(lines) {
+  const timed = lines.filter(l => l.t && l.who);
+  if (timed.length < 2) return "";
+  const starts = timed.map(l => seconds(l.t)), end = Math.max(...starts) + 8;
+  const spoke = { Me: 0, Others: 0 }, blocks = timed.map((l, i) => {
+    const len = Math.max(0, Math.min(20, (starts[i + 1] ?? end) - starts[i]));
+    spoke[l.who] = (spoke[l.who] || 0) + len;
+    return `<span class="${l.who === "Others" ? "others" : "me"}" data-t="${l.t}" style="left:${(starts[i] / end * 100).toFixed(2)}%;width:${Math.max(0.3, len / end * 100).toFixed(2)}%" title="${l.label} ${esc(l.who)}"></span>`;
+  }).join("");
+  const total = spoke.Me + spoke.Others || 1, me = Math.round(spoke.Me / total * 100);
+  return `<div class="tl"><div class="tl-bar" role="img" aria-label="${esc(t("Who spoke when: Me {a}%, Others {b}%", { a: me, b: 100 - me }))}">${blocks}</div>
+    <div class="tl-share" aria-hidden="true">Me ${me}% · Others ${100 - me}%</div></div>`;
+}
 function renderTranscript() {
   const lines = transcriptLines(openMeeting.transcript);
   if (!lines.length) return `<p class="muted">${t("No transcript.")}</p>`;
   const visible = showAllTranscript ? lines : lines.slice(0, 20);
-  return `<div class="transcript t14">${visible.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>
+  return `${timeline(lines)}<div class="transcript t14">${visible.map(l => `<p${l.t ? ` id="t-${l.t}"` : ""}${l.who === "Others" ? ' class="others"' : ""}>${l.label ? `<time>${l.label}</time>` : ""}${l.who ? `<span class="who">${esc(l.who)}</span>` : ""}${esc(l.text)}</p>`).join("")}</div>
     ${lines.length > 20 && !showAllTranscript ? `<button class="link" id="show-all">${t("Show all {n} lines", { n: lines.length })}</button>` : ""}`;
 }
 
@@ -725,6 +756,7 @@ function renderMeeting() {
   bindHandle();
 }
 function bindTranscript() {
+  $(".tl-bar")?.addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (b) jumpTo(b.dataset.t); });
   $("#show-all")?.addEventListener("click", () => { showAllTranscript = true; $("#transcript").innerHTML = renderTranscript(); bindTranscript(); });
 }
 function jumpTo(t) {
@@ -945,7 +977,7 @@ function renderFeed() {
   const feed = $("#feed");
   if (!feed || !status.segments?.length) return;
   const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
-  feed.innerHTML = status.segments.map(s => `<p><time>${clock(s.t)}</time><span class="who">${esc(s.who)}</span>${esc(s.text)}</p>`).join("");
+  feed.innerHTML = status.segments.map(s => `<p${s.who === "Others" ? ' class="others"' : ""}><time>${clock(s.t)}</time><span class="who">${esc(s.who)}</span>${esc(s.text)}</p>`).join("");
   if (atBottom) feed.scrollTop = feed.scrollHeight;
 }
 
@@ -1029,6 +1061,8 @@ async function refresh() {
   try { status = await api("/api/status"); } catch { statusEl.textContent = t("Cannot reach MeTranscript. Is the program running?"); return; }
   const p = status.phase, rec = p === "recording", busy = BUSY.includes(p);
   document.body.classList.toggle("recording", busy);
+  document.body.classList.toggle("on-air", rec);
+  document.title = rec ? `● ${clock(status.elapsed || 0)} MeTranscript` : "MeTranscript";
   if (busy) {
     recordingId = status.meeting_id;
     const m = meetings.find(x => x.id === status.meeting_id) || (openMeeting?.id === status.meeting_id ? openMeeting : null);
