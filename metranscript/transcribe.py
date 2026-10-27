@@ -164,7 +164,10 @@ def pick_cut(spans: list[tuple[float, float]], duration: float) -> float:
 def vocabulary() -> str:
     """The user's glossary and protected terms, so Whisper spells them right."""
     out = ""
-    for term in dict.fromkeys([*privacy.glossary(), *privacy.terms()]):
+    unique = {}
+    for term in [*privacy.glossary(), *privacy.terms()]:
+        unique.setdefault(term.casefold(), term)  # "acme" and "Acme" are one term
+    for term in unique.values():
         if len(out) + len(term) + 2 > VOCAB_MAX:
             break
         out += (", " if out else "") + term
@@ -193,10 +196,10 @@ def transcribe_clip(clip: Path, spans: list[tuple[float, float]], cut: float, la
         args += ["--prompt", prompt]
     _run(args, timeout=300)
     # whisper.cpp can cut a multibyte character in half inside a loop of garbage; decode leniently so one bad clip never stops the meeting.
-    raw = base.with_suffix(".json").read_bytes().decode("utf-8", errors="replace")
     try:
+        raw = base.with_suffix(".json").read_bytes().decode("utf-8", errors="replace")
         return parse_whisper(json.loads(raw), offset, who)
-    except (json.JSONDecodeError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
         raise RuntimeError("whisper-cli wrote output that could not be read") from None
 
 

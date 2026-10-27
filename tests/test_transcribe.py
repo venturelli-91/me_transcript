@@ -36,7 +36,8 @@ class TranscribeTest(unittest.TestCase):
 
     def test_a_clip_with_broken_utf8_or_json_is_read_leniently_or_skipped(self):
         for raw, expected in ((b'{"transcription": [{"offsets": {"from": 0}, "text": " Ol\xed mundo"}]}', ["Ol mundo"]),
-                              (b"not json at all \xed", None), (b'{"transcription": [{"text": "no offsets"}]}', None)):
+                              (b"not json at all \xed", None), (b"[]", None), (b"null", None),
+                              (b'{"transcription": [{"offsets": {"from": 0}, "text": null}]}', None), (b"[" * 100000, None), (b'{"transcription": [{"text": "no offsets"}]}', None)):
             with self.subTest(raw=raw[:20]), tempfile.TemporaryDirectory() as tmp:
                 clip = Path(tmp) / "mic.wav"
                 (Path(tmp) / "mic-out.json").write_bytes(raw)
@@ -108,6 +109,9 @@ class TranscribeTest(unittest.TestCase):
         with mock.patch.object(transcribe.privacy, "glossary", return_value=["GCP", "Control-M"]), \
                 mock.patch.object(transcribe.privacy, "terms", return_value=["Acme", "GCP"]):
             self.assertEqual(transcribe.vocabulary(), "GCP, Control-M, Acme")
+        with mock.patch.object(transcribe.privacy, "glossary", return_value=["acme"]), \
+                mock.patch.object(transcribe.privacy, "terms", return_value=["Acme"]):
+            self.assertEqual(transcribe.vocabulary(), "acme")
 
     def test_window_prompt_has_the_vocabulary_and_the_tail_of_the_previous_window(self):
         calls = []
