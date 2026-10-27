@@ -42,7 +42,7 @@ def http_error(status: int, code: str) -> urllib.error.HTTPError:
     return urllib.error.HTTPError("https://x", status, "err", {}, io.BytesIO(json.dumps({"error": code}).encode()))
 
 
-SCOPE = "openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+SCOPE = "openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events.readonly"
 
 
 def token_reply(email="me@gmail.com", **extra) -> dict:
@@ -101,7 +101,7 @@ class LoginTest(GoogleCase):
         self.assertEqual((q["client_id"], q["redirect_uri"], q["response_type"]), ("123.apps.googleusercontent.com", "http://127.0.0.1:8765/oauth/google", "code"))
         self.assertEqual((q["code_challenge_method"], q["access_type"]), ("S256", "offline"))
         self.assertIn("gmail.send", q["scope"])
-        self.assertIn("calendar.readonly", q["scope"])
+        self.assertIn("calendar.events.readonly", q["scope"])
         verifier = google._pending[q["state"]][0]
         digest = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
         self.assertEqual(q["code_challenge"], digest)
@@ -153,7 +153,7 @@ class LoginTest(GoogleCase):
         self.assertEqual(google.accounts(), [])
 
     def test_every_permission_must_be_granted_or_the_login_is_revoked_and_nothing_is_saved(self):
-        for scope in ("openid email https://www.googleapis.com/auth/calendar.readonly",
+        for scope in ("openid email https://www.googleapis.com/auth/calendar.events.readonly",
                       "openid email https://www.googleapis.com/auth/gmail.send", ""):
             state = urllib.parse.parse_qs(urllib.parse.urlsplit(google.start_login(8765)).query)["state"][0]
             with self.subTest(scope=scope), self.answer(token_reply(scope=scope), {}), self.assertRaises(RuntimeError) as ctx:

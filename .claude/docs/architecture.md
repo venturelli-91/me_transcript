@@ -168,7 +168,7 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
 
 ## Google accounts (DEV-0068 to DEV-0073, ADR-0009)
 - `google.py`: `start_login(port)` builds the Google address (code flow, PKCE S256, random `state` kept 10 min in memory, `prompt=select_account consent`,
-  scopes `openid email gmail.send calendar.readonly`); Google redirects to `http://127.0.0.1:<port>/oauth/google`, handled by `server._google_outcome`,
+  scopes `openid email gmail.send calendar.events.readonly`); Google redirects to `http://127.0.0.1:<port>/oauth/google`, handled by `server._google_outcome`,
   which calls `finish_login` (state checked once, code traded at `oauth2.googleapis.com/token`, every permission required or the login is revoked,
   the address read from the `id_token` of that TLS reply) and answers with a 302 to `/?google=connected|denied|error#/settings` (no detail in the URL).
 - Storage: `google-accounts.json` `{accounts: [{email, token}], send_from}`; each refresh token is protected with DPAPI (`CryptProtectData`, current

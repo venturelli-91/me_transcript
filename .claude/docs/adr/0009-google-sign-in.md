@@ -12,7 +12,7 @@ Windows-only, stdlib-only and may be downloaded by others.
 ## Decision
 - "Sign in with Google" using the OAuth 2.0 authorization code flow with PKCE. The app's own server is the loopback redirect
   (`http://127.0.0.1:<port>/oauth/google`) of a **Desktop-app client that each user creates once in their own Google Cloud project** (client ID and
-  secret pasted in Settings). Scopes: `openid email`, `gmail.send`, `calendar.readonly`.
+  secret pasted in Settings). Scopes: `openid email`, `gmail.send`, `calendar.events.readonly`.
 - Calendars: the Calendar API (`events.list`, primary calendar) for every connected account, merged. Email: the Gmail API, from the account chosen as
   sender, to itself; no attachment.
 - Logins (refresh tokens) in `google-accounts.json` encrypted with Windows DPAPI; access tokens only in memory.

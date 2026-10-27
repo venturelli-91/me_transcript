@@ -24,10 +24,10 @@ ROOT = Path(__file__).resolve().parent.parent
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 REVOKE_URL = "https://oauth2.googleapis.com/revoke"
-SCOPES = "openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly"
+SCOPES = "openid email https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events.readonly"
 STATE_TTL = 600
 EMAIL_RE = re.compile(r"[^\s@<>/?#\\%&=+]+@[^\s@<>/?#\\%&=+]+")
-NEEDED_SCOPES = ("https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/calendar.readonly")
+NEEDED_SCOPES = ("https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/calendar.events.readonly")
 MAX_REPLY = 5_000_000
 
 _LOCK = threading.Lock()

@@ -109,7 +109,7 @@ Google asks every app that signs people in to be registered, so you create yours
 1. Open [console.cloud.google.com](https://console.cloud.google.com), create a project called `MeTranscript`.
 2. **APIs & Services → Library**: enable the **Gmail API** and the **Google Calendar API**.
 3. **Google Auth Platform → Get started**: app name `MeTranscript`, your email, audience **External**. Under **Data access**, add the
-   scopes `.../auth/gmail.send` (send the summary) and `.../auth/calendar.readonly` (read your events, never change them).
+   scopes `.../auth/gmail.send` (send the summary) and `.../auth/calendar.events.readonly` (read your events, never change them).
 4. Under **Audience**, add your Google accounts as test users, then **Publish app**. Without publishing, the login expires every
    7 days. Published without Google's verification, it works for up to 100 accounts, which is plenty for personal use.
 5. **Clients → Create client → Desktop app**. Copy the **Client ID** and the **Client secret**.
