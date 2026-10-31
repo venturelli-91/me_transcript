@@ -130,6 +130,8 @@ body.recording #strip { display: flex; }
 #stop { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #fff; background: transparent; display: grid; place-items: center; cursor: pointer; flex: none; }
 #stop span { width: 14px; height: 14px; border-radius: 3px; background: var(--rec); }
 #stop:disabled { opacity: .4; cursor: default; }
+#pause { width: 44px; height: 44px; border-radius: 50%; border: 2px solid #fff; background: transparent; color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; font: 400 16px/1 var(--mono); }
+#pause:disabled { opacity: .4; cursor: default; }
 #strip .now { min-width: 0; flex: 1 1 220px; }
 #strip .now .lbl { display: block; overflow-wrap: anywhere; }
 #strip-clock { font: 400 40px/1.05 var(--mono); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -347,6 +349,7 @@ dialog::backdrop { background: var(--scrim); }
 <body>
 <div id="strip" role="region" aria-label="Recording">
   <button id="stop" aria-label="Stop recording"><span></span></button>
+  <button id="pause" aria-label="Pause recording">❚❚</button>
   <div class="now">
     <span class="lbl" id="strip-label">(Recording)</span>
     <div id="strip-clock">00:00</div>
@@ -584,6 +587,9 @@ const PT = {
   "A recording is already in progress.": "Já há uma gravação em andamento.",
   "Cannot reach MeTranscript. Is the program running?": "Não foi possível falar com o MeTranscript. O programa está rodando?",
   "(Recording – {t})": "(Gravando – {t})",
+  "(Paused – {t})": "(Pausado – {t})",
+  "Pause recording": "Pausar gravação",
+  "Resume recording": "Retomar gravação",
   "meeting": "reunião",
   "(Writing the summary…)": "(Escrevendo o resumo…)",
   "(Waiting to transcribe…)": "(Aguardando para transcrever…)",
@@ -1256,6 +1262,9 @@ async function startRec(body) {
   }
 }
 $("#record-btn").addEventListener("click", () => openRecordSheet());
+$("#pause").addEventListener("click", async () => {
+  try { await api(status.paused ? "/api/resume" : "/api/pause", { method: "POST" }); await poll(); } catch (err) { showError(err.message); }
+});
 $("#stop").addEventListener("click", async () => {
   await flushNotes();
   notice = null;
@@ -1272,18 +1281,22 @@ async function refresh() {
   const busy = rec || active.length > 0;
   document.body.classList.toggle("recording", busy);
   document.body.classList.toggle("on-air", rec);
-  document.title = rec ? `● ${clock(status.elapsed || 0)} MeTranscript` : "MeTranscript";
+  const paused = rec && status.paused;
+  document.title = rec ? `${paused ? "⏸" : "●"} ${clock(status.elapsed || 0)} MeTranscript` : "MeTranscript";
   if (rec) recordingId = status.meeting_id;
   if (busy) {
     const shownId = rec ? status.meeting_id : active[0][0];
     const m = meetings.find(x => x.id === shownId) || (openMeeting?.id === shownId ? openMeeting : null);
     $("#strip-label").textContent = rec
-      ? t("(Recording – {t})", { t: m ? titleOf(m) : t("meeting") }) + (active.length ? ` · ${t("{n} processing", { n: active.length })}` : "")
+      ? t(paused ? "(Paused – {t})" : "(Recording – {t})", { t: m ? titleOf(m) : t("meeting") }) + (active.length ? ` · ${t("{n} processing", { n: active.length })}` : "")
       : stripText(active[0][1]);
     $("#strip-clock").textContent = clock(status.elapsed || 0);
     $("#stop").disabled = !rec;
-    $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
-    $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
+    $("#pause").disabled = !rec;
+    $("#pause").textContent = paused ? "▶" : "❚❚";
+    $("#pause").setAttribute("aria-label", t(paused ? "Resume recording" : "Pause recording"));
+    $("#lv-mic").style.width = paused ? "0%" : Math.min(100, status.levels.mic * 100) + "%";
+    $("#lv-system").style.width = paused ? "0%" : Math.min(100, status.levels.system * 100) + "%";
     const onIt = openId === shownId;
     $("#strip-back").hidden = onIt;
     $("#strip-back").href = `#/m/${shownId}`;
