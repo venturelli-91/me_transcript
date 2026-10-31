@@ -591,6 +591,7 @@ const PT = {
   "{n} processing": "{n} em processamento",
   "Processing": "Processando",
   "Transcribe next": "Transcrever em seguida",
+  "Cancel transcription": "Cancelar transcrição",
   "Failed": "Falhou",
   "{app} is using the microphone. Did a meeting start?": "{app} está usando o microfone. Uma reunião começou?",
   "{app} is using the microphone. Record this meeting?": "{app} está usando o microfone. Gravar esta reunião?",
@@ -863,7 +864,8 @@ function renderMeeting() {
           <div class="reading">${summary ? markdown(summary)
             : `<p class="muted" id="proc-msg">${processing ? procText(job)
               : m.private ? t("Private meeting: no summary is generated.") : t("No summary yet.")}</p>
-            ${job?.phase === "queued" ? `<p><button class="pill ghost" id="prioritize">${t("Transcribe next")}</button></p>` : ""}`}</div>
+            ${job?.phase === "queued" ? `<p><button class="pill ghost" id="prioritize">${t("Transcribe next")}</button>
+              <button class="pill ghost" id="cancel-job">${t("Cancel transcription")}</button></p>` : ""}`}</div>
           ${m.private ? "" : `<div class="actions">
             <button class="pill dark" id="regen" ${off}>${m.summary ? t("Regenerate") : t("Generate summary")}</button>
             ${m.can_undo ? `<button class="pill ghost" id="undo" ${off}>${t("Undo")}</button>` : ""}
@@ -906,9 +908,9 @@ function renderMeeting() {
     try { await api(`/api/meetings/${openId}/retranscribe`, { method: "POST" }); await poll(); }
     catch (err) { e.target.disabled = false; $("#doc-msg").innerHTML = `<span class="error">${esc(err.message)}</span>`; }
   });
-  $("#prioritize")?.addEventListener("click", async e => {
+  for (const [id, action] of [["prioritize", "prioritize"], ["cancel-job", "cancel"]]) $(`#${id}`)?.addEventListener("click", async e => {
     e.target.disabled = true;
-    try { await api(`/api/meetings/${openId}/prioritize`, { method: "POST" }); await poll(); }
+    try { await api(`/api/meetings/${openId}/${action}`, { method: "POST" }); await poll(); }
     catch (err) { e.target.disabled = false; showError(err.message); }
   });
   $("#mail")?.addEventListener("click", () => docAction("email", t("Sending…"), t("Sent to your email.")));

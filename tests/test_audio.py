@@ -234,6 +234,29 @@ class ServerAudioTest(ServerCase):
             thread.join(5)
         self.assertEqual(order, ["a", "d", "b", "c"])
 
+    def test_cancelling_a_queued_meeting_skips_whisper_keeps_the_audio_and_is_not_resumed(self):
+        mid = self.meeting()
+        store.finish(mid)
+        wav = store.meeting_dir(mid) / "mic.wav"
+        write_wav(wav)
+        with mock.patch.object(server.session, "jobs", {mid: {"phase": "queued", "progress": None, "error": None}}), \
+                mock.patch.object(transcribe, "retranscribe") as whisper, mock.patch.object(transcribe, "to_opus") as to_opus:
+            with server._turn("blocker"):
+                worker = threading.Thread(target=server._retranscribe, args=(mid, "en"))
+                worker.start()
+                deadline = time.time() + 5
+                while mid not in server._queue and time.time() < deadline:
+                    time.sleep(0.01)
+                server.cancel(mid)
+                with self.assertRaises(RuntimeError):
+                    server.cancel(mid)
+            worker.join(5)
+            self.assertFalse(whisper.called)
+            to_opus.assert_called_once_with(wav)
+            self.assertNotIn(mid, server.session.jobs)
+            self.assertFalse(wav.exists())
+            self.assertEqual(store.unfinished(), [])
+
     def test_unfinished_lists_only_stopped_meetings_that_still_have_a_wav(self):
         waiting, compressed, recording = self.meeting(), self.meeting(), self.meeting()
         for mid in (waiting, compressed):

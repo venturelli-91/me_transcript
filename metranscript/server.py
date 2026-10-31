@@ -66,8 +66,13 @@ session = Session()
 # One whisper run at a time: it is GPU/CPU heavy and must not starve a recording in progress.
 # Waiting meetings run in `_queue` order (first come first served, unless `prioritize` moves one up).
 _queue: list[str] = []
+_cancelled: set[str] = set()
 _running: str | None = None
 _queue_cv = threading.Condition()
+
+
+class _Cancelled(Exception):
+    pass
 
 
 @contextlib.contextmanager
@@ -75,7 +80,10 @@ def _turn(meeting_id: str):
     global _running
     with _queue_cv:
         _queue.append(meeting_id)
-        _queue_cv.wait_for(lambda: _running is None and _queue[:1] == [meeting_id])
+        _queue_cv.wait_for(lambda: meeting_id in _cancelled or (_running is None and _queue[:1] == [meeting_id]))
+        if meeting_id in _cancelled:
+            _cancelled.discard(meeting_id)
+            raise _Cancelled
         _queue.pop(0)
         _running = meeting_id
     try:
@@ -93,6 +101,23 @@ def prioritize(meeting_id: str) -> None:
         _queue.remove(meeting_id)
         _queue.insert(0, meeting_id)
         _queue_cv.notify_all()
+
+
+def cancel(meeting_id: str) -> None:
+    """Take a waiting meeting out of the queue; its audio is kept (compressed) and it can be re-transcribed later."""
+    with _queue_cv:
+        if meeting_id not in _queue:
+            raise RuntimeError("Only a meeting that is waiting to be transcribed can be cancelled.")
+        _queue.remove(meeting_id)
+        _cancelled.add(meeting_id)
+        _queue_cv.notify_all()
+
+
+def _drop_cancelled(meeting_id: str) -> None:
+    # Compressing here, not in `cancel`, keeps the slow encode off the HTTP thread; the WAV is gone, so a restart won't resume it.
+    _archive_audio(meeting_id)
+    with session.lock:
+        session.jobs.pop(meeting_id, None)
 
 
 def _live_ids() -> set[str]:
@@ -179,6 +204,8 @@ def _finalize(meeting_id: str, recorder: Recorder) -> None:
             transcriber.finish(end)
         if transcriber.skipped:
             log.warning("%s: %d window(s) could not be transcribed", meeting_id, transcriber.skipped)
+    except _Cancelled:
+        return _drop_cancelled(meeting_id)
     except Exception as e:
         log.exception("Could not finish %s", meeting_id)
         return _set_phase(meeting_id, "error", f"Transcription did not finish ({e}). Audio and notes are saved in the meeting folder.")
@@ -235,6 +262,8 @@ def _retranscribe(meeting_id: str, lang: str) -> None:
             _set_phase(meeting_id, "transcribing")
             store.replace_transcript(meeting_id, transcribe.retranscribe(
                 store.meeting_dir(meeting_id), lang, lambda share: _set_progress(meeting_id, share)))
+    except _Cancelled:
+        return _drop_cancelled(meeting_id)
     except Exception as e:
         log.exception("Could not re-transcribe %s", meeting_id)
         return _set_phase(meeting_id, "error", f"Re-transcription failed ({e}). The previous transcript is untouched.")
@@ -375,7 +404,7 @@ def undo(meeting_id: str) -> dict:
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/archive|/undo|/email|/retranscribe|/prioritize|/report\.md|/report\.pdf)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/archive|/undo|/email|/retranscribe|/prioritize|/cancel|/report\.md|/report\.pdf)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -573,6 +602,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(lambda: (retranscribe(m.group(1)), self._send(200)))
         if m and m.group(2) == "/prioritize":
             return self._guard(lambda: (prioritize(m.group(1)), self._send(200)))
+        if m and m.group(2) == "/cancel":
+            return self._guard(lambda: (cancel(m.group(1)), self._send(200)))
         if m and m.group(2) == "/undo":
             return self._guard(lambda: self._send(200, undo(m.group(1))))
         if m and m.group(2) == "/chat":
