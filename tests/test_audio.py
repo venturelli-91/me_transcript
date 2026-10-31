@@ -206,6 +206,20 @@ class ServerAudioTest(ServerCase):
             self.assertEqual((server.session.phase, server.session.meeting_id), ("recording", nxt))
             self.assertIn(prev, server.session.jobs)
 
+    def test_pause_and_resume_go_to_the_recorder_and_show_in_the_status(self):
+        recorder = mock.Mock(paused_at=None, elapsed=lambda: 5.0, levels=lambda: {}, warning=None, devices={})
+        with mock.patch.object(server.session, "phase", "recording"), mock.patch.object(server.session, "recorder", recorder):
+            self.assertEqual(self.call("POST", "/api/pause", {})[0], 200)
+            recorder.pause.assert_called_once()
+            recorder.paused_at = 3.0
+            self.assertTrue(self.call("GET", "/api/status")[1]["paused"])
+            self.assertEqual(self.call("POST", "/api/resume", {})[0], 200)
+            recorder.resume.assert_called_once()
+
+    def test_pause_without_a_recording_is_refused(self):
+        status, body = self.call("POST", "/api/pause", {})
+        self.assertEqual((status, body["error"]), (409, "No recording in progress."))
+
     def test_transcriptions_run_in_queue_order_and_prioritize_moves_one_to_the_front(self):
         order, release = [], threading.Event()
 

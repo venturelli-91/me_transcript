@@ -51,6 +51,7 @@ class Session:
             snap = {
                 "phase": self.phase,
                 "meeting_id": self.meeting_id,
+                "paused": bool(self.recorder and self.recorder.paused_at is not None),
                 "elapsed": self.recorder.elapsed() if self.recorder else 0,
                 "levels": self.recorder.levels() if self.recorder else {"mic": 0.0, "system": 0.0},
                 "jobs": {meeting_id: dict(job) for meeting_id, job in self.jobs.items()},
@@ -157,6 +158,14 @@ def switch_device(track: str, name: str) -> None:
     if recorder is None:
         raise RuntimeError("No recording in progress.")
     recorder.switch(track, name)
+
+
+def pause_or_resume(pause: bool) -> None:
+    with session.lock:
+        recorder = session.recorder if session.phase == "recording" else None
+    if recorder is None:
+        raise RuntimeError("No recording in progress.")
+    recorder.pause() if pause else recorder.resume()
 
 
 MEETING_APPS = {*detect.EXES.values(), *agenda.APPS.values()}
@@ -557,6 +566,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(run)
         if self.path == "/api/stop":
             return self._guard(lambda: (stop(), self._send(200)))
+        if self.path in ("/api/pause", "/api/resume"):
+            return self._guard(lambda: (pause_or_resume(self.path == "/api/pause"), self._send(200)))
         if self.path == "/api/google/login":
             return self._guard(lambda: self._send(200, {"url": google.start_login(PORT)}))
         if self.path in ("/api/google/sender", "/api/google/disconnect"):
