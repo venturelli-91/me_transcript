@@ -21,6 +21,12 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
 - [ ] After stopping, the next meeting can be recorded right away: the previous one is transcribed and
       summarized in the background (one transcription at a time, the rest wait as "queued"), with its
       progress shown on its page and in the index.
+- [ ] (DEV-0094) While you record another meeting, a background meeting that finishes (or fails) shows a silent
+      Windows notification; clicking it opens that meeting.
+- [ ] (DEV-0095) If the app closed while a meeting was being transcribed, it is queued again on the next start.
+- [ ] (DEV-0096, DEV-0097) A meeting waiting in the queue has **Transcribe next** (moves it to the front) and
+      **Cancel transcription** (takes it out; the audio is kept and **Re-transcribe** still works).
+- [ ] (DEV-0098) Under 5 GB of free disk space, the status line warns and points to **Keep audio for (days)**.
 
 ## F3 — Two audio tracks
 - [ ] `mic.wav` contains only the microphone; `system.wav` contains only system audio

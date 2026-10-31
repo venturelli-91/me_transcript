@@ -38,7 +38,15 @@ A single `Session` object in `server.py`, guarded by a `threading.Lock`:
 already stopped. A finished job is removed; a failed one stays until that meeting is retried or deleted.
 
 ponytail: one recording at a time; processing runs in the background, so the next meeting can be recorded
-right away. One whisper run at a time (`_transcribe_lock`), the others show as `queued`.
+right away. One whisper run at a time: meetings wait in `_queue` (`_turn()` context manager) and show as `queued`;
+`prioritize` moves one to the front and `cancel` takes one out (its WAV is compressed, so it is not resumed and can be
+re-transcribed later). A running job cannot be cancelled.
+
+On start, `resume_unfinished()` queues every meeting that has `ended_at` but still a WAV (`store.unfinished()`): the WAV
+is only removed once the transcript is done, so a leftover one means the app closed while processing it.
+
+While another meeting is being recorded, a job that ends (summary ready, or failed) shows a silent Windows toast
+(`_notify_done`, `desktop.notify(..., silent=True)`) that opens that meeting.
 
 ## Meeting flow
 1. `POST /api/start` → `store.create()` → `capture.start()`. Nothing is transcribed during the call (DEV-0059).
@@ -60,11 +68,13 @@ right away. One whisper run at a time (`_transcribe_lock`), the others show as `
 | Method and route | Body | Response |
 |---|---|---|
 | `GET /` | — | `web/index.html` |
-| `GET /api/status` | — | `{phase: "idle"\|"recording", meeting_id, elapsed, levels:{mic,system}, devices, jobs:{<id>:{phase, progress, error}}, detected, error}` |
+| `GET /api/status` | — | `{phase: "idle"\|"recording", meeting_id, elapsed, levels:{mic,system}, devices, jobs:{<id>:{phase, progress, error}}, detected, error, low_disk_gb}` (`low_disk_gb` is `null` unless under 5 GB is free) |
 | `GET /api/meetings` | — | `[{id, title, started_at, has_summary}]` |
 | `GET /api/meetings/<id>` | — | `{id, title, lang, private, started_at, ended_at, notes, transcript, summary, chat, can_undo}` |
 | `POST /api/start` | `{title?, lang: "pt"\|"en", private?: bool}` | `{id}` · `409` if already recording |
 | `POST /api/stop` | — | `{}` (processing continues in the background) |
+| `POST /api/meetings/<id>/prioritize` | — | `{}` · `409` unless that meeting is `queued` |
+| `POST /api/meetings/<id>/cancel` | — | `{}` · `409` unless that meeting is `queued` |
 | `PUT /api/meetings/<id>/notes` | `{notes}` | `{}` |
 | `POST /api/meetings/<id>/summary` | — | updated meeting (regenerates the summary; synchronous) |
 | `POST /api/meetings/<id>/chat` | `{message}` (1–4000 characters) | updated meeting |
