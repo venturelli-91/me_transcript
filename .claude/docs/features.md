@@ -18,6 +18,9 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
 - [ ] Optional title and language (`pt` default, `en`) chosen before recording.
 - [ ] Elapsed time and audio level indicators for both tracks while recording.
 - [ ] Only one recording at a time; trying to start another returns a clear error.
+- [ ] After stopping, the next meeting can be recorded right away: the previous one is transcribed and
+      summarized in the background (one transcription at a time, the rest wait as "queued"), with its
+      progress shown on its page and in the index.
 
 ## F3 — Two audio tracks
 - [ ] `mic.wav` contains only the microphone; `system.wav` contains only system audio

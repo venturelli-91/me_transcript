@@ -33,10 +33,12 @@ others; the rest don't import each other (except `transcribe` reading the WAVs t
 
 ## Session state
 A single `Session` object in `server.py`, guarded by a `threading.Lock`:
-`phase` ∈ `idle | recording | transcribing | enhancing | done | error`, `meeting_id`,
-`started_at`, `segments`, `levels`, `error`.
+`phase` ∈ `idle | recording`, `meeting_id`, `recorder`, `error` for the recording in progress, plus `jobs`:
+`{meeting_id: {phase: queued | transcribing | enhancing | error, progress, error}}` for meetings whose recording
+already stopped. A finished job is removed; a failed one stays until that meeting is retried or deleted.
 
-ponytail: one global session — the app is for one person, one meeting at a time.
+ponytail: one recording at a time; processing runs in the background, so the next meeting can be recorded
+right away. One whisper run at a time (`_transcribe_lock`), the others show as `queued`.
 
 ## Meeting flow
 1. `POST /api/start` → `store.create()` → `capture.start()`. Nothing is transcribed during the call (DEV-0059).
@@ -44,10 +46,11 @@ ponytail: one global session — the app is for one person, one meeting at a tim
    each WAV (`ffmpeg -ss/-t` → 16 kHz mono) and runs it through Silero VAD (`whisper-vad-speech-segments`); with ≥ 0.5 s of speech, it runs
    `whisper-cli -l <lang> -ot <speech start> -oj` on the window (GPU via Vulkan), at Windows low priority. Output is read as lenient UTF-8,
    decoding loops are collapsed (`collapse_repeats`), a window that fails is skipped (`Transcriber.skipped`). Segments with absolute
-   timestamps are appended to `transcript.md` per window, and `Session.progress` (0-1) is exposed in `/api/status`.
-3. Then `phase = enhancing` →
-   `enhance.summarize()` → `summary.md` → `phase = done`. A transcription or summary failure →
-   `phase = error` with a message; nothing saved is deleted. A private meeting skips the summary.
+   timestamps are appended to `transcript.md` per window, and the job's `progress` (0-1) is exposed in `/api/status`.
+   The session is free again as soon as `stop` returns: a new recording can start while this one is processed.
+3. Then the job phase becomes `enhancing` →
+   `enhance.summarize()` → `summary.md` → job removed. A transcription or summary failure →
+   job phase `error` with a message; nothing saved is deleted. A private meeting skips the summary.
 4. In an open meeting, each chat message calls `enhance.chat()` (JSON mode): the answer goes
    to `chat.json`; if it includes `summary`, the previous version goes to `summary-history.json` and the new
    text to `summary.md`. "Undo" restores the latest version from the history.
@@ -57,7 +60,7 @@ ponytail: one global session — the app is for one person, one meeting at a tim
 | Method and route | Body | Response |
 |---|---|---|
 | `GET /` | — | `web/index.html` |
-| `GET /api/status` | — | `{phase, meeting_id, elapsed, levels:{mic,system}, segments:[...], detected, error}` |
+| `GET /api/status` | — | `{phase: "idle"\|"recording", meeting_id, elapsed, levels:{mic,system}, devices, jobs:{<id>:{phase, progress, error}}, detected, error}` |
 | `GET /api/meetings` | — | `[{id, title, started_at, has_summary}]` |
 | `GET /api/meetings/<id>` | — | `{id, title, lang, private, started_at, ended_at, notes, transcript, summary, chat, can_undo}` |
 | `POST /api/start` | `{title?, lang: "pt"\|"en", private?: bool}` | `{id}` · `409` if already recording |
