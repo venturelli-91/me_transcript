@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import wave
 from collections.abc import Callable
 from difflib import SequenceMatcher
@@ -212,12 +213,16 @@ class Transcriber:
 
     def _window(self, end: float, final: bool = False) -> None:
         duration = end - self.done
+        started = time.perf_counter()
+        whisper_s = {}
         with tempfile.TemporaryDirectory() as tmp:
             found = {who: analyze(self.folder / f"{track}.wav", self.done, duration, Path(tmp))
                      for track, who in TRACKS.items()}
             cut = duration if final else pick_cut(union(*(spans for _, spans in found.values())), duration)
+            prep_s = time.perf_counter() - started
             tracks = []
             for who, (clip, spans) in found.items():
+                began = time.perf_counter()
                 # The vocabulary and the end of what this person just said keep names and sentences consistent.
                 names = vocabulary()
                 prompt = " ".join(filter(None, [INTRO[self.lang].format(names) if names else "", self.tail[who]]))
@@ -229,6 +234,10 @@ class Transcriber:
                     log.warning("Skipping %s at %.0f s: %s", who, self.done, e)
                     self.skipped += 1
                     tracks.append([{"t": round(self.done, 2), "who": who, "text": MISSING}])
+                whisper_s[who] = time.perf_counter() - began
+        # Where the time goes: ffmpeg + VAD ("prep", GPU idle) versus whisper per track ("0.0 s" = no speech, skipped).
+        log.info("window %.0f-%.0f s: prep %.1f s, whisper %s", self.done, self.done + cut, prep_s,
+                 ", ".join(f"{who} {s:.1f} s" for who, s in whisper_s.items()))
         for segs in tracks:
             if segs:
                 self.tail[segs[-1]["who"]] = " ".join(s["text"] for s in segs)[-TAIL:].strip()
@@ -237,8 +246,11 @@ class Transcriber:
             self.on_segments(segments)
 
     def finish(self, end: float) -> None:
+        started = time.perf_counter()
         while end - self.done > 0.5:
             window_end = min(end, self.done + CHUNK)
             self._window(window_end, final=window_end == end)
             if self.on_progress:
                 self.on_progress(min(1.0, self.done / end))
+        spent = time.perf_counter() - started
+        log.info("transcribed %.0f s of audio in %.0f s (%.1fx real time)", end, spent, end / spent if spent else 0)
