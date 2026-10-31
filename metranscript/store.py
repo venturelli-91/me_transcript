@@ -233,6 +233,18 @@ def replace_transcript(meeting_id: str, segments: list[dict]) -> None:
         _write(folder / "transcript.md", "".join(format_segment(s) + "\n" for s in segments))
 
 
+def unfinished() -> list[str]:
+    """Meetings that stopped recording but still have a WAV: it is only removed once the transcript is done."""
+    found = []
+    for folder in sorted(ROOT.glob("*/")) if ROOT.exists() else []:
+        try:
+            if ID_RE.fullmatch(folder.name) and _meta(folder).get("ended_at") and any((folder / f"{t}.wav").exists() for t in TRACKS):
+                found.append(folder.name)
+        except Exception:
+            pass  # a folder that is not a meeting or a hand-edited meta.json is not ours to resume
+    return found
+
+
 def expire_meetings(days: int, skip: set[str] = frozenset()) -> None:
     """Delete finished meetings that ended more than `days` ago; one still being recorded or processed is never touched."""
     cutoff = datetime.now() - timedelta(days=days)

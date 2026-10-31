@@ -655,6 +655,18 @@ def _retention_loop() -> None:
         time.sleep(6 * 3600)
 
 
+def resume_unfinished() -> None:
+    """Queue meetings whose transcription was cut short because the app closed while processing them."""
+    ids = store.unfinished()
+    for meeting_id in ids:
+        try:
+            retranscribe(meeting_id)
+        except RuntimeError as e:
+            return log.warning("Not resuming unfinished meetings: %s", e)
+    if ids:
+        log.info("Resumed %d unfinished meeting(s)", len(ids))
+
+
 def main() -> None:
     global server, watcher
     # pythonw (start with Windows) has no console, so log to a file there.
@@ -667,7 +679,8 @@ def main() -> None:
         return
     store.ROOT.mkdir(exist_ok=True)
     threading.Thread(target=_retention_loop, daemon=True).start()
-    watcher = agenda.Watcher(store.ROOT / "reminders-sent.json", on_reminder)
+    resume_unfinished()
+    watcher =agenda.Watcher(store.ROOT / "reminders-sent.json", on_reminder)
     log.info("MeTranscript running at %s", URL)
     server.serve_forever()
 

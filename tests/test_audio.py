@@ -206,6 +206,26 @@ class ServerAudioTest(ServerCase):
             self.assertEqual((server.session.phase, server.session.meeting_id), ("recording", nxt))
             self.assertIn(prev, server.session.jobs)
 
+    def test_unfinished_lists_only_stopped_meetings_that_still_have_a_wav(self):
+        waiting, compressed, recording = self.meeting(), self.meeting(), self.meeting()
+        for mid in (waiting, compressed):
+            store.finish(mid)
+        write_wav(store.meeting_dir(waiting) / "mic.wav")
+        write_wav(store.meeting_dir(recording) / "mic.wav")
+        (store.meeting_dir(compressed) / "mic.opus").write_bytes(b"x")
+        (store.ROOT / "not-a-meeting").mkdir()
+        self.assertEqual(store.unfinished(), [waiting])
+
+    def test_resume_queues_every_unfinished_meeting_and_stops_when_transcription_is_unavailable(self):
+        with mock.patch.object(store, "unfinished", return_value=["a", "b"]), \
+                mock.patch.object(server, "retranscribe") as queue:
+            server.resume_unfinished()
+        self.assertEqual([c.args for c in queue.call_args_list], [("a",), ("b",)])
+        with mock.patch.object(store, "unfinished", return_value=["a", "b"]), \
+                mock.patch.object(server, "retranscribe", side_effect=RuntimeError("missing")) as queue:
+            server.resume_unfinished()
+        queue.assert_called_once()
+
     def test_a_finished_background_job_notifies_silently_only_while_recording(self):
         mid = self.meeting()
         for phase, notified in (("recording", True), ("idle", False)):
