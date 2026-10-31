@@ -276,6 +276,11 @@ class GoogleRoutesTest(ServerCase):
         patcher = mock.patch.object(google, "ROOT", Path(tmp.name))
         patcher.start()
         self.addCleanup(patcher.stop)
+        env = mock.patch.dict(os.environ)
+        env.start()
+        self.addCleanup(env.stop)
+        for name in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"):
+            os.environ.pop(name, None)
         for cache in (google._pending, google._access, google._reconnect):
             cache.clear()
 
