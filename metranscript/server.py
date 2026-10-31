@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import os
@@ -63,7 +64,35 @@ class Session:
 # ponytail: one recording at a time; finished recordings are processed in the background by `jobs`
 session = Session()
 # One whisper run at a time: it is GPU/CPU heavy and must not starve a recording in progress.
-_transcribe_lock = threading.Lock()
+# Waiting meetings run in `_queue` order (first come first served, unless `prioritize` moves one up).
+_queue: list[str] = []
+_running: str | None = None
+_queue_cv = threading.Condition()
+
+
+@contextlib.contextmanager
+def _turn(meeting_id: str):
+    global _running
+    with _queue_cv:
+        _queue.append(meeting_id)
+        _queue_cv.wait_for(lambda: _running is None and _queue[:1] == [meeting_id])
+        _queue.pop(0)
+        _running = meeting_id
+    try:
+        yield
+    finally:
+        with _queue_cv:
+            _running = None
+            _queue_cv.notify_all()
+
+
+def prioritize(meeting_id: str) -> None:
+    with _queue_cv:
+        if meeting_id not in _queue:
+            raise RuntimeError("This meeting is not waiting to be transcribed.")
+        _queue.remove(meeting_id)
+        _queue.insert(0, meeting_id)
+        _queue_cv.notify_all()
 
 
 def _live_ids() -> set[str]:
@@ -142,7 +171,7 @@ def _finalize(meeting_id: str, recorder: Recorder) -> None:
     try:
         end = recorder.stop()
         store.finish(meeting_id)
-        with _transcribe_lock:
+        with _turn(meeting_id):
             _set_phase(meeting_id, "transcribing")
             transcriber = Transcriber(store.meeting_dir(meeting_id), store.load(meeting_id)["lang"],
                                       lambda segs: store.append_segments(meeting_id, segs),
@@ -202,7 +231,7 @@ def retranscribe(meeting_id: str) -> None:
 
 def _retranscribe(meeting_id: str, lang: str) -> None:
     try:
-        with _transcribe_lock:
+        with _turn(meeting_id):
             _set_phase(meeting_id, "transcribing")
             store.replace_transcript(meeting_id, transcribe.retranscribe(
                 store.meeting_dir(meeting_id), lang, lambda share: _set_progress(meeting_id, share)))
@@ -346,7 +375,7 @@ def undo(meeting_id: str) -> dict:
     return load(meeting_id)
 
 
-MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/archive|/undo|/email|/retranscribe|/report\.md|/report\.pdf)?")
+MEETING_RE = re.compile(r"/api/meetings/([^/]+)(/notes|/title|/summary|/chat|/pin|/archive|/undo|/email|/retranscribe|/prioritize|/report\.md|/report\.pdf)?")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -542,6 +571,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._guard(lambda: self._send(200, email(m.group(1))))
         if m and m.group(2) == "/retranscribe":
             return self._guard(lambda: (retranscribe(m.group(1)), self._send(200)))
+        if m and m.group(2) == "/prioritize":
+            return self._guard(lambda: (prioritize(m.group(1)), self._send(200)))
         if m and m.group(2) == "/undo":
             return self._guard(lambda: self._send(200, undo(m.group(1))))
         if m and m.group(2) == "/chat":

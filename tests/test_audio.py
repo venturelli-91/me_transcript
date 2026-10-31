@@ -206,6 +206,34 @@ class ServerAudioTest(ServerCase):
             self.assertEqual((server.session.phase, server.session.meeting_id), ("recording", nxt))
             self.assertIn(prev, server.session.jobs)
 
+    def test_transcriptions_run_in_queue_order_and_prioritize_moves_one_to_the_front(self):
+        order, release = [], threading.Event()
+
+        def job(mid):
+            with server._turn(mid):
+                order.append(mid)
+                if mid == "a":
+                    release.wait(5)
+
+        def wait_until(condition):
+            deadline = time.time() + 5
+            while not condition() and time.time() < deadline:
+                time.sleep(0.01)
+
+        threads = []
+        for mid in ("a", "b", "c", "d"):
+            threads.append(threading.Thread(target=job, args=(mid,)))
+            threads[-1].start()
+            wait_until(lambda: order == ["a"] if mid == "a" else mid in server._queue)
+        self.assertEqual(server._queue, ["b", "c", "d"])
+        with self.assertRaises(RuntimeError):
+            server.prioritize("a")
+        server.prioritize("d")
+        release.set()
+        for thread in threads:
+            thread.join(5)
+        self.assertEqual(order, ["a", "d", "b", "c"])
+
     def test_unfinished_lists_only_stopped_meetings_that_still_have_a_wav(self):
         waiting, compressed, recording = self.meeting(), self.meeting(), self.meeting()
         for mid in (waiting, compressed):
@@ -247,7 +275,7 @@ class ServerAudioTest(ServerCase):
         with mock.patch.object(server.session, "jobs", {mid: job}), \
                 mock.patch.object(transcribe, "retranscribe", return_value=[{"t": 3, "who": "Others", "text": "words"}]), \
                 mock.patch.object(enhance, "_complete", return_value="## New"):
-            with server._transcribe_lock:
+            with server._turn("blocker"):
                 worker = threading.Thread(target=server._retranscribe, args=(mid, "en"))
                 worker.start()
                 time.sleep(0.2)
