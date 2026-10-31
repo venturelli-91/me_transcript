@@ -23,6 +23,11 @@ class RoutesTest(ServerCase):
         self.assertEqual((status, body["phase"]), (200, "idle"))
         self.assertEqual(self.call("GET", "/api/agenda")[1], {"configured": False, "events": [], "error": None})
 
+    def test_status_reports_free_space_only_when_it_is_low(self):
+        for free, expected in ((2_000_000_000, 2.0), (50_000_000_000, None)):
+            with mock.patch.object(server.shutil, "disk_usage", return_value=mock.Mock(free=free)):
+                self.assertEqual(self.call("GET", "/api/status")[1]["low_disk_gb"], expected)
+
     def test_fonts_are_served_locally_and_confined(self):
         def fetch(path):
             conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)

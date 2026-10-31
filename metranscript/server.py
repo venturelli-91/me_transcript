@@ -27,6 +27,7 @@ MAX_BODY = 2_000_000
 PORT = int(os.environ.get("ATA_PORT", "8765"))
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 PROCESSING = {"queued", "transcribing", "enhancing"}
+LOW_DISK_BYTES = 5 * 10**9  # recordings wait as WAV until transcribed; only a warning, never a refusal
 URL = f"http://127.0.0.1:{PORT}/"
 # One-time tokens behind the "Record" button of a reminder; the page can't start a reminder recording without one.
 reminder_tokens: dict[str, tuple[str, str | None, float]] = {}
@@ -58,6 +59,8 @@ class Session:
             }
         # Also reported while recording, so the page can mark that mic session as already handled.
         snap["detected"] = detect.detected()
+        free = shutil.disk_usage(store.ROOT).free
+        snap["low_disk_gb"] = round(free / 10**9, 1) if free < LOW_DISK_BYTES else None
         return snap
 
 

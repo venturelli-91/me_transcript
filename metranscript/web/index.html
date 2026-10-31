@@ -592,6 +592,7 @@ const PT = {
   "Processing": "Processando",
   "Transcribe next": "Transcrever em seguida",
   "Cancel transcription": "Cancelar transcrição",
+  "Low disk space: {n} GB free. Lower “Keep audio for (days)” in Settings to free some.": "Pouco espaço em disco: {n} GB livres. Diminua “Manter o áudio por (dias)” em Configurações para liberar espaço.",
   "Failed": "Falhou",
   "{app} is using the microphone. Did a meeting start?": "{app} está usando o microfone. Uma reunião começou?",
   "{app} is using the microphone. Record this meeting?": "{app} está usando o microfone. Gravar esta reunião?",
@@ -1304,7 +1305,8 @@ async function refresh() {
   if (jobs[openId] && $("#proc-msg")) $("#proc-msg").textContent = procText(jobs[openId]);
   if (prevKey !== key) notice = null;
   const error = status.error || Object.values(jobs).find(job => job.error)?.error;
-  statusEl.innerHTML = notice ?? (error ? `<span class="error">${esc(error)}</span>` : "");
+  const lowDisk = status.low_disk_gb != null ? t("Low disk space: {n} GB free. Lower “Keep audio for (days)” in Settings to free some.", { n: status.low_disk_gb }) : "";
+  statusEl.innerHTML = notice ?? (error || lowDisk ? `<span class="error">${esc(error || lowDisk)}</span>` : "");
   if (rec && openId === status.meeting_id) {
     if (!$("#live-note")) renderLive();
   }
