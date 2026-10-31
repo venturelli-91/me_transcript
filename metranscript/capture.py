@@ -96,6 +96,8 @@ class Recorder:
         self.devices: dict[str, str] = {}
         self.warning: str | None = None
         self.t0 = time.monotonic()
+        self.paused_at: float | None = None
+        self._paused_total = 0.0
         self.jobs: queue.Queue = queue.Queue()
         self.running = True
         threading.Thread(target=self._worker, daemon=True).start()
@@ -204,11 +206,47 @@ class Recorder:
 
     def switch(self, track: str, name: str) -> None:
         def run():
-            self._attach(track, self._find(track, name))
+            if self.paused_at is not None:
+                self._find(track, name)  # fail now, not on resume; attached then
+                self.devices[track] = name
+            else:
+                self._attach(track, self._find(track, name))
             self.warning = None
         self._call(run)
 
+    def pause(self) -> None:
+        self._call(self._pause)
+
+    def resume(self) -> None:
+        self._call(self._resume)
+
+    def _pause(self) -> None:
+        if self.paused_at is not None:
+            return
+        self.paused_at = time.monotonic()
+        streams, self.streams = self.streams, {}
+        for s in streams.values():
+            self._close(s)
+
+    def _resume(self) -> None:
+        if self.paused_at is None:
+            return
+        paused_at, total = self.paused_at, self._paused_total
+        self.paused_at, self._paused_total = None, total + time.monotonic() - paused_at
+        try:
+            for name in self.tracks:
+                self._attach(name, self._find(name, self.devices[name]))
+        except Exception:
+            # Stay paused so the user can pick another device and retry.
+            self.paused_at, self._paused_total = paused_at, total
+            streams, self.streams = self.streams, {}
+            for s in streams.values():
+                self._close(s)
+            raise
+
     def _pad_and_check(self) -> None:
+        if self.paused_at is not None:
+            return
         now = self.elapsed()
         # Loopback delivers nothing in silence, so it is always padded; the mic only once its stream has died,
         # because padding a live but late mic would insert silence before its real audio.
@@ -221,7 +259,7 @@ class Recorder:
             self.warning = f"{label[dead[0]]} stopped ({self.devices[dead[0]]}). Pick another device to keep recording."
 
     def elapsed(self) -> float:
-        return time.monotonic() - self.t0
+        return (self.paused_at or time.monotonic()) - self.t0 - self._paused_total
 
     def levels(self) -> dict:
         return {name: t.level for name, t in self.tracks.items()}
