@@ -25,7 +25,7 @@ LANGS = {"pt", "en", "auto"}
 MAX_BODY = 2_000_000
 PORT = int(os.environ.get("ATA_PORT", "8765"))
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
-BUSY = {"recording", "transcribing", "enhancing"}
+PROCESSING = {"queued", "transcribing", "enhancing"}
 URL = f"http://127.0.0.1:{PORT}/"
 # One-time tokens behind the "Record" button of a reminder; the page can't start a reminder recording without one.
 reminder_tokens: dict[str, tuple[str, str | None, float]] = {}
@@ -40,8 +40,9 @@ class Session:
         self.phase = "idle"
         self.meeting_id: str | None = None
         self.recorder: Recorder | None = None
-        self.progress: float | None = None  # share of the audio transcribed so far, while transcribing
         self.error: str | None = None
+        # Meetings after the recording stopped: {id: {"phase": queued|transcribing|enhancing|error, "progress", "error"}}
+        self.jobs: dict[str, dict] = {}
 
     def snapshot(self) -> dict:
         with self.lock:
@@ -50,19 +51,27 @@ class Session:
                 "meeting_id": self.meeting_id,
                 "elapsed": self.recorder.elapsed() if self.recorder else 0,
                 "levels": self.recorder.levels() if self.recorder else {"mic": 0.0, "system": 0.0},
-                "progress": self.progress,
-                "detected": None,
+                "jobs": {meeting_id: dict(job) for meeting_id, job in self.jobs.items()},
                 "error": self.error or (self.recorder.warning if self.recorder else None),
                 "devices": dict(self.recorder.devices) if self.recorder else None,
             }
         # Also reported while recording, so the page can mark that mic session as already handled.
-        if snap["phase"] not in ("transcribing", "enhancing"):
-            snap["detected"] = detect.detected()
+        snap["detected"] = detect.detected()
         return snap
 
 
-# ponytail: one global session, one person records one meeting at a time
+# ponytail: one recording at a time; finished recordings are processed in the background by `jobs`
 session = Session()
+# One whisper run at a time: it is GPU/CPU heavy and must not starve a recording in progress.
+_transcribe_lock = threading.Lock()
+
+
+def _live_ids() -> set[str]:
+    """Meetings being recorded or processed; the caller holds session.lock."""
+    live = {meeting_id for meeting_id, job in session.jobs.items() if job["phase"] in PROCESSING}
+    if session.phase == "recording":
+        live.add(session.meeting_id)
+    return live
 
 
 def on_reminder(event: dict, minutes: int, reminder: int) -> None:
@@ -80,15 +89,15 @@ def on_reminder(event: dict, minutes: int, reminder: int) -> None:
 
 def quit_app() -> None:
     with session.lock:
-        if session.phase in BUSY:
+        if _live_ids():
             raise RuntimeError("Stop the recording and wait for the summary before quitting.")
     threading.Thread(target=server.shutdown, daemon=True).start()
 
 
 def switch_device(track: str, name: str) -> None:
     with session.lock:
-        recorder = session.recorder
-    if session.phase != "recording" or recorder is None:
+        recorder = session.recorder if session.phase == "recording" else None
+    if recorder is None:
         raise RuntimeError("No recording in progress.")
     recorder.switch(track, name)
 
@@ -101,8 +110,6 @@ def start(title: str, lang: str, private: bool, mic: str | None = None, speakers
     with session.lock:
         if session.phase == "recording":
             raise RuntimeError("A meeting is already being recorded.")
-        if session.phase in BUSY:
-            raise RuntimeError("The previous meeting is still being processed. Wait for its summary to be ready.")
         check_ready()
         meeting_id = store.create(title, lang, private, app=app, consented=consented)
         try:
@@ -120,29 +127,32 @@ def stop() -> None:
     with session.lock:
         if session.phase != "recording":
             raise RuntimeError("No recording in progress.")
-        session.phase, session.progress = "transcribing", 0.0
         meeting_id, recorder = session.meeting_id, session.recorder
-        session.recorder = None
+        session.phase, session.meeting_id, session.recorder = "idle", None, None
+        session.jobs[meeting_id] = {"phase": "queued", "progress": None, "error": None}
     threading.Thread(target=_finalize, args=(meeting_id, recorder), daemon=True).start()
 
 
-def _set_progress(share: float) -> None:
+def _set_progress(meeting_id: str, share: float) -> None:
     with session.lock:
-        session.progress = share
+        session.jobs[meeting_id]["progress"] = share
 
 
 def _finalize(meeting_id: str, recorder: Recorder) -> None:
     try:
         end = recorder.stop()
         store.finish(meeting_id)
-        transcriber = Transcriber(store.meeting_dir(meeting_id), store.load(meeting_id)["lang"],
-                                  lambda segs: store.append_segments(meeting_id, segs), _set_progress)
-        transcriber.finish(end)
+        with _transcribe_lock:
+            _set_phase(meeting_id, "transcribing")
+            transcriber = Transcriber(store.meeting_dir(meeting_id), store.load(meeting_id)["lang"],
+                                      lambda segs: store.append_segments(meeting_id, segs),
+                                      lambda share: _set_progress(meeting_id, share))
+            transcriber.finish(end)
         if transcriber.skipped:
             log.warning("%s: %d window(s) could not be transcribed", meeting_id, transcriber.skipped)
     except Exception as e:
         log.exception("Could not finish %s", meeting_id)
-        return _set_phase("error", f"Transcription did not finish ({e}). Audio and notes are saved in the meeting folder.")
+        return _set_phase(meeting_id, "error", f"Transcription did not finish ({e}). Audio and notes are saved in the meeting folder.")
     _archive_audio(meeting_id)
     _summarize_and_finish(meeting_id)
 
@@ -166,36 +176,39 @@ def _archive_audio(meeting_id: str) -> None:
 def _summarize_and_finish(meeting_id: str) -> None:
     meeting = store.load(meeting_id)
     if meeting.get("private"):
-        return _set_phase("done")
-    _set_phase("enhancing")
+        return _set_phase(meeting_id, "done")
+    _set_phase(meeting_id, "enhancing")
     try:
         store.save_summary(meeting_id, _summary(meeting_id, meeting))
     except Exception as e:
         log.exception("Could not summarize %s", meeting_id)
-        return _set_phase("error", f"Summary not generated: {e} The transcript is saved; use Generate summary.")
+        return _set_phase(meeting_id, "error", f"Summary not generated: {e} The transcript is saved; use Generate summary.")
     # Still "enhancing" while sending, so a manual click can't race the automatic email.
     _auto_email(meeting_id)
-    _set_phase("done")
+    _set_phase(meeting_id, "done")
 
 
 def retranscribe(meeting_id: str) -> None:
     with session.lock:
-        if session.phase in BUSY:
-            raise RuntimeError("Wait until the current recording is processed.")
+        if meeting_id in _live_ids():
+            raise RuntimeError("Wait until this meeting is processed.")
         meeting = store.load(meeting_id)
         if not meeting["has_audio"]:
             raise RuntimeError("This meeting has no saved audio.")
         check_ready()
-        session.phase, session.meeting_id, session.error, session.progress = "transcribing", meeting_id, None, 0.0
+        session.jobs[meeting_id] = {"phase": "queued", "progress": None, "error": None}
     threading.Thread(target=_retranscribe, args=(meeting_id, meeting["lang"]), daemon=True).start()
 
 
 def _retranscribe(meeting_id: str, lang: str) -> None:
     try:
-        store.replace_transcript(meeting_id, transcribe.retranscribe(store.meeting_dir(meeting_id), lang, _set_progress))
+        with _transcribe_lock:
+            _set_phase(meeting_id, "transcribing")
+            store.replace_transcript(meeting_id, transcribe.retranscribe(
+                store.meeting_dir(meeting_id), lang, lambda share: _set_progress(meeting_id, share)))
     except Exception as e:
         log.exception("Could not re-transcribe %s", meeting_id)
-        return _set_phase("error", f"Re-transcription failed ({e}). The previous transcript is untouched.")
+        return _set_phase(meeting_id, "error", f"Re-transcription failed ({e}). The previous transcript is untouched.")
     _summarize_and_finish(meeting_id)
 
 
@@ -211,14 +224,17 @@ def _auto_email(meeting_id: str) -> None:
     store.set_email_status(meeting_id)
 
 
-def _set_phase(phase: str, error: str | None = None) -> None:
+def _set_phase(meeting_id: str, phase: str, error: str | None = None) -> None:
     with session.lock:
-        session.phase, session.error, session.progress = phase, error, None
+        if phase == "done":
+            session.jobs.pop(meeting_id, None)
+        else:
+            session.jobs[meeting_id] = {"phase": phase, "progress": 0.0 if phase == "transcribing" else None, "error": error}
 
 
 def _sendable(meeting_id: str) -> dict:
     with session.lock:
-        if session.meeting_id == meeting_id and session.phase in BUSY:
+        if meeting_id in _live_ids():
             raise RuntimeError("Wait: this meeting is still being recorded, transcribed or summarized.")
     meeting = store.load(meeting_id)
     if meeting.get("private"):
@@ -283,8 +299,9 @@ def rename_meeting(meeting_id: str, title: str) -> dict:
 
 def delete_meeting(meeting_id: str) -> None:
     with session.lock:
-        if session.meeting_id == meeting_id and session.phase in BUSY:
+        if meeting_id in _live_ids():
             raise RuntimeError("Stop the recording and wait for the summary before deleting this meeting.")
+        session.jobs.pop(meeting_id, None)
     store.delete(meeting_id)
 
 
@@ -609,7 +626,7 @@ def _google_outcome(query: dict) -> str:
 def _retention_pass() -> None:
     """Expire old audio and, if set, old meetings; a meeting being recorded or processed is left alone."""
     with session.lock:
-        live = session.meeting_id if session.phase in BUSY else None
+        live = _live_ids()
     try:
         store.expire_audio(settings.days("AUDIO_KEEP_DAYS", store.AUDIO_KEEP_DAYS))
     except Exception:

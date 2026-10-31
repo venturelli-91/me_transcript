@@ -233,13 +233,13 @@ def replace_transcript(meeting_id: str, segments: list[dict]) -> None:
         _write(folder / "transcript.md", "".join(format_segment(s) + "\n" for s in segments))
 
 
-def expire_meetings(days: int, skip: str | None = None) -> None:
+def expire_meetings(days: int, skip: set[str] = frozenset()) -> None:
     """Delete finished meetings that ended more than `days` ago; one still being recorded or processed is never touched."""
     cutoff = datetime.now() - timedelta(days=days)
     for folder in ROOT.glob("*/") if ROOT.exists() else []:
         try:
             ended = _meta(folder).get("ended_at")
-            if folder.name != skip and ended and datetime.fromisoformat(ended) < cutoff:
+            if folder.name not in skip and ended and datetime.fromisoformat(ended) < cutoff:
                 delete(folder.name)
         except Exception:
             pass  # a folder that is not a meeting, a hand-edited meta.json or one in use must not stop the others; the next pass tries again

@@ -1,3 +1,4 @@
+import contextlib
 import http.client
 import json
 import time
@@ -186,10 +187,13 @@ class RoutesTest(ServerCase):
 
     def test_cannot_delete_a_meeting_that_is_being_recorded_or_processed(self):
         mid = store.create("Busy", "pt")
-        for phase in ("recording", "transcribing", "enhancing"):
-            with mock.patch.object(server.session, "phase", phase), mock.patch.object(server.session, "meeting_id", mid):
+        states = [{"phase": "recording", "meeting_id": mid}] + [{"jobs": {mid: {"phase": p}}} for p in ("queued", "transcribing", "enhancing")]
+        for state in states:
+            with contextlib.ExitStack() as stack:
+                for name, value in state.items():
+                    stack.enter_context(mock.patch.object(server.session, name, value))
                 status, body = self.call("DELETE", f"/api/meetings/{mid}")
-            self.assertEqual(status, 409, phase)
+            self.assertEqual(status, 409, state)
             self.assertIn("Stop the recording", body["error"])
         self.assertEqual(self.call("GET", f"/api/meetings/{mid}")[0], 200)
         other = store.create("Other", "pt")

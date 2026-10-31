@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 import unittest
 import wave
@@ -44,15 +45,15 @@ class AudioStoreTest(ServerCase):
 
     def test_retention_pass_skips_only_a_meeting_that_is_being_processed(self):
         with mock.patch.object(store, "expire_audio") as audio, mock.patch.object(store, "expire_meetings") as meetings, \
-                mock.patch.dict(os.environ, {"AUDIO_KEEP_DAYS": "7", "MEETING_KEEP_DAYS": "90"}), \
-                mock.patch.object(server.session, "meeting_id", "m1"):
-            with mock.patch.object(server.session, "phase", "done"):
+                mock.patch.dict(os.environ, {"AUDIO_KEEP_DAYS": "7", "MEETING_KEEP_DAYS": "90"}):
+            with mock.patch.object(server.session, "jobs", {"m1": {"phase": "error"}}):
                 server._retention_pass()
-            meetings.assert_called_with(90, skip=None)
+            meetings.assert_called_with(90, skip=set())
             audio.assert_called_with(7)
-            with mock.patch.object(server.session, "phase", "transcribing"):
+            with mock.patch.object(server.session, "jobs", {"m1": {"phase": "transcribing"}, "m3": {"phase": "queued"}}), \
+                    mock.patch.object(server.session, "phase", "recording"), mock.patch.object(server.session, "meeting_id", "m2"):
                 server._retention_pass()
-            meetings.assert_called_with(90, skip="m1")
+            meetings.assert_called_with(90, skip={"m1", "m2", "m3"})
 
     def test_retention_pass_survives_a_failing_step_and_does_nothing_without_a_meeting_limit(self):
         with mock.patch.object(store, "expire_audio", side_effect=OSError("disk")), \
@@ -178,21 +179,46 @@ class ServerAudioTest(ServerCase):
         loaded = store.load(mid)
         self.assertIn("better words", loaded["transcript"])
         self.assertEqual((loaded["summary"], loaded["can_undo"]), ("## New", True))
-        self.assertEqual(server.session.phase, "done")
+        self.assertNotIn(mid, server.session.jobs)
 
     def test_failed_retranscription_keeps_the_old_transcript(self):
         mid = self.meeting()
         with mock.patch.object(transcribe, "retranscribe", side_effect=RuntimeError("whisper-cli.exe failed")):
             server._retranscribe(mid, "en")
         self.assertIn("old words", store.load(mid)["transcript"])
-        self.assertEqual(server.session.phase, "error")
-        self.assertIn("previous transcript is untouched", server.session.error)
+        self.assertEqual(server.session.jobs[mid]["phase"], "error")
+        self.assertIn("previous transcript is untouched", server.session.jobs[mid]["error"])
 
     def test_route_refuses_a_meeting_without_audio(self):
         mid = self.meeting()
-        server._set_phase("idle")
         status, body = self.call("POST", f"/api/meetings/{mid}/retranscribe", {})
         self.assertEqual((status, body["error"]), (409, "This meeting has no saved audio."))
+
+    def test_stop_moves_the_meeting_to_a_job_and_frees_the_session_for_the_next_recording(self):
+        prev = self.meeting()
+        with mock.patch.object(server.session, "jobs", {}), mock.patch.object(server.session, "phase", "recording"), \
+                mock.patch.object(server.session, "meeting_id", prev), mock.patch.object(server.session, "recorder", mock.Mock()), \
+                mock.patch.object(server, "_finalize"), mock.patch.object(server, "check_ready"), \
+                mock.patch.object(server, "Recorder"):
+            server.stop()
+            self.assertEqual((server.session.phase, server.session.jobs[prev]["phase"]), ("idle", "queued"))
+            nxt = server.start("Next", "en", False)
+            self.assertEqual((server.session.phase, server.session.meeting_id), ("recording", nxt))
+            self.assertIn(prev, server.session.jobs)
+
+    def test_a_queued_job_waits_for_the_running_transcription_then_finishes(self):
+        mid = self.meeting()
+        job = {"phase": "queued", "progress": None, "error": None}
+        with mock.patch.object(server.session, "jobs", {mid: job}), \
+                mock.patch.object(transcribe, "retranscribe", return_value=[{"t": 3, "who": "Others", "text": "words"}]), \
+                mock.patch.object(enhance, "_complete", return_value="## New"):
+            with server._transcribe_lock:
+                worker = threading.Thread(target=server._retranscribe, args=(mid, "en"))
+                worker.start()
+                time.sleep(0.2)
+                self.assertEqual(server.session.jobs[mid]["phase"], "queued")
+            worker.join(5)
+            self.assertNotIn(mid, server.session.jobs)
 
 
 if __name__ == "__main__":

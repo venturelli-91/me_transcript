@@ -439,7 +439,6 @@ dialog::backdrop { background: var(--scrim); }
 <script>
 const $ = (s, el = document) => el.querySelector(s);
 const view = $("#view"), statusEl = $("#status");
-const BUSY = ["recording", "transcribing", "enhancing"];
 const LANG = { pt: "Portuguese", en: "English", auto: "Auto-detect" };
 
 /* ---------- interface language ---------- */
@@ -587,6 +586,11 @@ const PT = {
   "(Recording – {t})": "(Gravando – {t})",
   "meeting": "reunião",
   "(Writing the summary…)": "(Escrevendo o resumo…)",
+  "(Waiting to transcribe…)": "(Aguardando para transcrever…)",
+  "Waiting for the previous transcription…": "Aguardando a transcrição anterior…",
+  "{n} processing": "{n} em processamento",
+  "Processing": "Processando",
+  "Failed": "Falhou",
   "{app} is using the microphone. Did a meeting start?": "{app} está usando o microfone. Uma reunião começou?",
   "{app} is using the microphone. Record this meeting?": "{app} está usando o microfone. Gravar esta reunião?",
   "No meetings with a video link in the next 24 hours.": "Nenhuma reunião com link de vídeo nas próximas 24 horas.",
@@ -713,10 +717,17 @@ function applyLang(save = true) {
   if (save) { try { localStorage.setItem(LANG_KEY, uiLang); } catch { /* storage may be blocked */ } }
 }
 
-let status = { phase: "idle", levels: { mic: 0, system: 0 } };
+let status = { phase: "idle", levels: { mic: 0, system: 0 }, jobs: {} };
 let meetings = [], numbers = new Map(), filter = "all";
 let openId = null, openMeeting = null;
 let waiting = null, draft = "", notice = null, closed = false, prevPhase = "idle", recordingId = null;
+let prevSigs = new Map(), prevKey = "";  // per meeting: "recording" or its job phase, from the last poll
+const isLive = s => ["queued", "transcribing", "enhancing"].includes(s);
+const pct = job => Math.round((job.progress || 0) * 100);
+const procText = job => job.phase === "queued" ? t("Waiting for the previous transcription…")
+  : job.phase === "transcribing" ? t("Transcribing the audio… {n}%", { n: pct(job) }) : t("Writing the summary…");
+const stripText = job => job.phase === "queued" ? t("(Waiting to transcribe…)")
+  : job.phase === "transcribing" ? t("(Transcribing – {n}%)", { n: pct(job) }) : t("(Writing the summary…)");
 
 const api = async (path, opts = {}) => {
   const res = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
@@ -815,7 +826,7 @@ async function renderIndex() {
     ${!meetings.length ? `<div class="empty-state"><p class="t20">${t("No meetings yet.")}</p><p class="muted">${t("Press Record to start your first one.")}</p><p><a href="#/about">${t("New here? See how it works.")}</a></p></div>`
       : !shown.length ? `<div class="empty-state"><p class="muted">${filter === "archived" ? t("No archived meetings.") : t("No meetings match this filter.")}</p></div>`
       : `<ol class="index">${shown.map(m => `<li><a href="#/m/${m.id}" class="${m.has_summary ? "" : "no-summary"}">
-          <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}${m.pinned ? `<span class="pinmark">${t("Pinned")}</span>` : ""}</span>
+          <span class="num">${numbers.get(m.id)}</span><span class="title">${esc(titleOf(m))}${m.pinned ? `<span class="pinmark">${t("Pinned")}</span>` : ""}${status.jobs[m.id] ? `<span class="pinmark">${status.jobs[m.id].error ? t("Failed") : t("Processing")}</span>` : ""}</span>
           <span class="app">${esc(m.app || "")}</span><span class="date">${dateOnly(m.started_at)}</span></a></li>`).join("")}</ol>`}
     `;
   view.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => { filter = b.dataset.filter; renderIndex(); }));
@@ -831,7 +842,7 @@ function mailStatus(m) {
 }
 function renderMeeting() {
   const m = openMeeting;
-  const processing = ["transcribing", "enhancing"].includes(status.phase) && status.meeting_id === m.id;
+  const job = status.jobs[m.id], processing = isLive(job?.phase);
   if (status.phase === "recording" && status.meeting_id === m.id) return renderLive();
   const summary = m.summary_body, nextSteps = m.next_steps;
   const off = processing || waiting === m.id || m.private ? "disabled" : "";
@@ -849,7 +860,7 @@ function renderMeeting() {
         <div class="meta">${meta.map(x => `<span>${x}</span>`).join("")}</div>
         <section class="sec" aria-labelledby="s1"><span class="lbl" id="s1">${t("(01) Summary")}</span><div>
           <div class="reading">${summary ? markdown(summary)
-            : `<p class="muted" id="proc-msg">${processing ? (status.phase === "transcribing" ? t("Transcribing the audio… {n}%", { n: Math.round((status.progress || 0) * 100) }) : t("Writing the summary…"))
+            : `<p class="muted" id="proc-msg">${processing ? procText(job)
               : m.private ? t("Private meeting: no summary is generated.") : t("No summary yet.")}</p>`}</div>
           ${m.private ? "" : `<div class="actions">
             <button class="pill dark" id="regen" ${off}>${m.summary ? t("Regenerate") : t("Generate summary")}</button>
@@ -1202,7 +1213,7 @@ async function copyNotice(show) {
 $("#copy-notice").addEventListener("click", () => copyNotice(msg => { $("#notice-msg").textContent = msg; }));
 $("#strip-notice").addEventListener("click", () => copyNotice(showInfo));
 async function openRecordSheet(prefill = {}) {
-  if (BUSY.includes(status.phase)) return showError(t("A recording is already in progress."));
+  if (status.phase === "recording") return showError(t("A recording is already in progress."));
   sheetPrefill = prefill;
   $("#title").value = prefill.title || "";
   $("#sheet-msg").textContent = "";
@@ -1246,22 +1257,26 @@ let polling = null;
 const poll = () => polling ??= refresh().finally(() => { polling = null; });
 async function refresh() {
   try { status = await api("/api/status"); } catch { statusEl.textContent = t("Cannot reach MeTranscript. Is the program running?"); return; }
-  const p = status.phase, rec = p === "recording", busy = BUSY.includes(p);
+  const jobs = status.jobs, p = status.phase, rec = p === "recording";
+  const active = Object.entries(jobs).filter(([, job]) => isLive(job.phase));
+  const busy = rec || active.length > 0;
   document.body.classList.toggle("recording", busy);
   document.body.classList.toggle("on-air", rec);
   document.title = rec ? `● ${clock(status.elapsed || 0)} MeTranscript` : "MeTranscript";
+  if (rec) recordingId = status.meeting_id;
   if (busy) {
-    recordingId = status.meeting_id;
-    const m = meetings.find(x => x.id === status.meeting_id) || (openMeeting?.id === status.meeting_id ? openMeeting : null);
-    $("#strip-label").textContent = rec ? t("(Recording – {t})", { t: m ? titleOf(m) : t("meeting") })
-      : p === "transcribing" ? t("(Transcribing – {n}%)", { n: Math.round((status.progress || 0) * 100) }) : t("(Writing the summary…)");
+    const shownId = rec ? status.meeting_id : active[0][0];
+    const m = meetings.find(x => x.id === shownId) || (openMeeting?.id === shownId ? openMeeting : null);
+    $("#strip-label").textContent = rec
+      ? t("(Recording – {t})", { t: m ? titleOf(m) : t("meeting") }) + (active.length ? ` · ${t("{n} processing", { n: active.length })}` : "")
+      : stripText(active[0][1]);
     $("#strip-clock").textContent = clock(status.elapsed || 0);
     $("#stop").disabled = !rec;
     $("#lv-mic").style.width = Math.min(100, status.levels.mic * 100) + "%";
     $("#lv-system").style.width = Math.min(100, status.levels.system * 100) + "%";
-    const onIt = openId === status.meeting_id;
+    const onIt = openId === shownId;
     $("#strip-back").hidden = onIt;
-    $("#strip-back").href = `#/m/${status.meeting_id}`;
+    $("#strip-back").href = `#/m/${shownId}`;
     if (rec && status.devices) {
       if (prevPhase !== "recording" || !$("#strip-mic").options.length) {
         if (!deviceList.mics.length) { try { deviceList = await api("/api/devices"); } catch { /* shown on next action */ } }
@@ -1274,24 +1289,30 @@ async function refresh() {
       }
     }
   }
-  if (p === "transcribing" && $("#proc-msg")) $("#proc-msg").textContent = t("Transcribing the audio… {n}%", { n: Math.round((status.progress || 0) * 100) });
-  if (prevPhase !== p) notice = null;
-  statusEl.innerHTML = notice ?? (status.error ? `<span class="error">${esc(status.error)}</span>` : "");
+  const sigOf = id => (rec && status.meeting_id === id ? "recording" : jobs[id]?.phase) ?? "idle";
+  const sigs = new Map([...Object.keys(jobs), ...(rec ? [status.meeting_id] : [])].map(id => [id, sigOf(id)]));
+  const key = [...sigs].join();
+  if (jobs[openId] && $("#proc-msg")) $("#proc-msg").textContent = procText(jobs[openId]);
+  if (prevKey !== key) notice = null;
+  const error = status.error || Object.values(jobs).find(job => job.error)?.error;
+  statusEl.innerHTML = notice ?? (error ? `<span class="error">${esc(error)}</span>` : "");
   if (rec && openId === status.meeting_id) {
     if (!$("#live-note")) renderLive();
   }
-  const finished = BUSY.includes(prevPhase) && !busy;
-  if (prevPhase !== p && openId === status.meeting_id && openId && !finished) {
+  if (openId && (prevSigs.get(openId) ?? "idle") !== sigOf(openId)) {
     await flushNotes();
     openMeeting = await api(`/api/meetings/${openId}`).catch(() => openMeeting);
     renderMeeting();
   }
-  if (finished && recordingId) {
+  const finished = [...prevSigs].some(([id, sig]) => id === recordingId && isLive(sig) && !isLive(sigs.get(id)));
+  if (finished) {
     const id = recordingId;
     recordingId = null;
-    if (location.hash === `#/m/${id}`) route(); else location.hash = `#/m/${id}`;
+    if (location.hash !== `#/m/${id}`) location.hash = `#/m/${id}`;
   }
-  if (currentRoute().name === "index" && prevPhase !== p) renderIndex();
+  if (currentRoute().name === "index" && prevKey !== key) renderIndex();
+  prevSigs = sigs;
+  prevKey = key;
   prevPhase = p;
   showDetected();
 }
@@ -1304,7 +1325,7 @@ $("#detected-dismiss").addEventListener("click", () => { seen.add(status.detecte
 function showDetected() {
   const d = status.detected;
   if (d && status.phase === "recording") seen.add(d.key);
-  const show = !!d && !seen.has(d.key) && !BUSY.includes(status.phase);
+  const show = !!d && !seen.has(d.key) && status.phase !== "recording";
   $("#detected").classList.toggle("show", show);
   if (!show || shownKey === d.key) return;
   shownKey = d.key;
