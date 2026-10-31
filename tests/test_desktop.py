@@ -20,6 +20,12 @@ class DesktopTest(unittest.TestCase):
         self.assertEqual(texts, [hostile, "msg & <b>"])
         self.assertEqual(root.find("actions/action").get("arguments"), "http://127.0.0.1:8765/?record=a&b=1")
 
+    def test_toast_is_silent_only_when_asked(self):
+        loud = ElementTree.fromstring(desktop.toast_xml("t", "m", "http://127.0.0.1:8765/"))
+        quiet = ElementTree.fromstring(desktop.toast_xml("t", "m", "http://127.0.0.1:8765/", silent=True))
+        self.assertIsNone(loud.find("audio"))
+        self.assertEqual(quiet.find("audio").get("silent"), "true")
+
     def test_launcher_uses_windowless_python(self):
         cmd = desktop.launcher()
         self.assertIn("pythonw.exe", cmd)

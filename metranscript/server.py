@@ -224,12 +224,22 @@ def _auto_email(meeting_id: str) -> None:
     store.set_email_status(meeting_id)
 
 
+def _notify_done(meeting_id: str, failed: bool) -> None:
+    meeting = store.load(meeting_id)
+    message = "Processing failed. Open it to see why." if failed else "Transcript ready." if meeting.get("private") else "Summary ready."
+    desktop.notify(meeting.get("title") or "Meeting", message, f"{URL}#/m/{meeting_id}", silent=True)
+
+
 def _set_phase(meeting_id: str, phase: str, error: str | None = None) -> None:
     with session.lock:
         if phase == "done":
             session.jobs.pop(meeting_id, None)
         else:
             session.jobs[meeting_id] = {"phase": phase, "progress": 0.0 if phase == "transcribing" else None, "error": error}
+        recording = session.phase == "recording"
+    # Only while another meeting is being recorded: otherwise the page itself shows the result.
+    if recording and phase in ("done", "error"):
+        _notify_done(meeting_id, phase == "error")
 
 
 def _sendable(meeting_id: str) -> dict:

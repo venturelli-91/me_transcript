@@ -206,6 +206,21 @@ class ServerAudioTest(ServerCase):
             self.assertEqual((server.session.phase, server.session.meeting_id), ("recording", nxt))
             self.assertIn(prev, server.session.jobs)
 
+    def test_a_finished_background_job_notifies_silently_only_while_recording(self):
+        mid = self.meeting()
+        for phase, notified in (("recording", True), ("idle", False)):
+            with mock.patch.object(server.session, "jobs", {mid: {"phase": "enhancing"}}), \
+                    mock.patch.object(server.session, "phase", phase), mock.patch.object(server.desktop, "notify") as notify:
+                server._set_phase(mid, "done")
+            self.assertEqual(notify.called, notified, phase)
+        self.assertEqual(notify.call_args, None)
+        with mock.patch.object(server.session, "jobs", {}), mock.patch.object(server.session, "phase", "recording"), \
+                mock.patch.object(server.desktop, "notify") as notify:
+            server._set_phase(mid, "error", "boom")
+        title, message, url = notify.call_args.args
+        self.assertEqual((title, message, url), ("Kickoff", "Processing failed. Open it to see why.", f"{server.URL}#/m/{mid}"))
+        self.assertTrue(notify.call_args.kwargs["silent"])
+
     def test_a_queued_job_waits_for_the_running_transcription_then_finishes(self):
         mid = self.meeting()
         job = {"phase": "queued", "progress": None, "error": None}

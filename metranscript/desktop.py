@@ -24,13 +24,14 @@ TOAST_SCRIPT = (
 )
 
 
-def toast_xml(title: str, message: str, url: str, action: tuple[str, str] | None = None) -> str:
+def toast_xml(title: str, message: str, url: str, action: tuple[str, str] | None = None, silent: bool = False) -> str:
     actions = ""
     if action:
         actions = (f'<actions><action content={quoteattr(action[0])} activationType="protocol" '
                    f'arguments={quoteattr(action[1])}/></actions>')
+    audio = '<audio silent="true"/>' if silent else ""
     return (f'<toast activationType="protocol" launch={quoteattr(url)}><visual><binding template="ToastGeneric">'
-            f"<text>{escape(title)}</text><text>{escape(message)}</text></binding></visual>{actions}</toast>")
+            f"<text>{escape(title)}</text><text>{escape(message)}</text></binding></visual>{actions}{audio}</toast>")
 
 
 def _register_app_id() -> None:
@@ -39,12 +40,12 @@ def _register_app_id() -> None:
         winreg.SetValueEx(key, "DisplayName", 0, winreg.REG_SZ, "MeTranscript")
 
 
-def notify(title: str, message: str, url: str, action: tuple[str, str] | None = None) -> None:
+def notify(title: str, message: str, url: str, action: tuple[str, str] | None = None, silent: bool = False) -> None:
     try:
         _register_app_id()
         subprocess.run(
             ["powershell", "-NoProfile", "-NonInteractive", "-Command", TOAST_SCRIPT],
-            env={**os.environ, "METRANSCRIPT_TOAST": toast_xml(title, message, url, action), "METRANSCRIPT_APP_ID": APP_ID},
+            env={**os.environ, "METRANSCRIPT_TOAST": toast_xml(title, message, url, action, silent), "METRANSCRIPT_APP_ID": APP_ID},
             check=True, capture_output=True, timeout=20, creationflags=subprocess.CREATE_NO_WINDOW,
         )
     except (OSError, subprocess.SubprocessError):
