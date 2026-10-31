@@ -15,6 +15,9 @@ Each meeting is a folder `meetings/YYYY-MM-DD_HHMM/` with `meta.json`, `notes.md
 
 ## F2 — Record and stop
 - [ ] The **Record** button starts capture; the **Stop** button ends it. There is no auto-stop.
+- [ ] (DEV-0101..0103) **Pause** closes the microphone and speaker streams (the Windows mic indicator goes off) and freezes
+  the clock; **Resume** reopens the same devices and continues in the same meeting. The paused time is not in the audio.
+  Nothing is transcribed until **Stop**, which also works while paused. Resume keeps the recording paused if a device is gone.
 - [ ] Optional title and language (`pt` default, `en`) chosen before recording.
 - [ ] Elapsed time and audio level indicators for both tracks while recording.
 - [ ] Only one recording at a time; trying to start another returns a clear error.

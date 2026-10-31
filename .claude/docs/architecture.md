@@ -73,6 +73,7 @@ While another meeting is being recorded, a job that ends (summary ready, or fail
 | `GET /api/meetings/<id>` | — | `{id, title, lang, private, started_at, ended_at, notes, transcript, summary, chat, can_undo}` |
 | `POST /api/start` | `{title?, lang: "pt"\|"en", private?: bool}` | `{id}` · `409` if already recording |
 | `POST /api/stop` | — | `{}` (processing continues in the background) |
+| `POST /api/pause`, `/api/resume` | — | `{}` · `409` if nothing is being recorded; `status.paused` shows the state |
 | `POST /api/meetings/<id>/prioritize` | — | `{}` · `409` unless that meeting is `queued` |
 | `POST /api/meetings/<id>/cancel` | — | `{}` · `409` unless that meeting is `queued` |
 | `PUT /api/meetings/<id>/notes` | `{notes}` | `{}` |
@@ -140,6 +141,8 @@ Segment: `{"t": 83.2, "who": "Me" | "Others", "text": "..."}` (`t` in seconds si
   `-9999 Unanticipated host error`. The same thread pads silence and watches for dead streams.
 - `Recorder.switch(track, name)` opens the new stream first and only then closes the old one; mono/stereo
   are converted on the fly (`convert_channels`); a different sample rate is refused.
+- `Recorder.pause()` closes the streams and `resume()` reopens the same devices on the Recorder thread. `elapsed()` leaves out the
+  paused time, so the tracks have no gap; `session.phase` stays `recording` and `paused` is part of the status.
 - PortAudio enumerates devices once per session: a device plugged in mid-recording appears in the next one.
 
 | Method and route | Body | Response |
